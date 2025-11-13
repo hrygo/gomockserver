@@ -1,0 +1,54 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application
+mockserver
+cmd/mockserver/mockserver
+cmd/admin/admin
+
+# Logs
+logs/
+*.log
+
+# Config (if contains sensitive data)
+# config.yaml
+
+# Build
+dist/
+build/
+
+# Docker
+.dockerignore
+
+# Frontend
+node_modules/
+web/frontend/dist/
+web/frontend/.next/
+web/frontend/build/

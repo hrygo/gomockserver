@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mockserver-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: mockserver
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - mockserver-network
+
+  mockserver:
+    build: .
+    container_name: mockserver-app
+    restart: always
+    ports:
+      - "8080:8080"  # Admin API
+      - "9090:9090"  # Mock Server
+    environment:
+      - TZ=Asia/Shanghai
+    depends_on:
+      - mongodb
+    volumes:
+      - ./config.yaml:/root/config.yaml
+      - ./logs:/root/logs
+    networks:
+      - mockserver-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  mockserver-network:
+    driver: bridge
