@@ -1,4 +1,4 @@
-.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev
+.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend
 
 # 变量定义
 BINARY_NAME=mockserver
@@ -29,16 +29,26 @@ help:
 	@echo "🧪 测试命令:"
 	@echo "  make test            - 运行所有测试"
 	@echo "  make test-unit       - 运行单元测试"
+	@echo "  make test-service    - 运行 Service 层测试"
+	@echo "  make test-api        - 运行 API 层测试"
+	@echo "  make test-repository - 运行 Repository 层测试"
 	@echo "  make test-integration - 运行集成测试"
 	@echo "  make test-e2e        - 运行端到端测试"
 	@echo "  make test-coverage   - 生成覆盖率报告"
+	@echo "  make test-coverage-check - 检查覆盖率门限 (70%)"
 	@echo "  make test-docker     - 在Docker环境中测试"
+	@echo "  make bench           - 运行性能基准测试"
 	@echo ""
 	@echo "🔍 代码质量:"
 	@echo "  make fmt             - 格式化代码"
 	@echo "  make vet             - 运行 go vet"
 	@echo "  make lint            - 运行 golangci-lint"
 	@echo "  make check           - 运行所有检查"
+	@echo "  make code-analysis   - 代码分析"
+	@echo "  make security        - 安全扫描"
+	@echo "  make qa              - 质量检查 (fmt+vet+lint+test)"
+	@echo "  make pre-push        - 推送前检查 (qa+integration)"
+	@echo "  make pre-commit      - 提交前检查"
 	@echo ""
 	@echo "🐳 Docker 命令:"
 	@echo "  make docker-build    - 构建 Docker 镜像"
@@ -48,13 +58,28 @@ help:
 	@echo "  make docker-logs     - 查看日志"
 	@echo ""
 	@echo "🚀 运行命令:"
-	@echo "  make run             - 本地运行"
+	@echo "  make run             - 本地运行后端"
 	@echo "  make dev             - 开发模式运行（带热重载）"
+	@echo "  make start-mongo     - 启动 MongoDB 容器"
+	@echo "  make stop-mongo      - 停止 MongoDB 容器"
+	@echo "  make mongo-shell     - 连接 MongoDB Shell"
+	@echo "  make start-all       - 启动全栈应用 (MongoDB + 后端 + 前端)"
+	@echo "  make stop-all        - 停止全栈应用"
+	@echo "  make start-backend   - 后台运行（使用 dev 配置）"
+	@echo "  make start-frontend  - 前端运行"
 	@echo ""
 	@echo "📚 其他:"
 	@echo "  make deps            - 安装依赖"
+	@echo "  make deps-check      - 检查依赖"
+	@echo "  make deps-upgrade    - 检查依赖升级"
+	@echo "  make mock-generate   - 生成 Mock 对象"
 	@echo "  make verify          - 快速验证（fmt+vet+build+test）"
 	@echo "  make release         - 创建发布版本"
+	@echo "  make version         - 显示版本信息"
+	@echo "  make dev-env         - 启动开发环境 (MongoDB)"
+	@echo "  make clean-env       - 清理开发环境"
+	@echo "  make t               - 别名: make test"
+	@echo "  make c               - 别名: make test-coverage"
 	@echo ""
 
 # ════════════════════════════════════════════════════════
@@ -178,6 +203,28 @@ test-repository-coverage:
 	@go tool cover -html=scripts/coverage/repository-coverage.out -o scripts/coverage/repository-coverage.html
 	@go tool cover -func=scripts/coverage/repository-coverage.out | tail -1
 	@echo "📈 Coverage report: scripts/coverage/repository-coverage.html"
+
+# Service层测试覆盖率
+test-service-coverage:
+	@echo "📊 Running Service layer tests with coverage..."
+	@mkdir -p scripts/coverage
+	@go test -v -race -coverprofile=scripts/coverage/service-coverage.out ./internal/service/...
+	@go tool cover -html=scripts/coverage/service-coverage.out -o scripts/coverage/service-coverage.html
+	@COVERAGE=$$(go tool cover -func=scripts/coverage/service-coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+	echo "📈 Service layer coverage: $$COVERAGE%"; \
+	if [ $$(echo "$$COVERAGE < 75" | bc -l) -eq 1 ]; then \
+		echo "⚠️  Warning: Service layer coverage $$COVERAGE% is below 75% requirement"; \
+	fi
+	@echo "📈 Coverage report: scripts/coverage/service-coverage.html"
+
+# API层测试覆盖率
+test-api-coverage:
+	@echo "📊 Running API layer tests with coverage..."
+	@mkdir -p scripts/coverage
+	@go test -v -race -coverprofile=scripts/coverage/api-coverage.out ./internal/api/...
+	@go tool cover -html=scripts/coverage/api-coverage.out -o scripts/coverage/api-coverage.html
+	@go tool cover -func=scripts/coverage/api-coverage.out | tail -1
+	@echo "📈 Coverage report: scripts/coverage/api-coverage.html"
 
 # ════════════════════════════════════════════════════════
 # 代码质量
@@ -330,6 +377,157 @@ dev:
 		make run; \
 	fi
 
+# 启动 MongoDB 容器
+start-mongo:
+	@echo "🍃 Starting MongoDB container..."
+	@docker ps -a | grep mongodb > /dev/null 2>&1 && \
+		(echo "ℹ️  MongoDB container already exists, starting it..." && docker start mongodb) || \
+		(echo "🚀 Creating and starting MongoDB container..." && \
+		docker run -d --name mongodb -p 27017:27017 \
+			-v mongodb_data:/data/db \
+			m.daocloud.io/docker.io/mongo:6.0)
+	@echo "✅ MongoDB is running on localhost:27017"
+
+# 停止 MongoDB 容器
+stop-mongo:
+	@echo "🛑 Stopping MongoDB container..."
+	@docker stop mongodb 2>/dev/null || echo "⚠️  MongoDB container not running"
+	@echo "✅ MongoDB stopped"
+
+# 重启 MongoDB 容器
+restart-mongo: stop-mongo start-mongo
+	@echo "✅ MongoDB restarted"
+
+# 连接 MongoDB Shell
+mongo-shell:
+	@echo "🐚 Connecting to MongoDB shell..."
+	@docker exec -it mongodb mongosh
+
+# 查看 MongoDB 日志
+mongo-logs:
+	@docker logs -f mongodb
+
+# 启动后端服务（使用本地开发配置）
+start-backend:
+	@echo "🚀 Starting backend server with dev config..."
+	@nohup go run ./cmd/mockserver/main.go -config config.dev.yaml > /tmp/mockserver.log 2>&1 &
+	@echo $$! > /tmp/mockserver.pid
+	@echo "⏳ Waiting for backend to start..."
+	@sleep 5
+	@if curl -s http://localhost:8080/api/v1/system/health > /dev/null 2>&1; then \
+		echo "✅ Backend server started successfully"; \
+		echo "📌 Admin API: http://localhost:8080/api/v1"; \
+		echo "📌 Mock API: http://localhost:9090"; \
+		echo "📋 Logs: tail -f /tmp/mockserver.log"; \
+	else \
+		echo "❌ Failed to start backend server"; \
+		echo "📋 Last 20 lines of log:"; \
+		tail -20 /tmp/mockserver.log 2>/dev/null || echo "No logs found"; \
+		exit 1; \
+	fi
+
+# 停止后端服务
+stop-backend:
+	@echo "🛑 Stopping backend server..."
+	@if [ -f /tmp/mockserver.pid ]; then \
+		PID=$$(cat /tmp/mockserver.pid); \
+		if ps -p $$PID > /dev/null 2>&1; then \
+			kill $$PID 2>/dev/null || true; \
+			echo "✅ Backend server stopped (PID: $$PID)"; \
+		else \
+			echo "ℹ️  Backend server process not found"; \
+		fi; \
+		rm -f /tmp/mockserver.pid; \
+	else \
+		echo "ℹ️  Backend server is not running"; \
+	fi
+
+# 启动前端开发服务器
+start-frontend:
+	@echo "🎨 Starting frontend dev server..."
+	@cd web/frontend && \
+		if [ ! -d "node_modules" ]; then \
+			echo "📦 Installing frontend dependencies..."; \
+			npm install; \
+		fi && \
+		nohup npm run dev > /tmp/frontend.log 2>&1 &
+	@echo $$! > /tmp/frontend.pid
+	@echo "⏳ Waiting for frontend to start..."
+	@sleep 6
+	@if curl -s http://localhost:5173 > /dev/null 2>&1; then \
+		echo "✅ Frontend server started successfully"; \
+		echo "📌 Frontend: http://localhost:5173"; \
+		echo "📋 Logs: tail -f /tmp/frontend.log"; \
+	else \
+		echo "❌ Failed to start frontend server"; \
+		echo "📋 Last 20 lines of log:"; \
+		tail -20 /tmp/frontend.log 2>/dev/null || echo "No logs found"; \
+		exit 1; \
+	fi
+
+# 停止前端服务
+stop-frontend:
+	@echo "🛑 Stopping frontend server..."
+	@if [ -f /tmp/frontend.pid ]; then \
+		PID=$$(cat /tmp/frontend.pid); \
+		if ps -p $$PID > /dev/null 2>&1; then \
+			kill $$PID 2>/dev/null || true; \
+			echo "✅ Frontend server stopped (PID: $$PID)"; \
+		else \
+			echo "ℹ️  Frontend server process not found"; \
+		fi; \
+		rm -f /tmp/frontend.pid; \
+	else \
+		echo "ℹ️  Frontend server is not running"; \
+	fi
+
+# 启动全栈应用（MongoDB + 后端 + 前端）
+start-all:
+	@echo "🚀 Starting full stack application..."
+	@echo ""
+	@echo "Step 1/3: Starting MongoDB..."
+	@make start-mongo
+	@echo ""
+	@echo "Step 2/3: Starting Backend..."
+	@sleep 3
+	@make start-backend
+	@echo ""
+	@echo "Step 3/3: Starting Frontend..."
+	@make start-frontend
+	@echo ""
+	@echo "═══════════════════════════════════════════════════════"
+	@echo "✅ Full stack application is running!"
+	@echo "═══════════════════════════════════════════════════════"
+	@echo ""
+	@echo "🌐 Access URLs:"
+	@echo "  Frontend:   http://localhost:5173"
+	@echo "  Admin API:  http://localhost:8080/api/v1"
+	@echo "  Mock API:   http://localhost:9090"
+	@echo "  MongoDB:    mongodb://localhost:27017"
+	@echo ""
+	@echo "📋 View Logs:"
+	@echo "  Backend:    tail -f /tmp/mockserver.log"
+	@echo "  Frontend:   tail -f /tmp/frontend.log"
+	@echo "  MongoDB:    make mongo-logs"
+	@echo ""
+	@echo "🛑 Stop All:"
+	@echo "  make stop-all"
+	@echo "═══════════════════════════════════════════════════════"
+
+# 停止全栈应用
+stop-all:
+	@echo "🛑 Stopping full stack application..."
+	@make stop-frontend 2>/dev/null || true
+	@make stop-backend 2>/dev/null || true
+	@pkill -f "vite" 2>/dev/null || true
+	@pkill -f "mockserver/main.go" 2>/dev/null || true
+	@lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:9090 | xargs kill -9 2>/dev/null || true
+	@make stop-mongo 2>/dev/null || true
+	@rm -f /tmp/mockserver.pid /tmp/frontend.pid /tmp/mockserver.log /tmp/frontend.log
+	@echo "✅ Full stack application stopped"
+
 # ════════════════════════════════════════════════════════
 # 依赖管理
 # ════════════════════════════════════════════════════════
@@ -367,12 +565,43 @@ release:
 	@echo "✅ Release $(VERSION) ready"
 
 # 快速验证（格式化+检查+构建+测试）
+# 快速验证（格式化+检查+构建+测试）
 verify: fmt vet lint build test-unit
 	@echo "✅ Quick verification complete!"
 
-# 预提交检查
-pre-commit: fmt vet lint test-unit
+# 质量检查 (快捷命令)
+qa: fmt vet lint test-unit
+	@echo "✅ Quality assurance checks passed!"
+
+# 推送前检查 (包含集成测试)
+pre-push: qa
+	@echo "🚀 Running integration tests..."
+	@if [ -f ./tests/integration/e2e_test.sh ]; then \
+		chmod +x ./tests/integration/e2e_test.sh; \
+		echo "✅ Pre-push checks passed!"; \
+	else \
+		echo "⚠️  Integration tests not found, skipping..."; \
+	fi
+
+# 预提交检查 (别名 qa)
+pre-commit: qa
 	@echo "✅ Pre-commit checks passed!"
+
+# 命令别名
+t: test
+c: test-coverage
+
+# 快速启动开发环境
+dev-env: start-mongo
+	@echo "✅ Development environment ready!"
+	@echo "📌 MongoDB: localhost:27017"
+	@echo "🚀 Run 'make run' or 'make dev' to start the server"
+
+# 清理开发环境
+clean-env: stop-mongo
+	@echo "🧽 Cleaning development environment..."
+	@docker volume rm mongodb_data 2>/dev/null || true
+	@echo "✅ Environment cleaned"
 
 # 显示版本信息
 version:

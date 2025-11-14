@@ -9,15 +9,17 @@ import (
 
 // AdminService 管理服务
 type AdminService struct {
-	ruleHandler    *api.RuleHandler
-	projectHandler *api.ProjectHandler
+	ruleHandler       *api.RuleHandler
+	projectHandler    *api.ProjectHandler
+	statisticsHandler *api.StatisticsHandler
 }
 
 // NewAdminService 创建管理服务
-func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHandler) *AdminService {
+func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHandler, statisticsHandler *api.StatisticsHandler) *AdminService {
 	return &AdminService{
-		ruleHandler:    ruleHandler,
-		projectHandler: projectHandler,
+		ruleHandler:       ruleHandler,
+		projectHandler:    projectHandler,
+		statisticsHandler: statisticsHandler,
 	}
 }
 
@@ -67,6 +69,16 @@ func StartAdminServer(addr string, service *AdminService) error {
 		{
 			system.GET("/health", HealthCheck)
 			system.GET("/version", GetVersion)
+		}
+
+		// 统计 API
+		statistics := v1.Group("/statistics")
+		{
+			statistics.GET("/dashboard", service.statisticsHandler.GetDashboardStatistics)
+			statistics.GET("/projects", service.statisticsHandler.GetProjectStatistics)
+			statistics.GET("/rules", service.statisticsHandler.GetRuleStatistics)
+			statistics.GET("/request-trend", service.statisticsHandler.GetRequestTrend)
+			statistics.GET("/response-time-distribution", service.statisticsHandler.GetResponseTimeDistribution)
 		}
 	}
 

@@ -1,0 +1,90 @@
+# Mock Server 本地开发配置文件
+
+server:
+  # 管理 API 服务配置
+  admin:
+    host: "0.0.0.0"
+    port: 8080
+  # Mock 服务配置
+  mock:
+    host: "0.0.0.0"
+    port: 9090
+
+# 数据库配置（本地开发）
+database:
+  mongodb:
+    uri: "mongodb://localhost:27017"
+    database: "mockserver"
+    timeout: 10s
+    pool:
+      min: 10
+      max: 100
+
+# Redis 配置
+redis:
+  enabled: false
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool:
+    min: 5
+    max: 50
+
+# 安全配置
+security:
+  # JWT 配置
+  jwt:
+    secret: "your-secret-key-change-in-production"
+    expiration: 7200 # 2小时，单位：秒
+  # API Key
+  api_key:
+    enabled: false
+  # IP 白名单
+  ip_whitelist:
+    enabled: false
+    ips: []
+
+# 日志配置
+logging:
+  level: "debug" # debug, info, warn, error
+  format: "json" # json, text
+  output: "stdout" # stdout, file
+  file:
+    path: "./logs/mockserver.log"
+    max_size: 100 # MB
+    max_backups: 10
+    max_age: 30 # days
+
+# 性能配置
+performance:
+  # 请求日志保留期
+  log_retention_days: 7
+  # 缓存配置
+  cache:
+    rule_ttl: 300 # 规则缓存时间，单位：秒
+    config_ttl: 1800 # 配置缓存时间，单位：秒
+  # 限流配置
+  rate_limit:
+    enabled: true
+    ip_limit: 1000 # 每分钟请求数
+    global_limit: 10000 # 每秒全局请求数
+  # Context 超时配置
+  timeout:
+    health_check: 2s # 健康检查超时
+    database_close: 10s # 数据库关闭超时
+    slow_request_threshold: 1s # 慢请求阈值
+    context:
+      default: 30s # 默认超时
+      database_query: 10s # 数据库查询超时
+      database_write: 15s # 数据库写入超时
+      health_check: 2s # 健康检查超时
+
+# 功能开关
+features:
+  # 启用规则版本控制
+  version_control: true
+  # 启用审计日志
+  audit_log: true
+  # 启用监控指标
+  metrics: true

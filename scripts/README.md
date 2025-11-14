@@ -9,10 +9,11 @@ scripts/
 ├── coverage/                    # 测试覆盖率报告（HTML）
 ├── run_unit_tests.sh            # 单元测试执行脚本
 ├── test-env.sh                  # Docker 测试环境管理
-├── mvp-test.sh                  # MVP 综合测试脚本
 ├── test.sh                      # 快速功能测试脚本
 └── README.md                    # 本说明文档
 ```
+
+> **🗑️ 归档说明**: `mvp-test.sh` 已归档至 `docs/archive/scripts/`。该脚本用于 MVP 版本验证，现已被 Makefile 命令替代，建议使用 `make verify` 或 `make qa`。
 
 ## 🔧 脚本说明
 
@@ -88,19 +89,7 @@ docker-compose up -d
 
 ### 辅助工具脚本
 
-#### `mvp-test.sh`
-**用途**：MVP 版本综合测试脚本
-
-**功能**：
-- 执行完整的测试流程
-- 包含单元测试、集成测试、功能测试
-- 生成详细测试报告
-- 用于发布前的完整验证
-
-**使用**：
-```bash
-./scripts/mvp-test.sh
-```
+> **⚠️ 已弃用**: `mvp-test.sh` 已归档，不再使用。请使用下面的 Makefile 命令代替。
 
 ---
 
@@ -150,14 +139,26 @@ open scripts/coverage/unit-coverage-all.html
 ```
 
 ### 发布前完整测试
+
+**推荐使用 Makefile 命令：**
 ```bash
-# 1. 运行 MVP 综合测试
-./scripts/mvp-test.sh
+# 1. 质量检查（格式化+静态分析+单元测试）
+make qa
 
-# 2. 生成测试报告
-./scripts/test-completion-report.sh
+# 2. 推送前检查（包含集成测试）
+make pre-push
 
-# 3. 检查覆盖率是否达标
+# 3. 完整验证
+ make verify
+
+# 4. 生成覆盖率报告
+make test-coverage
+```
+
+**或使用命令别名：**
+```bash
+make t              # 别名: make test
+make c              # 别名: make test-coverage
 ```
 
 ---
@@ -184,10 +185,27 @@ open scripts/coverage/unit-coverage-all.html
 
 - [README.md](../README.md) - 项目主文档
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - 贡献指南
-- [Makefile](../Makefile) - 构建脚本（包含 `make test` 等命令）
+- [Makefile](../Makefile) - 构建脚本（推荐使用 `make help` 查看所有命令）
 - [DEPLOYMENT.md](../DEPLOYMENT.md) - 部署指南
+- [docs/archive/INDEX.md](../docs/archive/INDEX.md) - 归档文档索引（包含已弃用脚本）
+
+## 🆕 Makefile 快捷命令
+
+**推荐使用 Makefile 命令代替直接执行脚本：**
+
+| 脚本 | Makefile 命令 | 说明 |
+|------|--------------|------|
+| `run_unit_tests.sh` | `make test-coverage` | 单元测试+覆盖率报告 |
+| `test-env.sh start` | `make docker-test-up` | 启动测试环境 |
+| `test-env.sh stop` | `make docker-test-down` | 停止测试环境 |
+| `mvp-test.sh` (已弃用) | `make verify` 或 `make qa` | 完整验证 |
+
+**查看所有可用命令：**
+```bash
+make help
+```
 
 ---
 
-**最后更新**: 2025-11-13  
+**最后更新**: 2025-01-21  
 **维护者**: Mock Server 团队

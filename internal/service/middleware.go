@@ -21,18 +21,18 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 尝试从请求头获取 request_id
 		requestID := c.GetHeader(RequestIDHeader)
-		
+
 		// 如果请求头中没有，则生成一个新的
 		if requestID == "" {
 			requestID = generateRequestID()
 		}
-		
+
 		// 将 request_id 存储到上下文中
 		c.Set(RequestIDKey, requestID)
-		
+
 		// 在响应头中返回 request_id
 		c.Header(RequestIDHeader, requestID)
-		
+
 		c.Next()
 	}
 }
@@ -45,17 +45,17 @@ func PerformanceMiddleware() gin.HandlerFunc {
 		startTime := time.Now()
 		path := c.Request.URL.Path
 		method := c.Request.Method
-		
+
 		// 获取 request_id
 		requestID, _ := c.Get(RequestIDKey)
-		
+
 		// 处理请求
 		c.Next()
-		
+
 		// 计算耗时
 		duration := time.Since(startTime)
 		statusCode := c.Writer.Status()
-		
+
 		// 记录日志
 		logger.Info("request completed",
 			zap.String("request_id", requestID.(string)),
@@ -65,7 +65,7 @@ func PerformanceMiddleware() gin.HandlerFunc {
 			zap.Duration("duration", duration),
 			zap.String("client_ip", c.ClientIP()),
 		)
-		
+
 		// 如果请求耗时过长（超过1秒），记录警告
 		if duration > time.Second {
 			logger.Warn("slow request detected",
@@ -86,7 +86,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 		if !exists {
 			requestID = "unknown"
 		}
-		
+
 		logger.Debug("incoming request",
 			zap.String("request_id", requestID.(string)),
 			zap.String("method", c.Request.Method),
@@ -94,7 +94,7 @@ func LoggingMiddleware() gin.HandlerFunc {
 			zap.String("client_ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
 		)
-		
+
 		c.Next()
 	}
 }
@@ -112,22 +112,22 @@ func int64ToString(n int64) string {
 	if n == 0 {
 		return "0"
 	}
-	
+
 	isNegative := n < 0
 	if isNegative {
 		n = -n
 	}
-	
+
 	var result string
 	for n > 0 {
 		digit := n % 10
 		result = string(rune('0'+digit)) + result
 		n /= 10
 	}
-	
+
 	if isNegative {
 		result = "-" + result
 	}
-	
+
 	return result
 }
