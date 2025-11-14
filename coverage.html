@@ -1,0 +1,3634 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>mockserver: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/gomockserver/mockserver/cmd/mockserver/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/gomockserver/mockserver/internal/adapter/http_adapter.go (96.3%)</option>
+				
+				<option value="file2">github.com/gomockserver/mockserver/internal/api/project_handler.go (100.0%)</option>
+				
+				<option value="file3">github.com/gomockserver/mockserver/internal/api/rule_handler.go (81.3%)</option>
+				
+				<option value="file4">github.com/gomockserver/mockserver/internal/config/config.go (94.4%)</option>
+				
+				<option value="file5">github.com/gomockserver/mockserver/internal/engine/match_engine.go (89.8%)</option>
+				
+				<option value="file6">github.com/gomockserver/mockserver/internal/executor/mock_executor.go (86.0%)</option>
+				
+				<option value="file7">github.com/gomockserver/mockserver/internal/models/errors.go (0.0%)</option>
+				
+				<option value="file8">github.com/gomockserver/mockserver/internal/repository/database.go (0.0%)</option>
+				
+				<option value="file9">github.com/gomockserver/mockserver/internal/repository/project_repository.go (0.0%)</option>
+				
+				<option value="file10">github.com/gomockserver/mockserver/internal/repository/rule_repository.go (0.0%)</option>
+				
+				<option value="file11">github.com/gomockserver/mockserver/internal/service/admin_service.go (26.1%)</option>
+				
+				<option value="file12">github.com/gomockserver/mockserver/internal/service/batch_operation_service.go (92.2%)</option>
+				
+				<option value="file13">github.com/gomockserver/mockserver/internal/service/health.go (1.1%)</option>
+				
+				<option value="file14">github.com/gomockserver/mockserver/internal/service/import_export_service.go (83.1%)</option>
+				
+				<option value="file15">github.com/gomockserver/mockserver/internal/service/middleware.go (0.0%)</option>
+				
+				<option value="file16">github.com/gomockserver/mockserver/internal/service/mock_service.go (72.7%)</option>
+				
+				<option value="file17">github.com/gomockserver/mockserver/pkg/logger/logger.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "flag"
+        "os"
+        "os/signal"
+        "syscall"
+
+        "github.com/gomockserver/mockserver/internal/api"
+        "github.com/gomockserver/mockserver/internal/config"
+        "github.com/gomockserver/mockserver/internal/engine"
+        "github.com/gomockserver/mockserver/internal/executor"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "github.com/gomockserver/mockserver/internal/service"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+func main() <span class="cov0" title="0">{
+        // 解析命令行参数
+        configPath := flag.String("config", "config.yaml", "配置文件路径")
+        flag.Parse()
+
+        // 加载配置
+        cfg, err := config.Load(*configPath)
+        if err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+
+        // 初始化日志
+        <span class="cov0" title="0">if err := logger.Init(
+                cfg.Logging.Level,
+                cfg.Logging.Format,
+                cfg.Logging.Output,
+                cfg.Logging.File.Path,
+                cfg.Logging.File.MaxSize,
+                cfg.Logging.File.MaxBackups,
+                cfg.Logging.File.MaxAge,
+        ); err != nil </span><span class="cov0" title="0">{
+                panic(err)</span>
+        }
+        <span class="cov0" title="0">defer logger.Sync()
+
+        logger.Info("mockserver admin starting...")
+
+        // 初始化数据库
+        if err := repository.Init(cfg); err != nil </span><span class="cov0" title="0">{
+                logger.Fatal("failed to init database", zap.Error(err))
+        }</span>
+        <span class="cov0" title="0">defer repository.Close()
+
+        logger.Info("database connected successfully")
+
+        // 创建仓库
+        ruleRepo := repository.NewRuleRepository()
+        projectRepo := repository.NewProjectRepository()
+        environmentRepo := repository.NewEnvironmentRepository()
+
+        // 创建处理器
+        ruleHandler := api.NewRuleHandler(ruleRepo, projectRepo, environmentRepo)
+        projectHandler := api.NewProjectHandler(projectRepo, environmentRepo)
+
+        // 创建服务
+        adminService := service.NewAdminService(ruleHandler, projectHandler)
+
+        // 同时启动 Mock 服务器
+        matchEngine := engine.NewMatchEngine(ruleRepo)
+        mockExecutor := executor.NewMockExecutor()
+        mockService := service.NewMockService(matchEngine, mockExecutor)
+
+        // 启动 Mock 服务器（在 goroutine 中）
+        go func() </span><span class="cov0" title="0">{
+                logger.Info("starting mock server", zap.String("address", cfg.GetMockAddress()))
+                if err := service.StartMockServer(cfg.GetMockAddress(), mockService); err != nil </span><span class="cov0" title="0">{
+                        logger.Fatal("failed to start mock server", zap.Error(err))
+                }</span>
+        }()
+
+        // 启动管理服务器（主 goroutine）
+        <span class="cov0" title="0">go func() </span><span class="cov0" title="0">{
+                logger.Info("starting admin server", zap.String("address", cfg.GetAdminAddress()))
+                if err := service.StartAdminServer(cfg.GetAdminAddress(), adminService); err != nil </span><span class="cov0" title="0">{
+                        logger.Fatal("failed to start admin server", zap.Error(err))
+                }</span>
+        }()
+
+        // 等待中断信号
+        <span class="cov0" title="0">quit := make(chan os.Signal, 1)
+        signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quit
+
+        logger.Info("shutting down mockserver...")</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package adapter
+
+import (
+        "io"
+        "strings"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/google/uuid"
+)
+
+// HTTPAdapter HTTP 协议适配器
+type HTTPAdapter struct{}
+
+// NewHTTPAdapter 创建 HTTP 适配器
+func NewHTTPAdapter() *HTTPAdapter <span class="cov10" title="13">{
+        return &amp;HTTPAdapter{}
+}</span>
+
+// Parse 解析 HTTP 请求为统一模型
+func (a *HTTPAdapter) Parse(rawRequest interface{}) (*Request, error) <span class="cov8" title="8">{
+        c, ok := rawRequest.(*gin.Context)
+        if !ok </span><span class="cov1" title="1">{
+                return nil, nil
+        }</span>
+
+        // 生成请求ID
+        <span class="cov7" title="7">requestID := uuid.New().String()
+
+        // 读取请求体
+        body, err := io.ReadAll(c.Request.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // 提取Headers
+        <span class="cov7" title="7">headers := make(map[string]string)
+        for key, values := range c.Request.Header </span><span class="cov8" title="8">{
+                if len(values) &gt; 0 </span><span class="cov8" title="8">{
+                        headers[key] = values[0]
+                }</span>
+        }
+
+        // 提取 Query 参数
+        <span class="cov7" title="7">query := make(map[string]string)
+        for key, values := range c.Request.URL.Query() </span><span class="cov4" title="3">{
+                if len(values) &gt; 0 </span><span class="cov4" title="3">{
+                        query[key] = values[0]
+                }</span>
+        }
+
+        // 获取客户端IP
+        <span class="cov7" title="7">clientIP := c.ClientIP()
+
+        // 创建统一请求模型
+        request := &amp;Request{
+                ID:         requestID,
+                Protocol:   models.ProtocolHTTP,
+                Path:       c.Request.URL.Path,
+                Headers:    headers,
+                Body:       body,
+                SourceIP:   clientIP,
+                ReceivedAt: time.Now(),
+                Metadata: map[string]interface{}{
+                        "method":       c.Request.Method,
+                        "query":        query,
+                        "raw_query":    c.Request.URL.RawQuery,
+                        "host":         c.Request.Host,
+                        "user_agent":   c.Request.UserAgent(),
+                        "content_type": c.ContentType(),
+                },
+        }
+
+        return request, nil</span>
+}
+
+// Build 构建 HTTP 响应
+func (a *HTTPAdapter) Build(response *Response) (interface{}, error) <span class="cov1" title="1">{
+        // 返回响应配置，由调用方设置到 gin.Context
+        return response, nil
+}</span>
+
+// WriteResponse 将响应写入 gin.Context
+func (a *HTTPAdapter) WriteResponse(c *gin.Context, response *Response) <span class="cov4" title="3">{
+        // 设置响应头
+        for key, value := range response.Headers </span><span class="cov5" title="4">{
+                c.Header(key, value)
+        }</span>
+
+        // 设置状态码和响应体
+        <span class="cov4" title="3">c.Data(response.StatusCode, getContentType(response.Headers), response.Body)</span>
+}
+
+// getContentType 从响应头中获取 Content-Type
+func getContentType(headers map[string]string) string <span class="cov8" title="8">{
+        for key, value := range headers </span><span class="cov7" title="7">{
+                if strings.ToLower(key) == "content-type" </span><span class="cov7" title="6">{
+                        return value
+                }</span>
+        }
+        <span class="cov3" title="2">return "application/json"</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package api
+
+import (
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// ProjectHandler 项目处理器
+type ProjectHandler struct {
+        projectRepo     repository.ProjectRepository
+        environmentRepo repository.EnvironmentRepository
+}
+
+// NewProjectHandler 创建项目处理器
+func NewProjectHandler(projectRepo repository.ProjectRepository, environmentRepo repository.EnvironmentRepository) *ProjectHandler <span class="cov10" title="25">{
+        return &amp;ProjectHandler{
+                projectRepo:     projectRepo,
+                environmentRepo: environmentRepo,
+        }
+}</span>
+
+// CreateProject 创建项目
+func (h *ProjectHandler) CreateProject(c *gin.Context) <span class="cov4" title="3">{
+        var project models.Project
+        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if err := h.projectRepo.Create(c.Request.Context(), &amp;project); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to create project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create project"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusCreated, project)</span>
+}
+
+// GetProject 获取项目详情
+func (h *ProjectHandler) GetProject(c *gin.Context) <span class="cov4" title="3">{
+        id := c.Param("id")
+
+        project, err := h.projectRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to get project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if project == nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, project)</span>
+}
+
+// UpdateProject 更新项目
+func (h *ProjectHandler) UpdateProject(c *gin.Context) <span class="cov4" title="3">{
+        id := c.Param("id")
+
+        var project models.Project
+        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov2" title="2">project.ID = id
+
+        if err := h.projectRepo.Update(c.Request.Context(), &amp;project); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to update project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, project)</span>
+}
+
+// DeleteProject 删除项目
+func (h *ProjectHandler) DeleteProject(c *gin.Context) <span class="cov2" title="2">{
+        id := c.Param("id")
+
+        if err := h.projectRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to delete project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete project"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{"message": "Project deleted successfully"})</span>
+}
+
+// CreateEnvironment 创建环境
+func (h *ProjectHandler) CreateEnvironment(c *gin.Context) <span class="cov4" title="3">{
+        var environment models.Environment
+        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if err := h.environmentRepo.Create(c.Request.Context(), &amp;environment); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to create environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create environment"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusCreated, environment)</span>
+}
+
+// GetEnvironment 获取环境详情
+func (h *ProjectHandler) GetEnvironment(c *gin.Context) <span class="cov4" title="3">{
+        id := c.Param("id")
+
+        environment, err := h.environmentRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to get environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get environment"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if environment == nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Environment not found"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, environment)</span>
+}
+
+// ListEnvironments 列出项目下的环境
+func (h *ProjectHandler) ListEnvironments(c *gin.Context) <span class="cov4" title="3">{
+        projectID := c.Query("project_id")
+        if projectID == "" </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">environments, err := h.environmentRepo.FindByProject(c.Request.Context(), projectID)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to list environments", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list environments"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{
+                "data": environments,
+        })</span>
+}
+
+// UpdateEnvironment 更新环境
+func (h *ProjectHandler) UpdateEnvironment(c *gin.Context) <span class="cov4" title="3">{
+        id := c.Param("id")
+
+        var environment models.Environment
+        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov2" title="2">environment.ID = id
+
+        if err := h.environmentRepo.Update(c.Request.Context(), &amp;environment); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to update environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update environment"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, environment)</span>
+}
+
+// DeleteEnvironment 删除环境
+func (h *ProjectHandler) DeleteEnvironment(c *gin.Context) <span class="cov2" title="2">{
+        id := c.Param("id")
+
+        if err := h.environmentRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to delete environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete environment"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{"message": "Environment deleted successfully"})</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package api
+
+import (
+        "net/http"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// RuleHandler 规则处理器
+type RuleHandler struct {
+        ruleRepo    repository.RuleRepository
+        projectRepo repository.ProjectRepository
+        envRepo     repository.EnvironmentRepository
+}
+
+// NewRuleHandler 创建规则处理器
+func NewRuleHandler(ruleRepo repository.RuleRepository, projectRepo repository.ProjectRepository, envRepo repository.EnvironmentRepository) *RuleHandler <span class="cov10" title="23">{
+        return &amp;RuleHandler{
+                ruleRepo:    ruleRepo,
+                projectRepo: projectRepo,
+                envRepo:     envRepo,
+        }
+}</span>
+
+// CreateRule 创建规则
+func (h *RuleHandler) CreateRule(c *gin.Context) <span class="cov5" title="5">{
+        var rule models.Rule
+        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        // 验证必填字段
+        <span class="cov4" title="4">if rule.Name == "" || rule.ProjectID == "" || rule.EnvironmentID == "" </span><span class="cov2" title="2">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "name, project_id and environment_id are required"})
+                return
+        }</span>
+
+        // 创建规则
+        <span class="cov2" title="2">if err := h.ruleRepo.Create(c.Request.Context(), &amp;rule); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to create rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create rule"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusCreated, rule)</span>
+}
+
+// GetRule 获取规则详情
+func (h *RuleHandler) GetRule(c *gin.Context) <span class="cov4" title="3">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov4" title="3">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to get rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if rule == nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, rule)</span>
+}
+
+// UpdateRule 更新规则
+func (h *RuleHandler) UpdateRule(c *gin.Context) <span class="cov4" title="3">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov4" title="3">var rule models.Rule
+        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov2" title="2">rule.ID = id
+
+        if err := h.ruleRepo.Update(c.Request.Context(), &amp;rule); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to update rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update rule"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, rule)</span>
+}
+
+// DeleteRule 删除规则
+func (h *RuleHandler) DeleteRule(c *gin.Context) <span class="cov2" title="2">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if err := h.ruleRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to delete rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete rule"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule deleted successfully"})</span>
+}
+
+// ListRules 列出规则
+func (h *RuleHandler) ListRules(c *gin.Context) <span class="cov4" title="4">{
+        // 分页参数
+        page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
+        pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "20"), 10, 64)
+
+        if page &lt; 1 </span><span class="cov0" title="0">{
+                page = 1
+        }</span>
+        <span class="cov4" title="4">if pageSize &lt; 1 || pageSize &gt; 100 </span><span class="cov0" title="0">{
+                pageSize = 20
+        }</span>
+
+        <span class="cov4" title="4">skip := (page - 1) * pageSize
+
+        // 过滤条件
+        filter := make(map[string]interface{})
+        if projectID := c.Query("project_id"); projectID != "" </span><span class="cov1" title="1">{
+                filter["project_id"] = projectID
+        }</span>
+        <span class="cov4" title="4">if environmentID := c.Query("environment_id"); environmentID != "" </span><span class="cov0" title="0">{
+                filter["environment_id"] = environmentID
+        }</span>
+        <span class="cov4" title="4">if protocol := c.Query("protocol"); protocol != "" </span><span class="cov0" title="0">{
+                filter["protocol"] = protocol
+        }</span>
+        <span class="cov4" title="4">if enabled := c.Query("enabled"); enabled != "" </span><span class="cov1" title="1">{
+                filter["enabled"] = enabled == "true"
+        }</span>
+
+        <span class="cov4" title="4">rules, total, err := h.ruleRepo.List(c.Request.Context(), filter, skip, pageSize)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to list rules", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list rules"})
+                return
+        }</span>
+
+        <span class="cov4" title="3">c.JSON(http.StatusOK, gin.H{
+                "data":      rules,
+                "total":     total,
+                "page":      page,
+                "page_size": pageSize,
+        })</span>
+}
+
+// EnableRule 启用规则
+func (h *RuleHandler) EnableRule(c *gin.Context) <span class="cov4" title="4">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov4" title="4">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to get rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
+                return
+        }</span>
+
+        <span class="cov4" title="3">if rule == nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">rule.Enabled = true
+        if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to enable rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enable rule"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule enabled successfully"})</span>
+}
+
+// DisableRule 禁用规则
+func (h *RuleHandler) DisableRule(c *gin.Context) <span class="cov2" title="2">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to get rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
+                return
+        }</span>
+
+        <span class="cov2" title="2">if rule == nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">rule.Enabled = false
+        if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to disable rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disable rule"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule disabled successfully"})</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package config
+
+import (
+        "fmt"
+        "time"
+
+        "github.com/spf13/viper"
+)
+
+// Config 应用配置结构
+type Config struct {
+        Server      ServerConfig      `mapstructure:"server"`
+        Database    DatabaseConfig    `mapstructure:"database"`
+        Redis       RedisConfig       `mapstructure:"redis"`
+        Security    SecurityConfig    `mapstructure:"security"`
+        Logging     LoggingConfig     `mapstructure:"logging"`
+        Performance PerformanceConfig `mapstructure:"performance"`
+        Features    FeaturesConfig    `mapstructure:"features"`
+}
+
+// ServerConfig 服务器配置
+type ServerConfig struct {
+        Admin AdminServerConfig `mapstructure:"admin"`
+        Mock  MockServerConfig  `mapstructure:"mock"`
+}
+
+// AdminServerConfig 管理 API 服务配置
+type AdminServerConfig struct {
+        Host string `mapstructure:"host"`
+        Port int    `mapstructure:"port"`
+}
+
+// MockServerConfig Mock 服务配置
+type MockServerConfig struct {
+        Host string `mapstructure:"host"`
+        Port int    `mapstructure:"port"`
+}
+
+// DatabaseConfig 数据库配置
+type DatabaseConfig struct {
+        MongoDB MongoDBConfig `mapstructure:"mongodb"`
+}
+
+// MongoDBConfig MongoDB 配置
+type MongoDBConfig struct {
+        URI      string         `mapstructure:"uri"`
+        Database string         `mapstructure:"database"`
+        Timeout  time.Duration  `mapstructure:"timeout"`
+        Pool     ConnectionPool `mapstructure:"pool"`
+}
+
+// ConnectionPool 连接池配置
+type ConnectionPool struct {
+        Min int `mapstructure:"min"`
+        Max int `mapstructure:"max"`
+}
+
+// RedisConfig Redis 配置
+type RedisConfig struct {
+        Enabled  bool           `mapstructure:"enabled"`
+        Host     string         `mapstructure:"host"`
+        Port     int            `mapstructure:"port"`
+        Password string         `mapstructure:"password"`
+        DB       int            `mapstructure:"db"`
+        Pool     ConnectionPool `mapstructure:"pool"`
+}
+
+// SecurityConfig 安全配置
+type SecurityConfig struct {
+        JWT         JWTConfig         `mapstructure:"jwt"`
+        APIKey      APIKeyConfig      `mapstructure:"api_key"`
+        IPWhitelist IPWhitelistConfig `mapstructure:"ip_whitelist"`
+}
+
+// JWTConfig JWT 配置
+type JWTConfig struct {
+        Secret     string `mapstructure:"secret"`
+        Expiration int    `mapstructure:"expiration"`
+}
+
+// APIKeyConfig API Key 配置
+type APIKeyConfig struct {
+        Enabled bool `mapstructure:"enabled"`
+}
+
+// IPWhitelistConfig IP 白名单配置
+type IPWhitelistConfig struct {
+        Enabled bool     `mapstructure:"enabled"`
+        IPs     []string `mapstructure:"ips"`
+}
+
+// LoggingConfig 日志配置
+type LoggingConfig struct {
+        Level  string        `mapstructure:"level"`
+        Format string        `mapstructure:"format"`
+        Output string        `mapstructure:"output"`
+        File   LogFileConfig `mapstructure:"file"`
+}
+
+// LogFileConfig 日志文件配置
+type LogFileConfig struct {
+        Path       string `mapstructure:"path"`
+        MaxSize    int    `mapstructure:"max_size"`
+        MaxBackups int    `mapstructure:"max_backups"`
+        MaxAge     int    `mapstructure:"max_age"`
+}
+
+// PerformanceConfig 性能配置
+type PerformanceConfig struct {
+        LogRetentionDays int             `mapstructure:"log_retention_days"`
+        Cache            CacheConfig     `mapstructure:"cache"`
+        RateLimit        RateLimitConfig `mapstructure:"rate_limit"`
+}
+
+// CacheConfig 缓存配置
+type CacheConfig struct {
+        RuleTTL   int `mapstructure:"rule_ttl"`
+        ConfigTTL int `mapstructure:"config_ttl"`
+}
+
+// RateLimitConfig 限流配置
+type RateLimitConfig struct {
+        Enabled     bool `mapstructure:"enabled"`
+        IPLimit     int  `mapstructure:"ip_limit"`
+        GlobalLimit int  `mapstructure:"global_limit"`
+}
+
+// FeaturesConfig 功能开关
+type FeaturesConfig struct {
+        VersionControl bool `mapstructure:"version_control"`
+        AuditLog       bool `mapstructure:"audit_log"`
+        Metrics        bool `mapstructure:"metrics"`
+}
+
+var globalConfig *Config
+
+// Load 加载配置文件
+func Load(configPath string) (*Config, error) <span class="cov10" title="8">{
+        v := viper.New()
+
+        // 设置配置文件路径
+        if configPath != "" </span><span class="cov9" title="7">{
+                v.SetConfigFile(configPath)
+        }</span> else<span class="cov1" title="1"> {
+                v.SetConfigName("config")
+                v.SetConfigType("yaml")
+                v.AddConfigPath(".")
+                v.AddConfigPath("./config")
+        }</span>
+
+        // 读取环境变量
+        <span class="cov10" title="8">v.AutomaticEnv()
+
+        // 读取配置文件
+        if err := v.ReadInConfig(); err != nil </span><span class="cov4" title="2">{
+                return nil, fmt.Errorf("failed to read config file: %w", err)
+        }</span>
+
+        // 解析配置
+        <span class="cov8" title="6">var cfg Config
+        if err := v.Unmarshal(&amp;cfg); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+        }</span>
+
+        <span class="cov8" title="6">globalConfig = &amp;cfg
+        return &amp;cfg, nil</span>
+}
+
+// Get 获取全局配置
+func Get() *Config <span class="cov4" title="2">{
+        return globalConfig
+}</span>
+
+// GetAdminAddress 获取管理服务地址
+func (c *Config) GetAdminAddress() string <span class="cov5" title="3">{
+        return fmt.Sprintf("%s:%d", c.Server.Admin.Host, c.Server.Admin.Port)
+}</span>
+
+// GetMockAddress 获取 Mock 服务地址
+func (c *Config) GetMockAddress() string <span class="cov4" title="2">{
+        return fmt.Sprintf("%s:%d", c.Server.Mock.Host, c.Server.Mock.Port)
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package engine
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "strings"
+
+        "github.com/gomockserver/mockserver/internal/adapter"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// MatchEngine 规则匹配引擎
+type MatchEngine struct {
+        ruleRepo repository.RuleRepository
+}
+
+// NewMatchEngine 创建匹配引擎
+func NewMatchEngine(ruleRepo repository.RuleRepository) *MatchEngine <span class="cov6" title="6">{
+        return &amp;MatchEngine{
+                ruleRepo: ruleRepo,
+        }
+}</span>
+
+// Match 匹配规则
+func (e *MatchEngine) Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error) <span class="cov5" title="5">{
+        // 加载环境下所有启用的规则
+        rules, err := e.ruleRepo.FindEnabledByEnvironment(ctx, projectID, environmentID)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to load rules", zap.Error(err))
+                return nil, err
+        }</span>
+
+        // 按优先级已排序，逐条匹配
+        <span class="cov5" title="5">for _, rule := range rules </span><span class="cov5" title="4">{
+                // 检查协议类型
+                if rule.Protocol != request.Protocol </span><span class="cov1" title="1">{
+                        continue</span>
+                }
+
+                // 根据匹配类型执行匹配
+                <span class="cov4" title="3">matched, err := e.matchRule(request, rule)
+                if err != nil </span><span class="cov0" title="0">{
+                        logger.Warn("rule match error",
+                                zap.String("rule_id", rule.ID),
+                                zap.Error(err))
+                        continue</span>
+                }
+
+                <span class="cov4" title="3">if matched </span><span class="cov3" title="2">{
+                        logger.Info("rule matched",
+                                zap.String("rule_id", rule.ID),
+                                zap.String("rule_name", rule.Name))
+                        return rule, nil
+                }</span>
+        }
+
+        // 没有匹配的规则
+        <span class="cov4" title="3">return nil, nil</span>
+}
+
+// matchRule 匹配单条规则
+func (e *MatchEngine) matchRule(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov6" title="7">{
+        switch rule.MatchType </span>{
+        case models.MatchTypeSimple:<span class="cov5" title="4">
+                return e.simpleMatch(request, rule)</span>
+        case models.MatchTypeRegex:<span class="cov1" title="1">
+                return e.regexMatch(request, rule)</span>
+        case models.MatchTypeScript:<span class="cov1" title="1">
+                return e.scriptMatch(request, rule)</span>
+        default:<span class="cov1" title="1">
+                return false, fmt.Errorf("unsupported match type: %s", rule.MatchType)</span>
+        }
+}
+
+// simpleMatch 简单匹配
+func (e *MatchEngine) simpleMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov9" title="17">{
+        if rule.Protocol != models.ProtocolHTTP </span><span class="cov1" title="1">{
+                return false, nil
+        }</span>
+
+        // 解析 HTTP 匹配条件
+        <span class="cov9" title="16">conditionBytes, err := json.Marshal(rule.MatchCondition)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+
+        <span class="cov9" title="16">var condition models.HTTPMatchCondition
+        if err := json.Unmarshal(conditionBytes, &amp;condition); err != nil </span><span class="cov0" title="0">{
+                return false, err
+        }</span>
+
+        // 获取请求方法
+        <span class="cov9" title="16">method, _ := request.Metadata["method"].(string)
+
+        // 匹配 Method
+        if condition.Method != nil </span><span class="cov9" title="15">{
+                if !matchMethod(method, condition.Method) </span><span class="cov3" title="2">{
+                        return false, nil
+                }</span>
+        }
+
+        // 匹配 Path
+        <span class="cov8" title="14">if condition.Path != "" </span><span class="cov8" title="13">{
+                if !matchPath(request.Path, condition.Path) </span><span class="cov0" title="0">{
+                        return false, nil
+                }</span>
+        }
+
+        // 匹配 Query 参数
+        <span class="cov8" title="14">if len(condition.Query) &gt; 0 </span><span class="cov4" title="3">{
+                query, _ := request.Metadata["query"].(map[string]string)
+                if !matchQuery(query, condition.Query) </span><span class="cov1" title="1">{
+                        return false, nil
+                }</span>
+        }
+
+        // 匹配 Headers
+        <span class="cov8" title="13">if len(condition.Headers) &gt; 0 </span><span class="cov4" title="3">{
+                if !matchHeaders(request.Headers, condition.Headers) </span><span class="cov1" title="1">{
+                        return false, nil
+                }</span>
+        }
+
+        // 匹配 IP 白名单
+        <span class="cov8" title="12">if len(condition.IPWhitelist) &gt; 0 </span><span class="cov5" title="4">{
+                if !matchIPWhitelist(request.SourceIP, condition.IPWhitelist) </span><span class="cov3" title="2">{
+                        return false, nil
+                }</span>
+        }
+
+        <span class="cov7" title="10">return true, nil</span>
+}
+
+// regexMatch 正则表达式匹配（阶段一暂不实现）
+func (e *MatchEngine) regexMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov1" title="1">{
+        // TODO: 阶段三实现
+        return false, fmt.Errorf("regex match not implemented yet")
+}</span>
+
+// scriptMatch 脚本匹配（阶段一暂不实现）
+func (e *MatchEngine) scriptMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov1" title="1">{
+        // TODO: 阶段三实现
+        return false, fmt.Errorf("script match not implemented yet")
+}</span>
+
+// matchMethod 匹配请求方法
+func matchMethod(requestMethod string, conditionMethod interface{}) bool <span class="cov10" title="20">{
+        switch v := conditionMethod.(type) </span>{
+        case string:<span class="cov9" title="18">
+                return strings.EqualFold(requestMethod, v)</span>
+        case []interface{}:<span class="cov3" title="2">
+                for _, m := range v </span><span class="cov5" title="4">{
+                        if method, ok := m.(string); ok </span><span class="cov5" title="4">{
+                                if strings.EqualFold(requestMethod, method) </span><span class="cov1" title="1">{
+                                        return true
+                                }</span>
+                        }
+                }
+                <span class="cov1" title="1">return false</span>
+        default:<span class="cov0" title="0">
+                return false</span>
+        }
+}
+
+// matchPath 匹配路径（支持简单通配符）
+func matchPath(requestPath, conditionPath string) bool <span class="cov9" title="18">{
+        // 精确匹配
+        if requestPath == conditionPath </span><span class="cov8" title="12">{
+                return true
+        }</span>
+
+        // 支持简单的路径参数匹配，如 /api/users/:id
+        <span class="cov6" title="6">conditionParts := strings.Split(conditionPath, "/")
+        requestParts := strings.Split(requestPath, "/")
+
+        if len(conditionParts) != len(requestParts) </span><span class="cov1" title="1">{
+                return false
+        }</span>
+
+        <span class="cov5" title="5">for i, part := range conditionParts </span><span class="cov10" title="20">{
+                if strings.HasPrefix(part, ":") </span><span class="cov5" title="5">{
+                        // 路径参数，匹配任意值
+                        continue</span>
+                }
+                <span class="cov9" title="15">if part != requestParts[i] </span><span class="cov1" title="1">{
+                        return false
+                }</span>
+        }
+
+        <span class="cov5" title="4">return true</span>
+}
+
+// matchQuery 匹配查询参数
+func matchQuery(requestQuery, conditionQuery map[string]string) bool <span class="cov7" title="8">{
+        for key, value := range conditionQuery </span><span class="cov7" title="9">{
+                if requestQuery[key] != value </span><span class="cov4" title="3">{
+                        return false
+                }</span>
+        }
+        <span class="cov5" title="5">return true</span>
+}
+
+// matchHeaders 匹配请求头
+func matchHeaders(requestHeaders, conditionHeaders map[string]string) bool <span class="cov6" title="7">{
+        for key, value := range conditionHeaders </span><span class="cov7" title="9">{
+                // Header 名称不区分大小写
+                found := false
+                for reqKey, reqValue := range requestHeaders </span><span class="cov8" title="11">{
+                        if strings.EqualFold(reqKey, key) </span><span class="cov7" title="9">{
+                                if reqValue != value </span><span class="cov3" title="2">{
+                                        return false
+                                }</span>
+                                <span class="cov6" title="7">found = true
+                                break</span>
+                        }
+                }
+                <span class="cov6" title="7">if !found </span><span class="cov0" title="0">{
+                        return false
+                }</span>
+        }
+        <span class="cov5" title="5">return true</span>
+}
+
+// matchIPWhitelist 匹配 IP 白名单（简单实现）
+func matchIPWhitelist(requestIP string, whitelist []string) bool <span class="cov7" title="9">{
+        for _, ip := range whitelist </span><span class="cov7" title="10">{
+                if requestIP == ip </span><span class="cov5" title="5">{
+                        return true
+                }</span>
+                // TODO: 支持 CIDR 格式的 IP 段匹配
+        }
+        <span class="cov5" title="4">return false</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package executor
+
+import (
+        "encoding/json"
+        "fmt"
+        "math/rand"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/adapter"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// MockExecutor Mock 执行器
+type MockExecutor struct{}
+
+// NewMockExecutor 创建 Mock 执行器
+func NewMockExecutor() *MockExecutor <span class="cov8" title="25">{
+        return &amp;MockExecutor{}
+}</span>
+
+// Execute 执行 Mock 响应生成
+func (e *MockExecutor) Execute(request *adapter.Request, rule *models.Rule) (*adapter.Response, error) <span class="cov8" title="35">{
+        // 应用延迟
+        if rule.Response.Delay != nil </span><span class="cov1" title="1">{
+                delay := e.calculateDelay(rule.Response.Delay)
+                if delay &gt; 0 </span><span class="cov1" title="1">{
+                        time.Sleep(time.Duration(delay) * time.Millisecond)
+                }</span>
+        }
+
+        // 根据响应类型生成响应
+        <span class="cov8" title="35">switch rule.Response.Type </span>{
+        case models.ResponseTypeStatic:<span class="cov8" title="32">
+                return e.staticResponse(request, rule)</span>
+        case models.ResponseTypeDynamic:<span class="cov1" title="1">
+                // TODO: 阶段三实现
+                return nil, fmt.Errorf("dynamic response not implemented yet")</span>
+        case models.ResponseTypeScript:<span class="cov1" title="1">
+                // TODO: 阶段三实现
+                return nil, fmt.Errorf("script response not implemented yet")</span>
+        case models.ResponseTypeProxy:<span class="cov1" title="1">
+                // TODO: 阶段三实现
+                return nil, fmt.Errorf("proxy response not implemented yet")</span>
+        default:<span class="cov0" title="0">
+                return nil, fmt.Errorf("unsupported response type: %s", rule.Response.Type)</span>
+        }
+}
+
+// staticResponse 生成静态响应
+func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rule) (*adapter.Response, error) <span class="cov8" title="32">{
+        if rule.Protocol != models.ProtocolHTTP </span><span class="cov3" title="3">{
+                return nil, fmt.Errorf("only HTTP protocol is supported in static response")
+        }</span>
+
+        // 解析 HTTP 响应配置
+        <span class="cov8" title="29">contentBytes, err := json.Marshal(rule.Response.Content)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to marshal response content", zap.Error(err))
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="29">var httpResp models.HTTPResponse
+        if err := json.Unmarshal(contentBytes, &amp;httpResp); err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to unmarshal http response", zap.Error(err))
+                return nil, err
+        }</span>
+
+        // 构建响应体
+        <span class="cov8" title="29">var body []byte
+        switch httpResp.ContentType </span>{
+        case models.ContentTypeJSON:<span class="cov6" title="13">
+                body, err = json.Marshal(httpResp.Body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+        case models.ContentTypeText, models.ContentTypeHTML, models.ContentTypeXML:<span class="cov6" title="13">
+                if str, ok := httpResp.Body.(string); ok </span><span class="cov6" title="12">{
+                        body = []byte(str)
+                }</span> else<span class="cov1" title="1"> {
+                        body, err = json.Marshal(httpResp.Body)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+                }
+        case models.ContentTypeBinary:<span class="cov1" title="1">
+                // TODO: 处理二进制数据
+                body = []byte{}</span>
+        default:<span class="cov2" title="2">
+                body, err = json.Marshal(httpResp.Body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+        }
+
+        // 设置默认 Content-Type
+        <span class="cov8" title="29">if httpResp.Headers == nil </span><span class="cov8" title="27">{
+                httpResp.Headers = make(map[string]string)
+        }</span>
+        <span class="cov8" title="29">if _, ok := httpResp.Headers["Content-Type"]; !ok </span><span class="cov8" title="29">{
+                httpResp.Headers["Content-Type"] = e.getDefaultContentType(httpResp.ContentType)
+        }</span>
+
+        // 构建统一响应模型
+        <span class="cov8" title="29">response := &amp;adapter.Response{
+                StatusCode: httpResp.StatusCode,
+                Headers:    httpResp.Headers,
+                Body:       body,
+                Metadata:   make(map[string]interface{}),
+        }
+
+        return response, nil</span>
+}
+
+// calculateDelay 计算延迟时间（毫秒）
+func (e *MockExecutor) calculateDelay(config *models.DelayConfig) int <span class="cov10" title="60">{
+        switch config.Type </span>{
+        case "fixed":<span class="cov2" title="2">
+                return config.Fixed</span>
+        case "random":<span class="cov9" title="54">
+                if config.Max &lt;= config.Min </span><span class="cov2" title="2">{
+                        return config.Min
+                }</span>
+                <span class="cov9" title="52">return config.Min + rand.Intn(config.Max-config.Min)</span>
+        case "normal":<span class="cov2" title="2">
+                // TODO: 实现正态分布延迟
+                return config.Mean</span>
+        case "step":<span class="cov1" title="1">
+                // TODO: 实现阶梯延迟
+                return config.Fixed</span>
+        default:<span class="cov1" title="1">
+                return 0</span>
+        }
+}
+
+// getDefaultContentType 获取默认 Content-Type
+func (e *MockExecutor) getDefaultContentType(contentType models.ContentType) string <span class="cov8" title="35">{
+        switch contentType </span>{
+        case models.ContentTypeJSON:<span class="cov6" title="14">
+                return "application/json"</span>
+        case models.ContentTypeXML:<span class="cov4" title="4">
+                return "application/xml"</span>
+        case models.ContentTypeHTML:<span class="cov3" title="3">
+                return "text/html"</span>
+        case models.ContentTypeText:<span class="cov5" title="9">
+                return "text/plain"</span>
+        case models.ContentTypeBinary:<span class="cov2" title="2">
+                return "application/octet-stream"</span>
+        default:<span class="cov3" title="3">
+                return "application/json"</span>
+        }
+}
+
+// GetDefaultResponse 获取默认 404 响应
+func (e *MockExecutor) GetDefaultResponse() *adapter.Response <span class="cov1" title="1">{
+        return &amp;adapter.Response{
+                StatusCode: 404,
+                Headers: map[string]string{
+                        "Content-Type": "application/json",
+                },
+                Body: []byte(`{"error": "No matching rule found"}`),
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package models
+
+import "fmt"
+
+// ErrorCode 错误码结构
+type ErrorCode struct {
+        Code      int    // 错误码
+        Message   string // 错误信息（英文）
+        ZhMessage string // 错误信息（中文）
+}
+
+// Error 实现 error 接口
+func (e ErrorCode) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("[%d] %s", e.Code, e.Message)
+}</span>
+
+// ErrorResponse API错误响应结构
+type ErrorResponse struct {
+        Error ErrorDetail `json:"error"`
+}
+
+// ErrorDetail 错误详情
+type ErrorDetail struct {
+        Code      int    `json:"code"`
+        Message   string `json:"message"`
+        Details   string `json:"details,omitempty"`
+        RequestID string `json:"request_id,omitempty"`
+}
+
+// ============================================
+// 通用错误 1000-1999
+// ============================================
+
+var (
+        // ErrInvalidParameter 无效参数
+        ErrInvalidParameter = ErrorCode{1001, "Invalid parameter", "参数无效"}
+        // ErrMissingParameter 缺少必填参数
+        ErrMissingParameter = ErrorCode{1002, "Missing required parameter", "缺少必填参数"}
+        // ErrInvalidFormat 格式无效
+        ErrInvalidFormat = ErrorCode{1003, "Invalid format", "格式无效"}
+        // ErrInvalidObjectID 无效的ObjectID
+        ErrInvalidObjectID = ErrorCode{1004, "Invalid ObjectID format", "无效的ObjectID格式"}
+        // ErrUnauthorized 未授权
+        ErrUnauthorized = ErrorCode{1010, "Unauthorized", "未授权"}
+        // ErrForbidden 禁止访问
+        ErrForbidden = ErrorCode{1011, "Forbidden", "禁止访问"}
+        // ErrRateLimited 请求过于频繁
+        ErrRateLimited = ErrorCode{1020, "Too many requests", "请求过于频繁"}
+)
+
+// ============================================
+// 项目相关 2000-2999
+// ============================================
+
+var (
+        // ErrProjectNotFound 项目不存在
+        ErrProjectNotFound = ErrorCode{2001, "Project not found", "项目不存在"}
+        // ErrProjectExists 项目已存在
+        ErrProjectExists = ErrorCode{2002, "Project already exists", "项目已存在"}
+        // ErrProjectNameInvalid 项目名称无效
+        ErrProjectNameInvalid = ErrorCode{2003, "Invalid project name", "项目名称无效"}
+        // ErrProjectCreateFailed 创建项目失败
+        ErrProjectCreateFailed = ErrorCode{2010, "Failed to create project", "创建项目失败"}
+        // ErrProjectUpdateFailed 更新项目失败
+        ErrProjectUpdateFailed = ErrorCode{2011, "Failed to update project", "更新项目失败"}
+        // ErrProjectDeleteFailed 删除项目失败
+        ErrProjectDeleteFailed = ErrorCode{2012, "Failed to delete project", "删除项目失败"}
+)
+
+// ============================================
+// 环境相关 3000-3999
+// ============================================
+
+var (
+        // ErrEnvironmentNotFound 环境不存在
+        ErrEnvironmentNotFound = ErrorCode{3001, "Environment not found", "环境不存在"}
+        // ErrEnvironmentExists 环境已存在
+        ErrEnvironmentExists = ErrorCode{3002, "Environment already exists", "环境已存在"}
+        // ErrEnvironmentNameInvalid 环境名称无效
+        ErrEnvironmentNameInvalid = ErrorCode{3003, "Invalid environment name", "环境名称无效"}
+        // ErrEnvironmentCreateFailed 创建环境失败
+        ErrEnvironmentCreateFailed = ErrorCode{3010, "Failed to create environment", "创建环境失败"}
+        // ErrEnvironmentUpdateFailed 更新环境失败
+        ErrEnvironmentUpdateFailed = ErrorCode{3011, "Failed to update environment", "更新环境失败"}
+        // ErrEnvironmentDeleteFailed 删除环境失败
+        ErrEnvironmentDeleteFailed = ErrorCode{3012, "Failed to delete environment", "删除环境失败"}
+)
+
+// ============================================
+// 规则相关 4000-4999
+// ============================================
+
+var (
+        // ErrRuleNotFound 规则不存在
+        ErrRuleNotFound = ErrorCode{4001, "Rule not found", "规则不存在"}
+        // ErrRuleMatchFailed 未找到匹配的规则
+        ErrRuleMatchFailed = ErrorCode{4002, "No matching rule found", "未找到匹配的规则"}
+        // ErrRuleNameInvalid 规则名称无效
+        ErrRuleNameInvalid = ErrorCode{4003, "Invalid rule name", "规则名称无效"}
+        // ErrRulePriorityInvalid 规则优先级无效
+        ErrRulePriorityInvalid = ErrorCode{4004, "Invalid rule priority", "规则优先级无效"}
+        // ErrRuleConditionInvalid 规则匹配条件无效
+        ErrRuleConditionInvalid = ErrorCode{4005, "Invalid rule match condition", "规则匹配条件无效"}
+        // ErrRuleResponseInvalid 规则响应配置无效
+        ErrRuleResponseInvalid = ErrorCode{4006, "Invalid rule response", "规则响应配置无效"}
+        // ErrRuleCreateFailed 创建规则失败
+        ErrRuleCreateFailed = ErrorCode{4010, "Failed to create rule", "创建规则失败"}
+        // ErrRuleUpdateFailed 更新规则失败
+        ErrRuleUpdateFailed = ErrorCode{4011, "Failed to update rule", "更新规则失败"}
+        // ErrRuleDeleteFailed 删除规则失败
+        ErrRuleDeleteFailed = ErrorCode{4012, "Failed to delete rule", "删除规则失败"}
+        // ErrRuleImportFailed 导入规则失败
+        ErrRuleImportFailed = ErrorCode{4020, "Failed to import rules", "导入规则失败"}
+        // ErrRuleExportFailed 导出规则失败
+        ErrRuleExportFailed = ErrorCode{4021, "Failed to export rules", "导出规则失败"}
+        // ErrRuleCloneFailed 复制规则失败
+        ErrRuleCloneFailed = ErrorCode{4022, "Failed to clone rule", "复制规则失败"}
+)
+
+// ============================================
+// 批量操作相关 6000-6999
+// ============================================
+
+var (
+        // ErrBatchOperationFailed 批量操作失败
+        ErrBatchOperationFailed = ErrorCode{6001, "Batch operation failed", "批量操作失败"}
+        // ErrBatchPartialSuccess 批量操作部分成功
+        ErrBatchPartialSuccess = ErrorCode{6002, "Batch operation partially succeeded", "批量操作部分成功"}
+        // ErrBatchInvalidInput 批量操作输入无效
+        ErrBatchInvalidInput = ErrorCode{6003, "Invalid batch operation input", "批量操作输入无效"}
+        // ErrBatchEmptyInput 批量操作输入为空
+        ErrBatchEmptyInput = ErrorCode{6004, "Batch operation input is empty", "批量操作输入为空"}
+)
+
+// ============================================
+// 导入导出相关 7000-7999
+// ============================================
+
+var (
+        // ErrImportDataInvalid 导入数据无效
+        ErrImportDataInvalid = ErrorCode{7001, "Import data is invalid", "导入数据无效"}
+        // ErrExportFailed 导出操作失败
+        ErrExportFailed = ErrorCode{7002, "Export operation failed", "导出操作失败"}
+        // ErrImportConflict 导入数据冲突
+        ErrImportConflict = ErrorCode{7003, "Import data conflicts with existing data", "导入数据与现有数据冲突"}
+        // ErrUnsupportedVersion 不支持的数据版本
+        ErrUnsupportedVersion = ErrorCode{7004, "Unsupported import data version", "不支持的导入数据版本"}
+        // ErrImportStrategyInvalid 导入策略无效
+        ErrImportStrategyInvalid = ErrorCode{7005, "Invalid import strategy", "导入策略无效"}
+        // ErrExportTypeInvalid 导出类型无效
+        ErrExportTypeInvalid = ErrorCode{7006, "Invalid export type", "导出类型无效"}
+)
+
+// ============================================
+// 数据库相关 5000-5999
+// ============================================
+
+var (
+        // ErrDatabaseConnection 数据库连接失败
+        ErrDatabaseConnection = ErrorCode{5001, "Database connection failed", "数据库连接失败"}
+        // ErrDatabaseQuery 数据库查询失败
+        ErrDatabaseQuery = ErrorCode{5002, "Database query failed", "数据库查询失败"}
+        // ErrDatabaseInsert 数据库插入失败
+        ErrDatabaseInsert = ErrorCode{5003, "Database insert failed", "数据库插入失败"}
+        // ErrDatabaseUpdate 数据库更新失败
+        ErrDatabaseUpdate = ErrorCode{5004, "Database update failed", "数据库更新失败"}
+        // ErrDatabaseDelete 数据库删除失败
+        ErrDatabaseDelete = ErrorCode{5005, "Database delete failed", "数据库删除失败"}
+        // ErrDatabaseTransaction 数据库事务失败
+        ErrDatabaseTransaction = ErrorCode{5010, "Database transaction failed", "数据库事务失败"}
+)
+
+// ============================================
+// 系统错误 9000-9999
+// ============================================
+
+var (
+        // ErrInternalServer 服务器内部错误
+        ErrInternalServer = ErrorCode{9001, "Internal server error", "服务器内部错误"}
+        // ErrServiceUnavailable 服务不可用
+        ErrServiceUnavailable = ErrorCode{9002, "Service unavailable", "服务不可用"}
+        // ErrTimeout 请求超时
+        ErrTimeout = ErrorCode{9003, "Request timeout", "请求超时"}
+        // ErrConfigError 配置错误
+        ErrConfigError = ErrorCode{9010, "Configuration error", "配置错误"}
+        // ErrUnknown 未知错误
+        ErrUnknown = ErrorCode{9999, "Unknown error", "未知错误"}
+)
+
+// NewErrorResponse 创建错误响应
+func NewErrorResponse(code ErrorCode, details string, requestID string) ErrorResponse <span class="cov0" title="0">{
+        return ErrorResponse{
+                Error: ErrorDetail{
+                        Code:      code.Code,
+                        Message:   code.Message,
+                        Details:   details,
+                        RequestID: requestID,
+                },
+        }
+}</span>
+
+// NewErrorResponseZh 创建中文错误响应
+func NewErrorResponseZh(code ErrorCode, details string, requestID string) ErrorResponse <span class="cov0" title="0">{
+        return ErrorResponse{
+                Error: ErrorDetail{
+                        Code:      code.Code,
+                        Message:   code.ZhMessage,
+                        Details:   details,
+                        RequestID: requestID,
+                },
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package repository
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/config"
+        "go.mongodb.org/mongo-driver/bson"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/options"
+)
+
+var (
+        client   *mongo.Client
+        database *mongo.Database
+)
+
+// Init 初始化数据库连接
+func Init(cfg *config.Config) error <span class="cov0" title="0">{
+        ctx, cancel := context.WithTimeout(context.Background(), cfg.Database.MongoDB.Timeout)
+        defer cancel()
+
+        // 创建客户端选项
+        clientOptions := options.Client().
+                ApplyURI(cfg.Database.MongoDB.URI).
+                SetMinPoolSize(uint64(cfg.Database.MongoDB.Pool.Min)).
+                SetMaxPoolSize(uint64(cfg.Database.MongoDB.Pool.Max))
+
+        // 连接数据库
+        var err error
+        client, err = mongo.Connect(ctx, clientOptions)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to connect to MongoDB: %w", err)
+        }</span>
+
+        // 验证连接
+        <span class="cov0" title="0">if err = client.Ping(ctx, nil); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to ping MongoDB: %w", err)
+        }</span>
+
+        // 获取数据库实例
+        <span class="cov0" title="0">database = client.Database(cfg.Database.MongoDB.Database)
+
+        // 创建索引
+        if err := createIndexes(ctx); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create indexes: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// createIndexes 创建索引
+func createIndexes(ctx context.Context) error <span class="cov0" title="0">{
+        // Rules 集合索引
+        rulesCollection := database.Collection("rules")
+        rulesIndexes := []mongo.IndexModel{
+                {
+                        Keys: bson.D{
+                                {Key: "project_id", Value: 1},
+                                {Key: "environment_id", Value: 1},
+                        },
+                },
+                {
+                        Keys: bson.D{{Key: "protocol", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "enabled", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "priority", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "tags", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "created_at", Value: 1}},
+                },
+        }
+        if _, err := rulesCollection.Indexes().CreateMany(ctx, rulesIndexes); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Projects 集合索引
+        <span class="cov0" title="0">projectsCollection := database.Collection("projects")
+        projectsIndexes := []mongo.IndexModel{
+                {
+                        Keys: bson.D{{Key: "workspace_id", Value: 1}},
+                },
+        }
+        if _, err := projectsCollection.Indexes().CreateMany(ctx, projectsIndexes); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Environments 集合索引
+        <span class="cov0" title="0">environmentsCollection := database.Collection("environments")
+        environmentsIndexes := []mongo.IndexModel{
+                {
+                        Keys: bson.D{{Key: "project_id", Value: 1}},
+                },
+        }
+        if _, err := environmentsCollection.Indexes().CreateMany(ctx, environmentsIndexes); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Logs 集合索引（带 TTL）
+        <span class="cov0" title="0">logsCollection := database.Collection("logs")
+        logsIndexes := []mongo.IndexModel{
+                {
+                        Keys: bson.D{{Key: "request_id", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "rule_id", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "protocol", Value: 1}},
+                },
+                {
+                        Keys:    bson.D{{Key: "timestamp", Value: 1}},
+                        Options: options.Index().SetExpireAfterSeconds(7 * 24 * 60 * 60), // 7天过期
+                },
+                {
+                        Keys: bson.D{
+                                {Key: "project_id", Value: 1},
+                                {Key: "environment_id", Value: 1},
+                        },
+                },
+        }
+        if _, err := logsCollection.Indexes().CreateMany(ctx, logsIndexes); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Versions 集合索引
+        <span class="cov0" title="0">versionsCollection := database.Collection("versions")
+        versionsIndexes := []mongo.IndexModel{
+                {
+                        Keys: bson.D{{Key: "rule_id", Value: 1}},
+                },
+                {
+                        Keys: bson.D{{Key: "created_at", Value: 1}},
+                },
+        }
+        if _, err := versionsCollection.Indexes().CreateMany(ctx, versionsIndexes); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        // Users 集合索引
+        <span class="cov0" title="0">usersCollection := database.Collection("users")
+        usersIndexes := []mongo.IndexModel{
+                {
+                        Keys:    bson.D{{Key: "username", Value: 1}},
+                        Options: options.Index().SetUnique(true),
+                },
+                {
+                        Keys:    bson.D{{Key: "email", Value: 1}},
+                        Options: options.Index().SetUnique(true),
+                },
+        }
+        if _, err := usersCollection.Indexes().CreateMany(ctx, usersIndexes); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetDatabase 获取数据库实例
+func GetDatabase() *mongo.Database <span class="cov0" title="0">{
+        return database
+}</span>
+
+// GetCollection 获取集合
+func GetCollection(name string) *mongo.Collection <span class="cov0" title="0">{
+        return database.Collection(name)
+}</span>
+
+// Close 关闭数据库连接
+func Close() error <span class="cov0" title="0">{
+        if client != nil </span><span class="cov0" title="0">{
+                ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+                defer cancel()
+                return client.Disconnect(ctx)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package repository
+
+import (
+        "context"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/models"
+        "go.mongodb.org/mongo-driver/bson"
+        "go.mongodb.org/mongo-driver/bson/primitive"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/options"
+)
+
+// ProjectRepository 项目仓库接口
+type ProjectRepository interface {
+        Create(ctx context.Context, project *models.Project) error
+        Update(ctx context.Context, project *models.Project) error
+        Delete(ctx context.Context, id string) error
+        FindByID(ctx context.Context, id string) (*models.Project, error)
+        FindByWorkspace(ctx context.Context, workspaceID string) ([]*models.Project, error)
+        List(ctx context.Context, skip, limit int64) ([]*models.Project, int64, error)
+}
+
+type projectRepository struct {
+        collection *mongo.Collection
+}
+
+// NewProjectRepository 创建项目仓库
+func NewProjectRepository() ProjectRepository <span class="cov0" title="0">{
+        return &amp;projectRepository{
+                collection: GetCollection("projects"),
+        }
+}</span>
+
+// Create 创建项目
+func (r *projectRepository) Create(ctx context.Context, project *models.Project) error <span class="cov0" title="0">{
+        project.CreatedAt = time.Now()
+        project.UpdatedAt = time.Now()
+
+        result, err := r.collection.InsertOne(ctx, project)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if oid, ok := result.InsertedID.(primitive.ObjectID); ok </span><span class="cov0" title="0">{
+                project.ID = oid.Hex()
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// Update 更新项目
+func (r *projectRepository) Update(ctx context.Context, project *models.Project) error <span class="cov0" title="0">{
+        project.UpdatedAt = time.Now()
+
+        objectID, err := primitive.ObjectIDFromHex(project.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+        // 排除 _id 字段，避免更新不可变字段
+        update := bson.M{"$set": bson.M{
+                "name":         project.Name,
+                "workspace_id": project.WorkspaceID,
+                "description":  project.Description,
+                "updated_at":   project.UpdatedAt,
+        }}
+
+        _, err = r.collection.UpdateOne(ctx, filter, update)
+        return err</span>
+}
+
+// Delete 删除项目
+func (r *projectRepository) Delete(ctx context.Context, id string) error <span class="cov0" title="0">{
+        objectID, err := primitive.ObjectIDFromHex(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+        _, err = r.collection.DeleteOne(ctx, filter)
+        return err</span>
+}
+
+// FindByID 根据ID查找项目
+func (r *projectRepository) FindByID(ctx context.Context, id string) (*models.Project, error) <span class="cov0" title="0">{
+        objectID, err := primitive.ObjectIDFromHex(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+
+        var project models.Project
+        err = r.collection.FindOne(ctx, filter).Decode(&amp;project)
+        if err != nil </span><span class="cov0" title="0">{
+                if err == mongo.ErrNoDocuments </span><span class="cov0" title="0">{
+                        return nil, nil
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+
+        <span class="cov0" title="0">return &amp;project, nil</span>
+}
+
+// FindByWorkspace 查找工作空间下的所有项目
+func (r *projectRepository) FindByWorkspace(ctx context.Context, workspaceID string) ([]*models.Project, error) <span class="cov0" title="0">{
+        filter := bson.M{"workspace_id": workspaceID}
+
+        cursor, err := r.collection.Find(ctx, filter)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var projects []*models.Project
+        if err = cursor.All(ctx, &amp;projects); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return projects, nil</span>
+}
+
+// List 列出项目（支持分页）
+func (r *projectRepository) List(ctx context.Context, skip, limit int64) ([]*models.Project, int64, error) <span class="cov0" title="0">{
+        filter := bson.M{}
+
+        // 获取总数
+        total, err := r.collection.CountDocuments(ctx, filter)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+
+        // 查询数据
+        <span class="cov0" title="0">opts := options.Find().
+                SetSkip(skip).
+                SetLimit(limit).
+                SetSort(bson.D{primitive.E{Key: "created_at", Value: -1}})
+
+        cursor, err := r.collection.Find(ctx, filter, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var projects []*models.Project
+        if err = cursor.All(ctx, &amp;projects); err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+
+        <span class="cov0" title="0">return projects, total, nil</span>
+}
+
+// EnvironmentRepository 环境仓库接口
+type EnvironmentRepository interface {
+        Create(ctx context.Context, environment *models.Environment) error
+        Update(ctx context.Context, environment *models.Environment) error
+        Delete(ctx context.Context, id string) error
+        FindByID(ctx context.Context, id string) (*models.Environment, error)
+        FindByProject(ctx context.Context, projectID string) ([]*models.Environment, error)
+}
+
+type environmentRepository struct {
+        collection *mongo.Collection
+}
+
+// NewEnvironmentRepository 创建环境仓库
+func NewEnvironmentRepository() EnvironmentRepository <span class="cov0" title="0">{
+        return &amp;environmentRepository{
+                collection: GetCollection("environments"),
+        }
+}</span>
+
+// Create 创建环境
+func (r *environmentRepository) Create(ctx context.Context, environment *models.Environment) error <span class="cov0" title="0">{
+        environment.CreatedAt = time.Now()
+        environment.UpdatedAt = time.Now()
+
+        result, err := r.collection.InsertOne(ctx, environment)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if oid, ok := result.InsertedID.(primitive.ObjectID); ok </span><span class="cov0" title="0">{
+                environment.ID = oid.Hex()
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// Update 更新环境
+func (r *environmentRepository) Update(ctx context.Context, environment *models.Environment) error <span class="cov0" title="0">{
+        environment.UpdatedAt = time.Now()
+
+        objectID, err := primitive.ObjectIDFromHex(environment.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+        // 排除 _id 字段，避免更新不可变字段
+        update := bson.M{"$set": bson.M{
+                "name":       environment.Name,
+                "project_id": environment.ProjectID,
+                "base_url":   environment.BaseURL,
+                "variables":  environment.Variables,
+                "updated_at": environment.UpdatedAt,
+        }}
+
+        _, err = r.collection.UpdateOne(ctx, filter, update)
+        return err</span>
+}
+
+// Delete 删除环境
+func (r *environmentRepository) Delete(ctx context.Context, id string) error <span class="cov0" title="0">{
+        objectID, err := primitive.ObjectIDFromHex(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+        _, err = r.collection.DeleteOne(ctx, filter)
+        return err</span>
+}
+
+// FindByID 根据ID查找环境
+func (r *environmentRepository) FindByID(ctx context.Context, id string) (*models.Environment, error) <span class="cov0" title="0">{
+        objectID, err := primitive.ObjectIDFromHex(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+
+        var environment models.Environment
+        err = r.collection.FindOne(ctx, filter).Decode(&amp;environment)
+        if err != nil </span><span class="cov0" title="0">{
+                if err == mongo.ErrNoDocuments </span><span class="cov0" title="0">{
+                        return nil, nil
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+
+        <span class="cov0" title="0">return &amp;environment, nil</span>
+}
+
+// FindByProject 查找项目下的所有环境
+func (r *environmentRepository) FindByProject(ctx context.Context, projectID string) ([]*models.Environment, error) <span class="cov0" title="0">{
+        filter := bson.M{"project_id": projectID}
+
+        cursor, err := r.collection.Find(ctx, filter)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var environments []*models.Environment
+        if err = cursor.All(ctx, &amp;environments); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return environments, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package repository
+
+import (
+        "context"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/models"
+        "go.mongodb.org/mongo-driver/bson"
+        "go.mongodb.org/mongo-driver/bson/primitive"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/options"
+)
+
+// RuleRepository 规则仓库接口
+type RuleRepository interface {
+        Create(ctx context.Context, rule *models.Rule) error
+        Update(ctx context.Context, rule *models.Rule) error
+        Delete(ctx context.Context, id string) error
+        FindByID(ctx context.Context, id string) (*models.Rule, error)
+        FindByEnvironment(ctx context.Context, projectID, environmentID string) ([]*models.Rule, error)
+        FindEnabledByEnvironment(ctx context.Context, projectID, environmentID string) ([]*models.Rule, error)
+        List(ctx context.Context, filter map[string]interface{}, skip, limit int64) ([]*models.Rule, int64, error)
+}
+
+type ruleRepository struct {
+        collection *mongo.Collection
+}
+
+// NewRuleRepository 创建规则仓库
+func NewRuleRepository() RuleRepository <span class="cov0" title="0">{
+        return &amp;ruleRepository{
+                collection: GetCollection("rules"),
+        }
+}</span>
+
+// Create 创建规则
+func (r *ruleRepository) Create(ctx context.Context, rule *models.Rule) error <span class="cov0" title="0">{
+        rule.CreatedAt = time.Now()
+        rule.UpdatedAt = time.Now()
+
+        result, err := r.collection.InsertOne(ctx, rule)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if oid, ok := result.InsertedID.(primitive.ObjectID); ok </span><span class="cov0" title="0">{
+                rule.ID = oid.Hex()
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// Update 更新规则
+func (r *ruleRepository) Update(ctx context.Context, rule *models.Rule) error <span class="cov0" title="0">{
+        rule.UpdatedAt = time.Now()
+
+        objectID, err := primitive.ObjectIDFromHex(rule.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+        // 排除 _id 字段，避免更新不可变字段
+        update := bson.M{"$set": bson.M{
+                "name":            rule.Name,
+                "project_id":      rule.ProjectID,
+                "environment_id":  rule.EnvironmentID,
+                "protocol":        rule.Protocol,
+                "match_type":      rule.MatchType,
+                "priority":        rule.Priority,
+                "enabled":         rule.Enabled,
+                "match_condition": rule.MatchCondition,
+                "response":        rule.Response,
+                "tags":            rule.Tags,
+                "creator":         rule.Creator,
+                "updated_at":      rule.UpdatedAt,
+        }}
+
+        _, err = r.collection.UpdateOne(ctx, filter, update)
+        return err</span>
+}
+
+// Delete 删除规则
+func (r *ruleRepository) Delete(ctx context.Context, id string) error <span class="cov0" title="0">{
+        objectID, err := primitive.ObjectIDFromHex(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+        _, err = r.collection.DeleteOne(ctx, filter)
+        return err</span>
+}
+
+// FindByID 根据ID查找规则
+func (r *ruleRepository) FindByID(ctx context.Context, id string) (*models.Rule, error) <span class="cov0" title="0">{
+        objectID, err := primitive.ObjectIDFromHex(id)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">filter := bson.M{"_id": objectID}
+
+        var rule models.Rule
+        err = r.collection.FindOne(ctx, filter).Decode(&amp;rule)
+        if err != nil </span><span class="cov0" title="0">{
+                if err == mongo.ErrNoDocuments </span><span class="cov0" title="0">{
+                        return nil, nil
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+
+        <span class="cov0" title="0">return &amp;rule, nil</span>
+}
+
+// FindByEnvironment 查找环境下的所有规则
+func (r *ruleRepository) FindByEnvironment(ctx context.Context, projectID, environmentID string) ([]*models.Rule, error) <span class="cov0" title="0">{
+        filter := bson.M{
+                "project_id":     projectID,
+                "environment_id": environmentID,
+        }
+
+        opts := options.Find().SetSort(bson.D{{Key: "priority", Value: -1}})
+
+        cursor, err := r.collection.Find(ctx, filter, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var rules []*models.Rule
+        if err = cursor.All(ctx, &amp;rules); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return rules, nil</span>
+}
+
+// FindEnabledByEnvironment 查找环境下所有启用的规则
+func (r *ruleRepository) FindEnabledByEnvironment(ctx context.Context, projectID, environmentID string) ([]*models.Rule, error) <span class="cov0" title="0">{
+        filter := bson.M{
+                "project_id":     projectID,
+                "environment_id": environmentID,
+                "enabled":        true,
+        }
+
+        opts := options.Find().SetSort(bson.D{{Key: "priority", Value: -1}})
+
+        cursor, err := r.collection.Find(ctx, filter, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var rules []*models.Rule
+        if err = cursor.All(ctx, &amp;rules); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return rules, nil</span>
+}
+
+// List 列出规则（支持分页和过滤）
+func (r *ruleRepository) List(ctx context.Context, filter map[string]interface{}, skip, limit int64) ([]*models.Rule, int64, error) <span class="cov0" title="0">{
+        // 转换过滤条件
+        mongoFilter := bson.M{}
+        for k, v := range filter </span><span class="cov0" title="0">{
+                mongoFilter[k] = v
+        }</span>
+
+        // 获取总数
+        <span class="cov0" title="0">total, err := r.collection.CountDocuments(ctx, mongoFilter)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+
+        // 查询数据
+        <span class="cov0" title="0">opts := options.Find().
+                SetSkip(skip).
+                SetLimit(limit).
+                SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+        cursor, err := r.collection.Find(ctx, mongoFilter, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var rules []*models.Rule
+        if err = cursor.All(ctx, &amp;rules); err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+
+        <span class="cov0" title="0">return rules, total, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package service
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/api"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// AdminService 管理服务
+type AdminService struct {
+        ruleHandler    *api.RuleHandler
+        projectHandler *api.ProjectHandler
+}
+
+// NewAdminService 创建管理服务
+func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHandler) *AdminService <span class="cov1" title="1">{
+        return &amp;AdminService{
+                ruleHandler:    ruleHandler,
+                projectHandler: projectHandler,
+        }
+}</span>
+
+// StartAdminServer 启动管理服务器
+func StartAdminServer(addr string, service *AdminService) error <span class="cov0" title="0">{
+        gin.SetMode(gin.ReleaseMode)
+        r := gin.New()
+        r.Use(gin.Recovery())
+        r.Use(CORSMiddleware())
+
+        // API 路由组
+        v1 := r.Group("/api/v1")
+        </span><span class="cov0" title="0">{
+                // 规则管理 API
+                rules := v1.Group("/rules")
+                </span><span class="cov0" title="0">{
+                        rules.GET("", service.ruleHandler.ListRules)
+                        rules.POST("", service.ruleHandler.CreateRule)
+                        rules.GET("/:id", service.ruleHandler.GetRule)
+                        rules.PUT("/:id", service.ruleHandler.UpdateRule)
+                        rules.DELETE("/:id", service.ruleHandler.DeleteRule)
+                        rules.POST("/:id/enable", service.ruleHandler.EnableRule)
+                        rules.POST("/:id/disable", service.ruleHandler.DisableRule)
+                }</span>
+
+                // 项目管理 API
+                <span class="cov0" title="0">projects := v1.Group("/projects")
+                </span><span class="cov0" title="0">{
+                        projects.POST("", service.projectHandler.CreateProject)
+                        projects.GET("/:id", service.projectHandler.GetProject)
+                        projects.PUT("/:id", service.projectHandler.UpdateProject)
+                        projects.DELETE("/:id", service.projectHandler.DeleteProject)
+                }</span>
+
+                // 环境管理 API
+                <span class="cov0" title="0">environments := v1.Group("/environments")
+                </span><span class="cov0" title="0">{
+                        environments.GET("", service.projectHandler.ListEnvironments)
+                        environments.POST("", service.projectHandler.CreateEnvironment)
+                        environments.GET("/:id", service.projectHandler.GetEnvironment)
+                        environments.PUT("/:id", service.projectHandler.UpdateEnvironment)
+                        environments.DELETE("/:id", service.projectHandler.DeleteEnvironment)
+                }</span>
+
+                // 系统管理 API
+                <span class="cov0" title="0">system := v1.Group("/system")
+                </span><span class="cov0" title="0">{
+                        system.GET("/health", HealthCheck)
+                        system.GET("/version", GetVersion)
+                }</span>
+        }
+
+        <span class="cov0" title="0">logger.Info("starting admin server", zap.String("address", addr))
+        return r.Run(addr)</span>
+}
+
+// CORSMiddleware CORS 中间件
+func CORSMiddleware() gin.HandlerFunc <span class="cov10" title="7">{
+        return func(c *gin.Context) </span><span class="cov10" title="7">{
+                c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+                c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+                c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+                c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+                if c.Request.Method == "OPTIONS" </span><span class="cov4" title="2">{
+                        c.AbortWithStatus(204)
+                        return
+                }</span>
+
+                <span class="cov8" title="5">c.Next()</span>
+        }
+}
+
+// HealthCheck 健康检查
+func HealthCheck(c *gin.Context) <span class="cov4" title="2">{
+        c.JSON(200, gin.H{
+                "status": "healthy",
+        })
+}</span>
+
+// GetVersion 获取版本信息
+func GetVersion(c *gin.Context) <span class="cov4" title="2">{
+        c.JSON(200, gin.H{
+                "version": "0.1.1",
+                "name":    "MockServer",
+        })
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package service
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "go.uber.org/zap"
+)
+
+// BatchOperationService 批量操作服务接口
+type BatchOperationService interface {
+        // BatchEnable 批量启用规则
+        BatchEnable(ctx context.Context, ruleIDs []string) (*models.BatchOperationResult, error)
+        // BatchDisable 批量禁用规则
+        BatchDisable(ctx context.Context, ruleIDs []string) (*models.BatchOperationResult, error)
+        // BatchDelete 批量删除规则
+        BatchDelete(ctx context.Context, ruleIDs []string) (*models.BatchOperationResult, error)
+        // BatchUpdate 批量更新规则
+        BatchUpdate(ctx context.Context, ruleIDs []string, updates map[string]interface{}) (*models.BatchOperationResult, error)
+}
+
+type batchOperationService struct {
+        ruleRepo repository.RuleRepository
+        logger   *zap.Logger
+}
+
+// NewBatchOperationService 创建批量操作服务
+func NewBatchOperationService(ruleRepo repository.RuleRepository, logger *zap.Logger) BatchOperationService <span class="cov1" title="1">{
+        return &amp;batchOperationService{
+                ruleRepo: ruleRepo,
+                logger:   logger,
+        }
+}</span>
+
+// BatchEnable 批量启用规则
+func (s *batchOperationService) BatchEnable(ctx context.Context, ruleIDs []string) (*models.BatchOperationResult, error) <span class="cov6" title="4">{
+        return s.batchUpdateEnabled(ctx, ruleIDs, true)
+}</span>
+
+// BatchDisable 批量禁用规则
+func (s *batchOperationService) BatchDisable(ctx context.Context, ruleIDs []string) (*models.BatchOperationResult, error) <span class="cov3" title="2">{
+        return s.batchUpdateEnabled(ctx, ruleIDs, false)
+}</span>
+
+// batchUpdateEnabled 批量更新启用状态
+func (s *batchOperationService) batchUpdateEnabled(ctx context.Context, ruleIDs []string, enabled bool) (*models.BatchOperationResult, error) <span class="cov8" title="6">{
+        result := &amp;models.BatchOperationResult{
+                TotalCount:   len(ruleIDs),
+                SuccessCount: 0,
+                FailedCount:  0,
+                FailedIDs:    []string{},
+                Errors:       []string{},
+        }
+
+        for _, ruleID := range ruleIDs </span><span class="cov10" title="10">{
+                rule, err := s.ruleRepo.FindByID(ctx, ruleID)
+                if err != nil </span><span class="cov1" title="1">{
+                        s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
+                        continue</span>
+                }
+                <span class="cov9" title="9">if rule == nil </span><span class="cov1" title="1">{
+                        s.handleError(result, ruleID, models.ErrRuleNotFound.Message)
+                        continue</span>
+                }
+
+                <span class="cov9" title="8">rule.Enabled = enabled
+                if err := s.ruleRepo.Update(ctx, rule); err != nil </span><span class="cov1" title="1">{
+                        s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
+                        continue</span>
+                }
+
+                <span class="cov8" title="7">result.SuccessCount++
+                s.logger.Info("Updated rule enabled status",
+                        zap.String("rule_id", ruleID),
+                        zap.Bool("enabled", enabled),
+                )</span>
+        }
+
+        <span class="cov8" title="6">result.Success = result.FailedCount == 0
+        return result, nil</span>
+}
+
+// BatchDelete 批量删除规则
+func (s *batchOperationService) BatchDelete(ctx context.Context, ruleIDs []string) (*models.BatchOperationResult, error) <span class="cov5" title="3">{
+        result := &amp;models.BatchOperationResult{
+                TotalCount:   len(ruleIDs),
+                SuccessCount: 0,
+                FailedCount:  0,
+                FailedIDs:    []string{},
+                Errors:       []string{},
+        }
+
+        for _, ruleID := range ruleIDs </span><span class="cov8" title="6">{
+                if err := s.ruleRepo.Delete(ctx, ruleID); err != nil </span><span class="cov1" title="1">{
+                        s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
+                        continue</span>
+                }
+
+                <span class="cov7" title="5">result.SuccessCount++
+                s.logger.Info("Deleted rule", zap.String("rule_id", ruleID))</span>
+        }
+
+        <span class="cov5" title="3">result.Success = result.FailedCount == 0
+        return result, nil</span>
+}
+
+// BatchUpdate 批量更新规则
+func (s *batchOperationService) BatchUpdate(ctx context.Context, ruleIDs []string, updates map[string]interface{}) (*models.BatchOperationResult, error) <span class="cov9" title="8">{
+        result := &amp;models.BatchOperationResult{
+                TotalCount:   len(ruleIDs),
+                SuccessCount: 0,
+                FailedCount:  0,
+                FailedIDs:    []string{},
+                Errors:       []string{},
+        }
+
+                // 验证更新字段
+                allowedFields := map[string]bool{
+                        "priority": true,
+                        "tags":     true,
+                        "enabled":  true,
+                }
+
+                for field := range updates </span><span class="cov10" title="10">{
+                        if !allowedFields[field] </span><span class="cov1" title="1">{
+                                return nil, fmt.Errorf("%s: field '%s' is not allowed for batch update", models.ErrBatchInvalidInput.Message, field)
+                        }</span>
+                }
+
+        <span class="cov8" title="7">for _, ruleID := range ruleIDs </span><span class="cov9" title="8">{
+                rule, err := s.ruleRepo.FindByID(ctx, ruleID)
+                if err != nil </span><span class="cov0" title="0">{
+                        s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
+                        continue</span>
+                }
+                <span class="cov9" title="8">if rule == nil </span><span class="cov0" title="0">{
+                        s.handleError(result, ruleID, models.ErrRuleNotFound.Message)
+                        continue</span>
+                }
+
+                // 应用更新
+                <span class="cov9" title="8">if priority, ok := updates["priority"].(int); ok </span><span class="cov6" title="4">{
+                        rule.Priority = priority
+                }</span>
+                <span class="cov9" title="8">if priority, ok := updates["priority"].(float64); ok </span><span class="cov1" title="1">{
+                        rule.Priority = int(priority)
+                }</span>
+                <span class="cov9" title="8">if tags, ok := updates["tags"].([]string); ok </span><span class="cov3" title="2">{
+                        rule.Tags = tags
+                }</span>
+                <span class="cov9" title="8">if tagsInterface, ok := updates["tags"].([]interface{}); ok </span><span class="cov1" title="1">{
+                        tags := make([]string, len(tagsInterface))
+                        for i, t := range tagsInterface </span><span class="cov3" title="2">{
+                                if str, ok := t.(string); ok </span><span class="cov3" title="2">{
+                                        tags[i] = str
+                                }</span>
+                        }
+                        <span class="cov1" title="1">rule.Tags = tags</span>
+                }
+                <span class="cov9" title="8">if enabled, ok := updates["enabled"].(bool); ok </span><span class="cov3" title="2">{
+                        rule.Enabled = enabled
+                }</span>
+
+                <span class="cov9" title="8">if err := s.ruleRepo.Update(ctx, rule); err != nil </span><span class="cov0" title="0">{
+                        s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
+                        continue</span>
+                }
+
+                <span class="cov9" title="8">result.SuccessCount++
+                s.logger.Info("Batch updated rule", zap.String("rule_id", ruleID))</span>
+        }
+
+        <span class="cov8" title="7">result.Success = result.FailedCount == 0
+        return result, nil</span>
+}
+
+// handleError 处理错误
+func (s *batchOperationService) handleError(result *models.BatchOperationResult, ruleID string, errorMsg string) <span class="cov8" title="6">{
+        result.FailedCount++
+        result.FailedIDs = append(result.FailedIDs, ruleID)
+        result.Errors = append(result.Errors, errorMsg)
+        s.logger.Error("Batch operation failed", zap.String("rule_id", ruleID), zap.String("error", errorMsg))
+}</span>
+
+// ExecuteBatchOperation 执行批量操作（统一入口）
+func ExecuteBatchOperation(
+        ctx context.Context,
+        service BatchOperationService,
+        req *models.BatchOperationRequest,
+) (*models.BatchOperationResult, error) <span class="cov8" title="7">{
+        if len(req.RuleIDs) == 0 </span><span class="cov1" title="1">{
+                return nil, models.ErrBatchEmptyInput
+        }</span>
+
+        <span class="cov8" title="6">switch req.Operation </span>{
+        case "enable":<span class="cov1" title="1">
+                return service.BatchEnable(ctx, req.RuleIDs)</span>
+        case "disable":<span class="cov1" title="1">
+                return service.BatchDisable(ctx, req.RuleIDs)</span>
+        case "delete":<span class="cov1" title="1">
+                return service.BatchDelete(ctx, req.RuleIDs)</span>
+                case "update":<span class="cov3" title="2">
+                        if req.Updates == nil || len(req.Updates) == 0 </span><span class="cov1" title="1">{
+                                return nil, fmt.Errorf("%s: updates cannot be empty for update operation", models.ErrBatchInvalidInput.Message)
+                        }</span>
+                        <span class="cov1" title="1">return service.BatchUpdate(ctx, req.RuleIDs, req.Updates)</span>
+        default:<span class="cov1" title="1">
+                return nil, fmt.Errorf("%s: unknown operation: %s", models.ErrBatchInvalidInput.Message, req.Operation)</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package service
+
+import (
+        "context"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.uber.org/zap"
+)
+
+var (
+        // ServerStartTime 服务器启动时间
+        ServerStartTime time.Time
+        // Version 应用版本号
+        Version = "0.1.1"
+        // AppName 应用名称
+        AppName = "MockServer"
+)
+
+func init() <span class="cov8" title="1">{
+        ServerStartTime = time.Now()
+}</span>
+
+// HealthStatus 健康状态
+type HealthStatus string
+
+const (
+        // StatusHealthy 健康
+        StatusHealthy HealthStatus = "healthy"
+        // StatusDegraded 降级（部分功能不可用）
+        StatusDegraded HealthStatus = "degraded"
+        // StatusUnhealthy 不健康
+        StatusUnhealthy HealthStatus = "unhealthy"
+)
+
+// ComponentStatus 组件状态
+type ComponentStatus struct {
+        Status  HealthStatus `json:"status"`
+        Message string       `json:"message,omitempty"`
+        Details interface{}  `json:"details,omitempty"`
+}
+
+// HealthResponse 健康检查响应
+type HealthResponse struct {
+        Status     HealthStatus               `json:"status"`
+        Version    string                     `json:"version"`
+        AppName    string                     `json:"app_name"`
+        Uptime     string                     `json:"uptime"`
+        Timestamp  string                     `json:"timestamp"`
+        Components map[string]ComponentStatus `json:"components,omitempty"`
+}
+
+// HealthChecker 健康检查器
+type HealthChecker struct {
+        mongoClient *mongo.Client
+}
+
+// NewHealthChecker 创建健康检查器
+func NewHealthChecker(mongoClient *mongo.Client) *HealthChecker <span class="cov0" title="0">{
+        return &amp;HealthChecker{
+                mongoClient: mongoClient,
+        }
+}</span>
+
+// Check 执行健康检查
+func (h *HealthChecker) Check(c *gin.Context) <span class="cov0" title="0">{
+        ctx := c.Request.Context()
+        detailed := c.Query("detailed") == "true"
+
+        response := HealthResponse{
+                Status:    StatusHealthy,
+                Version:   Version,
+                AppName:   AppName,
+                Uptime:    formatUptime(time.Since(ServerStartTime)),
+                Timestamp: time.Now().UTC().Format(time.RFC3339),
+        }
+
+        // 如果需要详细信息，检查各组件状态
+        if detailed &amp;&amp; h.mongoClient != nil </span><span class="cov0" title="0">{
+                components := make(map[string]ComponentStatus)
+
+                // 检查数据库连接
+                dbStatus := h.checkDatabase(ctx)
+                components["database"] = dbStatus
+
+                // 如果数据库不健康，整体状态降级
+                if dbStatus.Status == StatusUnhealthy </span><span class="cov0" title="0">{
+                        response.Status = StatusDegraded
+                }</span>
+
+                <span class="cov0" title="0">response.Components = components</span>
+        }
+
+        // 根据整体状态返回不同的 HTTP 状态码
+        <span class="cov0" title="0">statusCode := 200
+        if response.Status == StatusUnhealthy </span><span class="cov0" title="0">{
+                statusCode = 503
+        }</span> else<span class="cov0" title="0"> if response.Status == StatusDegraded </span><span class="cov0" title="0">{
+                statusCode = 200 // 降级时仍然返回 200，但在响应中标记
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(statusCode, response)</span>
+}
+
+// checkDatabase 检查数据库连接状态
+func (h *HealthChecker) checkDatabase(ctx context.Context) ComponentStatus <span class="cov0" title="0">{
+        if h.mongoClient == nil </span><span class="cov0" title="0">{
+                return ComponentStatus{
+                        Status:  StatusHealthy,
+                        Message: "database not configured",
+                }
+        }</span>
+
+        // 使用超时上下文进行 ping
+        <span class="cov0" title="0">pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+        defer cancel()
+
+        err := h.mongoClient.Ping(pingCtx, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("database health check failed", zap.Error(err))
+                return ComponentStatus{
+                        Status:  StatusUnhealthy,
+                        Message: "database connection failed",
+                        Details: map[string]interface{}{
+                                "error": err.Error(),
+                        },
+                }
+        }</span>
+
+        <span class="cov0" title="0">return ComponentStatus{
+                Status:  StatusHealthy,
+                Message: "database connection established",
+        }</span>
+}
+
+// formatUptime 格式化运行时间
+func formatUptime(d time.Duration) string <span class="cov0" title="0">{
+        days := int(d.Hours()) / 24
+        hours := int(d.Hours()) % 24
+        minutes := int(d.Minutes()) % 60
+        seconds := int(d.Seconds()) % 60
+
+        if days &gt; 0 </span><span class="cov0" title="0">{
+                return formatString("%dd %dh %dm %ds", days, hours, minutes, seconds)
+        }</span>
+        <span class="cov0" title="0">if hours &gt; 0 </span><span class="cov0" title="0">{
+                return formatString("%dh %dm %ds", hours, minutes, seconds)
+        }</span>
+        <span class="cov0" title="0">if minutes &gt; 0 </span><span class="cov0" title="0">{
+                return formatString("%dm %ds", minutes, seconds)
+        }</span>
+        <span class="cov0" title="0">return formatString("%ds", seconds)</span>
+}
+
+func formatString(format string, args ...interface{}) string <span class="cov0" title="0">{
+        // 简单格式化实现
+        switch len(args) </span>{
+        case 1:<span class="cov0" title="0">
+                return formatWithOneArg(format, args[0].(int))</span>
+        case 2:<span class="cov0" title="0">
+                return formatWithTwoArgs(format, args[0].(int), args[1].(int))</span>
+        case 3:<span class="cov0" title="0">
+                return formatWithThreeArgs(format, args[0].(int), args[1].(int), args[2].(int))</span>
+        case 4:<span class="cov0" title="0">
+                return formatWithFourArgs(format, args[0].(int), args[1].(int), args[2].(int), args[3].(int))</span>
+        default:<span class="cov0" title="0">
+                return ""</span>
+        }
+}
+
+func formatWithOneArg(format string, a int) string <span class="cov0" title="0">{
+        // %ds 格式
+        result := ""
+        for i := 0; i &lt; len(format); i++ </span><span class="cov0" title="0">{
+                if format[i] == '%' &amp;&amp; i+1 &lt; len(format) &amp;&amp; format[i+1] == 'd' </span><span class="cov0" title="0">{
+                        result += intToString(a)
+                        i++
+                }</span> else<span class="cov0" title="0"> {
+                        result += string(format[i])
+                }</span>
+        }
+        <span class="cov0" title="0">return result</span>
+}
+
+func formatWithTwoArgs(format string, a, b int) string <span class="cov0" title="0">{
+        result := ""
+        args := []int{a, b}
+        argIdx := 0
+        for i := 0; i &lt; len(format); i++ </span><span class="cov0" title="0">{
+                if format[i] == '%' &amp;&amp; i+1 &lt; len(format) &amp;&amp; format[i+1] == 'd' &amp;&amp; argIdx &lt; len(args) </span><span class="cov0" title="0">{
+                        result += intToString(args[argIdx])
+                        argIdx++
+                        i++
+                }</span> else<span class="cov0" title="0"> {
+                        result += string(format[i])
+                }</span>
+        }
+        <span class="cov0" title="0">return result</span>
+}
+
+func formatWithThreeArgs(format string, a, b, c int) string <span class="cov0" title="0">{
+        result := ""
+        args := []int{a, b, c}
+        argIdx := 0
+        for i := 0; i &lt; len(format); i++ </span><span class="cov0" title="0">{
+                if format[i] == '%' &amp;&amp; i+1 &lt; len(format) &amp;&amp; format[i+1] == 'd' &amp;&amp; argIdx &lt; len(args) </span><span class="cov0" title="0">{
+                        result += intToString(args[argIdx])
+                        argIdx++
+                        i++
+                }</span> else<span class="cov0" title="0"> {
+                        result += string(format[i])
+                }</span>
+        }
+        <span class="cov0" title="0">return result</span>
+}
+
+func formatWithFourArgs(format string, a, b, c, d int) string <span class="cov0" title="0">{
+        result := ""
+        args := []int{a, b, c, d}
+        argIdx := 0
+        for i := 0; i &lt; len(format); i++ </span><span class="cov0" title="0">{
+                if format[i] == '%' &amp;&amp; i+1 &lt; len(format) &amp;&amp; format[i+1] == 'd' &amp;&amp; argIdx &lt; len(args) </span><span class="cov0" title="0">{
+                        result += intToString(args[argIdx])
+                        argIdx++
+                        i++
+                }</span> else<span class="cov0" title="0"> {
+                        result += string(format[i])
+                }</span>
+        }
+        <span class="cov0" title="0">return result</span>
+}
+
+func intToString(n int) string <span class="cov0" title="0">{
+        if n == 0 </span><span class="cov0" title="0">{
+                return "0"
+        }</span>
+        <span class="cov0" title="0">var result string
+        for n &gt; 0 </span><span class="cov0" title="0">{
+                digit := n % 10
+                result = string(rune('0'+digit)) + result
+                n /= 10
+        }</span>
+        <span class="cov0" title="0">return result</span>
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package service
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "strings"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "go.uber.org/zap"
+)
+
+// ImportExportService 导入导出服务接口
+type ImportExportService interface {
+        // ExportRules 导出规则
+        ExportRules(ctx context.Context, req *models.ExportRequest) (*models.ExportData, error)
+        // ExportProject 导出整个项目
+        ExportProject(ctx context.Context, projectID string, includeMetadata bool) (*models.ExportData, error)
+        // ImportData 导入数据
+        ImportData(ctx context.Context, req *models.ImportRequest) (*models.ImportResult, error)
+        // ValidateImportData 验证导入数据
+        ValidateImportData(ctx context.Context, data *models.ExportData) error
+}
+
+type importExportService struct {
+        ruleRepo    repository.RuleRepository
+        projectRepo repository.ProjectRepository
+        envRepo     repository.EnvironmentRepository
+        logger      *zap.Logger
+}
+
+// NewImportExportService 创建导入导出服务
+func NewImportExportService(
+        ruleRepo repository.RuleRepository,
+        projectRepo repository.ProjectRepository,
+        envRepo repository.EnvironmentRepository,
+        logger *zap.Logger,
+) ImportExportService <span class="cov1" title="1">{
+        return &amp;importExportService{
+                ruleRepo:    ruleRepo,
+                projectRepo: projectRepo,
+                envRepo:     envRepo,
+                logger:      logger,
+        }
+}</span>
+
+// ExportRules 导出规则
+func (s *importExportService) ExportRules(ctx context.Context, req *models.ExportRequest) (*models.ExportData, error) <span class="cov7" title="6">{
+        exportData := &amp;models.ExportData{
+                Version:    "1.0",
+                ExportTime: time.Now(),
+                Data: models.ExportDataContent{
+                        Rules: []models.RuleExportData{},
+                },
+        }
+
+        // 根据请求参数确定导出类型
+        if req.IncludeProject </span><span class="cov3" title="2">{
+                exportData.ExportType = models.ExportTypeProject
+        }</span> else<span class="cov6" title="4"> if req.IncludeEnvs </span><span class="cov1" title="1">{
+                exportData.ExportType = models.ExportTypeEnvironment
+        }</span> else<span class="cov5" title="3"> {
+                exportData.ExportType = models.ExportTypeRules
+        }</span>
+
+        // 导出项目信息
+        <span class="cov7" title="6">if req.IncludeProject &amp;&amp; req.ProjectID != "" </span><span class="cov3" title="2">{
+                project, err := s.projectRepo.FindByID(ctx, req.ProjectID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to find project: %w", err)
+                }</span>
+                <span class="cov3" title="2">if project != nil </span><span class="cov3" title="2">{
+                        exportData.Data.Project = &amp;models.ProjectExportData{
+                                Name:        project.Name,
+                                WorkspaceID: project.WorkspaceID,
+                                Description: project.Description,
+                        }
+                }</span>
+        }
+
+        // 导出环境信息
+        <span class="cov7" title="6">envMap := make(map[string]string) // envID -&gt; envName
+        if req.IncludeEnvs &amp;&amp; req.ProjectID != "" </span><span class="cov3" title="2">{
+                envs, err := s.envRepo.FindByProject(ctx, req.ProjectID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to find environments: %w", err)
+                }</span>
+                <span class="cov3" title="2">for _, env := range envs </span><span class="cov3" title="2">{
+                        envMap[env.ID] = env.Name
+                        exportData.Data.Environments = append(exportData.Data.Environments, models.EnvironmentExportData{
+                                Name:      env.Name,
+                                BaseURL:   env.BaseURL,
+                                Variables: env.Variables,
+                        })
+                }</span>
+        }
+
+        // 导出规则
+        <span class="cov7" title="6">var rules []*models.Rule
+        var err error
+
+        if len(req.RuleIDs) &gt; 0 </span><span class="cov3" title="2">{
+                // 按规则ID列表导出
+                for _, ruleID := range req.RuleIDs </span><span class="cov5" title="3">{
+                        rule, err := s.ruleRepo.FindByID(ctx, ruleID)
+                        if err != nil </span><span class="cov0" title="0">{
+                                s.logger.Error("Failed to find rule", zap.String("rule_id", ruleID), zap.Error(err))
+                                continue</span>
+                        }
+                        <span class="cov5" title="3">if rule != nil </span><span class="cov5" title="3">{
+                                rules = append(rules, rule)
+                        }</span>
+                }
+        } else<span class="cov6" title="4"> if req.EnvironmentID != "" &amp;&amp; req.ProjectID != "" </span><span class="cov1" title="1">{
+                // 按环境导出
+                rules, err = s.ruleRepo.FindByEnvironment(ctx, req.ProjectID, req.EnvironmentID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to find rules by environment: %w", err)
+                }</span>
+        } else<span class="cov5" title="3"> if req.ProjectID != "" </span><span class="cov5" title="3">{
+                // 按项目导出所有规则
+                filter := map[string]interface{}{"project_id": req.ProjectID}
+                rules, _, err = s.ruleRepo.List(ctx, filter, 0, 10000) // 最多导出10000条
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to find rules by project: %w", err)
+                }</span>
+        }
+
+        // 转换规则为导出格式
+        <span class="cov7" title="6">for _, rule := range rules </span><span class="cov8" title="8">{
+                ruleData := models.RuleExportData{
+                        Name:           rule.Name,
+                        EnvironmentID:  rule.EnvironmentID,
+                        Protocol:       rule.Protocol,
+                        MatchType:      rule.MatchType,
+                        Priority:       rule.Priority,
+                        Enabled:        rule.Enabled,
+                        MatchCondition: rule.MatchCondition,
+                        Response:       rule.Response,
+                        Tags:           rule.Tags,
+                }
+
+                // 添加环境名称
+                if envName, ok := envMap[rule.EnvironmentID]; ok </span><span class="cov1" title="1">{
+                        ruleData.EnvironmentName = envName
+                }</span>
+
+                <span class="cov8" title="8">exportData.Data.Rules = append(exportData.Data.Rules, ruleData)</span>
+        }
+
+        // 添加元数据
+        <span class="cov7" title="6">if req.IncludeMetadata </span><span class="cov3" title="2">{
+                exportData.Metadata = &amp;models.ExportMetadata{
+                        Comment: fmt.Sprintf("Exported %d rules", len(exportData.Data.Rules)),
+                }
+        }</span>
+
+        <span class="cov7" title="6">return exportData, nil</span>
+}
+
+// ExportProject 导出整个项目
+func (s *importExportService) ExportProject(ctx context.Context, projectID string, includeMetadata bool) (*models.ExportData, error) <span class="cov1" title="1">{
+        req := &amp;models.ExportRequest{
+                ProjectID:       projectID,
+                IncludeProject:  true,
+                IncludeEnvs:     true,
+                IncludeMetadata: includeMetadata,
+        }
+        return s.ExportRules(ctx, req)
+}</span>
+
+// ValidateImportData 验证导入数据
+func (s *importExportService) ValidateImportData(ctx context.Context, data *models.ExportData) error <span class="cov10" title="11">{
+        // 检查版本
+        if data.Version != "1.0" </span><span class="cov1" title="1">{
+                return fmt.Errorf("unsupported data version: %s", data.Version)
+        }</span>
+
+        // 检查导出类型
+        <span class="cov9" title="10">validTypes := map[models.ExportType]bool{
+                models.ExportTypeRules:       true,
+                models.ExportTypeEnvironment: true,
+                models.ExportTypeProject:     true,
+        }
+        if !validTypes[data.ExportType] </span><span class="cov1" title="1">{
+                return fmt.Errorf("invalid export type: %s", data.ExportType)
+        }</span>
+
+        // 检查规则数据
+        <span class="cov9" title="9">if len(data.Data.Rules) == 0 </span><span class="cov3" title="2">{
+                return errors.New("no rules to import")
+        }</span>
+
+        // 验证每条规则的必填字段
+        <span class="cov8" title="7">for i, rule := range data.Data.Rules </span><span class="cov8" title="7">{
+                if rule.Name == "" </span><span class="cov1" title="1">{
+                        return fmt.Errorf("rule %d: name is required", i)
+                }</span>
+                <span class="cov7" title="6">if rule.Protocol == "" </span><span class="cov1" title="1">{
+                        return fmt.Errorf("rule %d (%s): protocol is required", i, rule.Name)
+                }</span>
+                <span class="cov7" title="5">if rule.MatchType == "" </span><span class="cov0" title="0">{
+                        return fmt.Errorf("rule %d (%s): match_type is required", i, rule.Name)
+                }</span>
+                <span class="cov7" title="5">if rule.MatchCondition == nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("rule %d (%s): match_condition is required", i, rule.Name)
+                }</span>
+        }
+
+        <span class="cov7" title="5">return nil</span>
+}
+
+// ImportData 导入数据
+func (s *importExportService) ImportData(ctx context.Context, req *models.ImportRequest) (*models.ImportResult, error) <span class="cov7" title="5">{
+        result := &amp;models.ImportResult{
+                Success:        true,
+                EnvironmentIDs: make(map[string]string),
+                Errors:         []models.ImportError{},
+        }
+
+        // 验证数据
+        if err := s.ValidateImportData(ctx, &amp;req.Data); err != nil </span><span class="cov1" title="1">{
+                return nil, fmt.Errorf("validation failed: %w", err)
+        }</span>
+
+        // 处理项目
+        <span class="cov6" title="4">projectID := req.TargetProjectID
+        if req.CreateProject &amp;&amp; req.Data.Data.Project != nil </span><span class="cov1" title="1">{
+                // 创建新项目
+                project := &amp;models.Project{
+                        Name:        req.Data.Data.Project.Name,
+                        WorkspaceID: req.Data.Data.Project.WorkspaceID,
+                        Description: req.Data.Data.Project.Description,
+                }
+                if err := s.projectRepo.Create(ctx, project); err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to create project: %w", err)
+                }</span>
+                <span class="cov1" title="1">projectID = project.ID
+                result.ProjectID = projectID
+                s.logger.Info("Created project", zap.String("project_id", projectID), zap.String("name", project.Name))</span>
+        } else<span class="cov5" title="3"> if projectID == "" &amp;&amp; req.Data.Data.Project == nil </span><span class="cov1" title="1">{
+                return nil, errors.New("project_id is required or create_project must be true")
+        }</span>
+
+        // 处理环境
+        <span class="cov5" title="3">envNameToID := make(map[string]string)
+        if req.CreateEnvs &amp;&amp; len(req.Data.Data.Environments) &gt; 0 </span><span class="cov1" title="1">{
+                for _, envData := range req.Data.Data.Environments </span><span class="cov1" title="1">{
+                        env := &amp;models.Environment{
+                                Name:      envData.Name,
+                                ProjectID: projectID,
+                                BaseURL:   envData.BaseURL,
+                                Variables: envData.Variables,
+                        }
+                        if err := s.envRepo.Create(ctx, env); err != nil </span><span class="cov0" title="0">{
+                                s.logger.Error("Failed to create environment", zap.String("name", envData.Name), zap.Error(err))
+                                continue</span>
+                        }
+                        <span class="cov1" title="1">envNameToID[envData.Name] = env.ID
+                        result.EnvironmentIDs[envData.Name] = env.ID
+                        s.logger.Info("Created environment", zap.String("env_id", env.ID), zap.String("name", env.Name))</span>
+                }
+        } else<span class="cov3" title="2"> if req.TargetEnvID != "" </span><span class="cov3" title="2">{
+                // 使用指定的目标环境
+                env, err := s.envRepo.FindByID(ctx, req.TargetEnvID)
+                if err != nil || env == nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("target environment not found: %s", req.TargetEnvID)
+                }</span>
+                <span class="cov3" title="2">envNameToID["default"] = req.TargetEnvID</span>
+        }
+
+        // 导入规则
+        <span class="cov5" title="3">for _, ruleData := range req.Data.Data.Rules </span><span class="cov5" title="3">{
+                // 确定目标环境ID
+                targetEnvID := req.TargetEnvID
+                if targetEnvID == "" </span><span class="cov1" title="1">{
+                        // 根据环境名称查找
+                        if ruleData.EnvironmentName != "" </span><span class="cov1" title="1">{
+                                if envID, ok := envNameToID[ruleData.EnvironmentName]; ok </span><span class="cov1" title="1">{
+                                        targetEnvID = envID
+                                }</span>
+                        }
+                        <span class="cov1" title="1">if targetEnvID == "" &amp;&amp; len(envNameToID) &gt; 0 </span><span class="cov0" title="0">{
+                                // 使用第一个环境
+                                for _, envID := range envNameToID </span><span class="cov0" title="0">{
+                                        targetEnvID = envID
+                                        break</span>
+                                }
+                        }
+                }
+
+                <span class="cov5" title="3">if targetEnvID == "" </span><span class="cov0" title="0">{
+                        result.Errors = append(result.Errors, models.ImportError{
+                                RuleName: ruleData.Name,
+                                Error:    "no target environment found",
+                        })
+                        result.Success = false
+                        continue</span>
+                }
+
+                // 检查规则是否已存在
+                <span class="cov5" title="3">existingRules, _ := s.ruleRepo.FindByEnvironment(ctx, projectID, targetEnvID)
+                var existingRule *models.Rule
+                for _, r := range existingRules </span><span class="cov3" title="2">{
+                        if r.Name == ruleData.Name </span><span class="cov3" title="2">{
+                                existingRule = r
+                                break</span>
+                        }
+                }
+
+                // 根据策略处理
+                <span class="cov5" title="3">switch req.Strategy </span>{
+                case models.ImportStrategySkip:<span class="cov3" title="2">
+                        if existingRule != nil </span><span class="cov1" title="1">{
+                                result.Skipped++
+                                s.logger.Info("Skipped existing rule", zap.String("name", ruleData.Name))
+                                continue</span>
+                        }
+                case models.ImportStrategyOverwrite:<span class="cov1" title="1">
+                        if existingRule != nil </span><span class="cov1" title="1">{
+                                // 更新现有规则
+                                existingRule.MatchType = ruleData.MatchType
+                                existingRule.Priority = ruleData.Priority
+                                existingRule.Enabled = ruleData.Enabled
+                                existingRule.MatchCondition = ruleData.MatchCondition
+                                existingRule.Response = ruleData.Response
+                                existingRule.Tags = ruleData.Tags
+
+                                if err := s.ruleRepo.Update(ctx, existingRule); err != nil </span><span class="cov0" title="0">{
+                                        result.Errors = append(result.Errors, models.ImportError{
+                                                RuleName: ruleData.Name,
+                                                Error:    err.Error(),
+                                        })
+                                        result.Success = false
+                                        continue</span>
+                                }
+                                <span class="cov1" title="1">result.Updated++
+                                result.RuleIDs = append(result.RuleIDs, existingRule.ID)
+                                s.logger.Info("Updated rule", zap.String("rule_id", existingRule.ID), zap.String("name", ruleData.Name))
+                                continue</span>
+                        }
+                case models.ImportStrategyAppend:<span class="cov0" title="0">
+                        if existingRule != nil </span><span class="cov0" title="0">{
+                                // 自动重命名
+                                ruleData.Name = s.generateUniqueName(ctx, projectID, targetEnvID, ruleData.Name)
+                        }</span>
+                }
+
+                // 创建新规则
+                <span class="cov1" title="1">rule := &amp;models.Rule{
+                        Name:           ruleData.Name,
+                        ProjectID:      projectID,
+                        EnvironmentID:  targetEnvID,
+                        Protocol:       ruleData.Protocol,
+                        MatchType:      ruleData.MatchType,
+                        Priority:       ruleData.Priority,
+                        Enabled:        ruleData.Enabled,
+                        MatchCondition: ruleData.MatchCondition,
+                        Response:       ruleData.Response,
+                        Tags:           ruleData.Tags,
+                }
+
+                if err := s.ruleRepo.Create(ctx, rule); err != nil </span><span class="cov0" title="0">{
+                        result.Errors = append(result.Errors, models.ImportError{
+                                RuleName: ruleData.Name,
+                                Error:    err.Error(),
+                        })
+                        result.Success = false
+                        continue</span>
+                }
+
+                <span class="cov1" title="1">result.Created++
+                result.RuleIDs = append(result.RuleIDs, rule.ID)
+                s.logger.Info("Created rule", zap.String("rule_id", rule.ID), zap.String("name", rule.Name))</span>
+        }
+
+        // 如果有任何错误，标记为不完全成功
+        <span class="cov5" title="3">if len(result.Errors) &gt; 0 </span><span class="cov0" title="0">{
+                result.Success = false
+        }</span>
+
+        <span class="cov5" title="3">return result, nil</span>
+}
+
+// generateUniqueName 生成唯一名称
+func (s *importExportService) generateUniqueName(ctx context.Context, projectID, envID, baseName string) string <span class="cov1" title="1">{
+        existingRules, _ := s.ruleRepo.FindByEnvironment(ctx, projectID, envID)
+        nameMap := make(map[string]bool)
+        for _, r := range existingRules </span><span class="cov3" title="2">{
+                nameMap[r.Name] = true
+        }</span>
+
+        // 尝试添加后缀
+        <span class="cov1" title="1">for i := 1; i &lt;= 100; i++ </span><span class="cov3" title="2">{
+                newName := fmt.Sprintf("%s_copy_%d", baseName, i)
+                if !nameMap[newName] </span><span class="cov1" title="1">{
+                        return newName
+                }</span>
+        }
+
+        // 使用时间戳
+        <span class="cov0" title="0">return fmt.Sprintf("%s_copy_%d", baseName, time.Now().Unix())</span>
+}
+
+// CloneRuleService 规则克隆服务接口
+type CloneRuleService interface {
+        // CloneRule 克隆规则
+        CloneRule(ctx context.Context, ruleID string, req *models.CloneRuleRequest) (*models.Rule, error)
+}
+
+type cloneRuleService struct {
+        ruleRepo repository.RuleRepository
+        logger   *zap.Logger
+}
+
+// NewCloneRuleService 创建规则克隆服务
+func NewCloneRuleService(ruleRepo repository.RuleRepository, logger *zap.Logger) CloneRuleService <span class="cov1" title="1">{
+        return &amp;cloneRuleService{
+                ruleRepo: ruleRepo,
+                logger:   logger,
+        }
+}</span>
+
+// CloneRule 克隆规则
+func (s *cloneRuleService) CloneRule(ctx context.Context, ruleID string, req *models.CloneRuleRequest) (*models.Rule, error) <span class="cov7" title="5">{
+        // 查找源规则
+        sourceRule, err := s.ruleRepo.FindByID(ctx, ruleID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to find source rule: %w", err)
+        }</span>
+        <span class="cov7" title="5">if sourceRule == nil </span><span class="cov1" title="1">{
+                return nil, errors.New("source rule not found")
+        }</span>
+
+        // 创建新规则（复制所有字段）
+        <span class="cov6" title="4">newRule := &amp;models.Rule{
+                Name:           sourceRule.Name,
+                ProjectID:      sourceRule.ProjectID,
+                EnvironmentID:  req.TargetEnvironmentID,
+                Protocol:       sourceRule.Protocol,
+                MatchType:      sourceRule.MatchType,
+                Priority:       sourceRule.Priority,
+                Enabled:        sourceRule.Enabled,
+                MatchCondition: sourceRule.MatchCondition,
+                Response:       sourceRule.Response,
+                Tags:           sourceRule.Tags,
+                Creator:        sourceRule.Creator,
+        }
+
+        // 应用目标项目（如果指定）
+        if req.TargetProjectID != "" </span><span class="cov1" title="1">{
+                newRule.ProjectID = req.TargetProjectID
+        }</span>
+
+        // 应用新名称
+        <span class="cov6" title="4">if req.NewName != "" </span><span class="cov1" title="1">{
+                newRule.Name = req.NewName
+        }</span> else<span class="cov5" title="3"> {
+                // 自动添加 "_copy" 后缀
+                newRule.Name = s.generateCopyName(sourceRule.Name)
+        }</span>
+
+        // 应用新优先级
+        <span class="cov6" title="4">if req.NewPriority != nil </span><span class="cov1" title="1">{
+                newRule.Priority = *req.NewPriority
+        }</span>
+
+        // 创建规则
+        <span class="cov6" title="4">if err := s.ruleRepo.Create(ctx, newRule); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create cloned rule: %w", err)
+        }</span>
+
+        <span class="cov6" title="4">s.logger.Info("Cloned rule",
+                zap.String("source_id", ruleID),
+                zap.String("new_id", newRule.ID),
+                zap.String("new_name", newRule.Name),
+        )
+
+        return newRule, nil</span>
+}
+
+// generateCopyName 生成复制名称
+func (s *cloneRuleService) generateCopyName(baseName string) string <span class="cov7" title="5">{
+        if !strings.HasSuffix(baseName, "_copy") </span><span class="cov6" title="4">{
+                return baseName + "_copy"
+        }</span>
+        <span class="cov1" title="1">return baseName</span>
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package service
+
+import (
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+const (
+        // RequestIDHeader 请求ID头部名称
+        RequestIDHeader = "X-Request-ID"
+        // RequestIDKey 请求ID在上下文中的key
+        RequestIDKey = "request_id"
+)
+
+// RequestIDMiddleware 请求追踪中间件
+// 为每个请求生成唯一的 request_id，并在整个调用链路中传递
+func RequestIDMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                // 尝试从请求头获取 request_id
+                requestID := c.GetHeader(RequestIDHeader)
+
+                // 如果请求头中没有，则生成一个新的
+                if requestID == "" </span><span class="cov0" title="0">{
+                        requestID = generateRequestID()
+                }</span>
+
+                // 将 request_id 存储到上下文中
+                <span class="cov0" title="0">c.Set(RequestIDKey, requestID)
+
+                // 在响应头中返回 request_id
+                c.Header(RequestIDHeader, requestID)
+
+                c.Next()</span>
+        }
+}
+
+// PerformanceMiddleware 性能监控中间件
+// 记录请求处理时长和基本信息
+func PerformanceMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                // 记录开始时间
+                startTime := time.Now()
+                path := c.Request.URL.Path
+                method := c.Request.Method
+
+                // 获取 request_id
+                requestID, _ := c.Get(RequestIDKey)
+
+                // 处理请求
+                c.Next()
+
+                // 计算耗时
+                duration := time.Since(startTime)
+                statusCode := c.Writer.Status()
+
+                // 记录日志
+                logger.Info("request completed",
+                        zap.String("request_id", requestID.(string)),
+                        zap.String("method", method),
+                        zap.String("path", path),
+                        zap.Int("status", statusCode),
+                        zap.Duration("duration", duration),
+                        zap.String("client_ip", c.ClientIP()),
+                )
+
+                // 如果请求耗时过长（超过1秒），记录警告
+                if duration &gt; time.Second </span><span class="cov0" title="0">{
+                        logger.Warn("slow request detected",
+                                zap.String("request_id", requestID.(string)),
+                                zap.String("method", method),
+                                zap.String("path", path),
+                                zap.Duration("duration", duration),
+                        )
+                }</span>
+        }
+}
+
+// LoggingMiddleware 日志中间件
+// 记录请求的基本信息
+func LoggingMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                requestID, exists := c.Get(RequestIDKey)
+                if !exists </span><span class="cov0" title="0">{
+                        requestID = "unknown"
+                }</span>
+
+                <span class="cov0" title="0">logger.Debug("incoming request",
+                        zap.String("request_id", requestID.(string)),
+                        zap.String("method", c.Request.Method),
+                        zap.String("path", c.Request.URL.Path),
+                        zap.String("client_ip", c.ClientIP()),
+                        zap.String("user_agent", c.Request.UserAgent()),
+                )
+
+                c.Next()</span>
+        }
+}
+
+// generateRequestID 生成唯一的请求ID
+func generateRequestID() string <span class="cov0" title="0">{
+        // 使用时间戳 + 随机数生成简单的 request_id
+        // 生产环境建议使用 UUID 或其他更强的唯一性保证
+        timestamp := time.Now().UnixNano()
+        return "req-" + int64ToString(timestamp)
+}</span>
+
+// int64ToString 将 int64 转换为字符串
+func int64ToString(n int64) string <span class="cov0" title="0">{
+        if n == 0 </span><span class="cov0" title="0">{
+                return "0"
+        }</span>
+
+        <span class="cov0" title="0">isNegative := n &lt; 0
+        if isNegative </span><span class="cov0" title="0">{
+                n = -n
+        }</span>
+
+        <span class="cov0" title="0">var result string
+        for n &gt; 0 </span><span class="cov0" title="0">{
+                digit := n % 10
+                result = string(rune('0'+digit)) + result
+                n /= 10
+        }</span>
+
+        <span class="cov0" title="0">if isNegative </span><span class="cov0" title="0">{
+                result = "-" + result
+        }</span>
+
+        <span class="cov0" title="0">return result</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package service
+
+import (
+        "context"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/adapter"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// MatchEngineInterface 匹配引擎接口
+type MatchEngineInterface interface {
+        Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error)
+}
+
+// MockExecutorInterface Mock 执行器接口
+type MockExecutorInterface interface {
+        Execute(request *adapter.Request, rule *models.Rule) (*adapter.Response, error)
+        GetDefaultResponse() *adapter.Response
+}
+
+// MockService Mock 服务
+type MockService struct {
+        httpAdapter  *adapter.HTTPAdapter
+        matchEngine  MatchEngineInterface
+        mockExecutor MockExecutorInterface
+}
+
+// NewMockService 创建 Mock 服务
+func NewMockService(matchEngine MatchEngineInterface, mockExecutor MockExecutorInterface) *MockService <span class="cov10" title="14">{
+        return &amp;MockService{
+                httpAdapter:  adapter.NewHTTPAdapter(),
+                matchEngine:  matchEngine,
+                mockExecutor: mockExecutor,
+        }
+}</span>
+
+// HandleMockRequest 处理 Mock 请求
+func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov9" title="13">{
+        // 从路径中提取项目ID和环境ID
+        // 请求格式：/:projectID/:environmentID/*path
+        projectID := c.Param("projectID")
+        environmentID := c.Param("environmentID")
+
+        if projectID == "" || environmentID == "" </span><span class="cov3" title="2">{
+                c.JSON(400, gin.H{
+                        "error": "projectID and environmentID are required",
+                })
+                return
+        }</span>
+
+        // 解析请求为统一模型
+        <span class="cov9" title="11">request, err := s.httpAdapter.Parse(c)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to parse request", zap.Error(err))
+                c.JSON(500, gin.H{
+                        "error": "Failed to parse request",
+                })
+                return
+        }</span>
+
+        // 匹配规则
+        <span class="cov9" title="11">ctx := context.Background()
+        rule, err := s.matchEngine.Match(ctx, request, projectID, environmentID)
+        if err != nil </span><span class="cov1" title="1">{
+                logger.Error("failed to match rule", zap.Error(err))
+                c.JSON(500, gin.H{
+                        "error": "Failed to match rule",
+                })
+                return
+        }</span>
+
+        <span class="cov8" title="10">var response *adapter.Response
+
+        // 如果没有匹配的规则，返回默认响应
+        if rule == nil </span><span class="cov1" title="1">{
+                logger.Info("no rule matched, using default response",
+                        zap.String("path", request.Path),
+                        zap.String("project_id", projectID),
+                        zap.String("environment_id", environmentID))
+                response = s.mockExecutor.GetDefaultResponse()
+        }</span> else<span class="cov8" title="9"> {
+                // 执行 Mock 响应生成
+                response, err = s.mockExecutor.Execute(request, rule)
+                if err != nil </span><span class="cov1" title="1">{
+                        logger.Error("failed to execute mock", zap.Error(err))
+                        c.JSON(500, gin.H{
+                                "error": "Failed to execute mock",
+                        })
+                        return
+                }</span>
+        }
+
+        // 写入响应
+        <span class="cov8" title="9">s.httpAdapter.WriteResponse(c, response)</span>
+}
+
+// StartMockServer 启动 Mock 服务器
+func StartMockServer(addr string, service *MockService) error <span class="cov0" title="0">{
+        gin.SetMode(gin.ReleaseMode)
+        r := gin.New()
+        r.Use(gin.Recovery())
+
+        // Mock 请求处理路由
+        // 格式：/:projectID/:environmentID/*path
+        r.Any("/:projectID/:environmentID/*path", service.HandleMockRequest)
+
+        logger.Info("starting mock server", zap.String("address", addr))
+        return r.Run(addr)
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package logger
+
+import (
+        "os"
+
+        "go.uber.org/zap"
+        "go.uber.org/zap/zapcore"
+        "gopkg.in/natefinch/lumberjack.v2"
+)
+
+var globalLogger *zap.Logger
+
+// Init 初始化日志
+func Init(level, format, output, filePath string, maxSize, maxBackups, maxAge int) error <span class="cov0" title="0">{
+        // 解析日志级别
+        var zapLevel zapcore.Level
+        switch level </span>{
+        case "debug":<span class="cov0" title="0">
+                zapLevel = zapcore.DebugLevel</span>
+        case "info":<span class="cov0" title="0">
+                zapLevel = zapcore.InfoLevel</span>
+        case "warn":<span class="cov0" title="0">
+                zapLevel = zapcore.WarnLevel</span>
+        case "error":<span class="cov0" title="0">
+                zapLevel = zapcore.ErrorLevel</span>
+        default:<span class="cov0" title="0">
+                zapLevel = zapcore.InfoLevel</span>
+        }
+
+        // 配置编码器
+        <span class="cov0" title="0">var encoderConfig zapcore.EncoderConfig
+        if format == "json" </span><span class="cov0" title="0">{
+                encoderConfig = zap.NewProductionEncoderConfig()
+        }</span> else<span class="cov0" title="0"> {
+                encoderConfig = zap.NewDevelopmentEncoderConfig()
+        }</span>
+        <span class="cov0" title="0">encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+        encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+
+        var encoder zapcore.Encoder
+        if format == "json" </span><span class="cov0" title="0">{
+                encoder = zapcore.NewJSONEncoder(encoderConfig)
+        }</span> else<span class="cov0" title="0"> {
+                encoder = zapcore.NewConsoleEncoder(encoderConfig)
+        }</span>
+
+        // 配置输出
+        <span class="cov0" title="0">var writeSyncer zapcore.WriteSyncer
+        if output == "file" </span><span class="cov0" title="0">{
+                // 文件输出，支持日志轮转
+                lumberJackLogger := &amp;lumberjack.Logger{
+                        Filename:   filePath,
+                        MaxSize:    maxSize,
+                        MaxBackups: maxBackups,
+                        MaxAge:     maxAge,
+                        Compress:   true,
+                }
+                writeSyncer = zapcore.AddSync(lumberJackLogger)
+        }</span> else<span class="cov0" title="0"> {
+                // 标准输出
+                writeSyncer = zapcore.AddSync(os.Stdout)
+        }</span>
+
+        // 创建核心
+        <span class="cov0" title="0">core := zapcore.NewCore(encoder, writeSyncer, zapLevel)
+
+        // 创建 logger
+        globalLogger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+        return nil</span>
+}
+
+// Get 获取全局 logger
+func Get() *zap.Logger <span class="cov0" title="0">{
+        if globalLogger == nil </span><span class="cov0" title="0">{
+                // 如果未初始化，返回默认 logger
+                globalLogger, _ = zap.NewProduction()
+        }</span>
+        <span class="cov0" title="0">return globalLogger</span>
+}
+
+// Debug 日志
+func Debug(msg string, fields ...zap.Field) <span class="cov0" title="0">{
+        Get().Debug(msg, fields...)
+}</span>
+
+// Info 日志
+func Info(msg string, fields ...zap.Field) <span class="cov0" title="0">{
+        Get().Info(msg, fields...)
+}</span>
+
+// Warn 日志
+func Warn(msg string, fields ...zap.Field) <span class="cov0" title="0">{
+        Get().Warn(msg, fields...)
+}</span>
+
+// Error 日志
+func Error(msg string, fields ...zap.Field) <span class="cov0" title="0">{
+        Get().Error(msg, fields...)
+}</span>
+
+// Fatal 日志
+func Fatal(msg string, fields ...zap.Field) <span class="cov0" title="0">{
+        Get().Fatal(msg, fields...)
+}</span>
+
+// Sync 刷新日志缓冲
+func Sync() error <span class="cov0" title="0">{
+        if globalLogger != nil </span><span class="cov0" title="0">{
+                return globalLogger.Sync()
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

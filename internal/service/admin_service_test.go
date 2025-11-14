@@ -18,8 +18,11 @@ func setupTestRouter() *gin.Engine {
 
 // TestNewAdminService 测试创建管理服务
 func TestNewAdminService(t *testing.T) {
-	service := NewAdminService(nil, nil)
+	service := NewAdminService(nil, nil, nil)
 	assert.NotNil(t, service)
+	assert.Nil(t, service.ruleHandler)
+	assert.Nil(t, service.projectHandler)
+	assert.Nil(t, service.statisticsHandler)
 }
 
 // TestCORSMiddleware 测试 CORS 中间件

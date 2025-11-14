@@ -103,8 +103,9 @@ func createIndexes(ctx context.Context) error {
 		return err
 	}
 
-	// Logs 集合索引（带 TTL）
+	// Logs 集合索引(带 TTL)
 	logsCollection := database.Collection("logs")
+	ttlSeconds := int32(7 * 24 * 60 * 60)
 	logsIndexes := []mongo.IndexModel{
 		{
 			Keys: bson.D{{Key: "request_id", Value: 1}},
@@ -117,7 +118,7 @@ func createIndexes(ctx context.Context) error {
 		},
 		{
 			Keys:    bson.D{{Key: "timestamp", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(7 * 24 * 60 * 60), // 7天过期
+			Options: &options.IndexOptions{ExpireAfterSeconds: &ttlSeconds}, // 7天过期
 		},
 		{
 			Keys: bson.D{
@@ -146,14 +147,15 @@ func createIndexes(ctx context.Context) error {
 
 	// Users 集合索引
 	usersCollection := database.Collection("users")
+	unique := true
 	usersIndexes := []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "username", Value: 1}},
-			Options: options.Index().SetUnique(true),
+			Options: &options.IndexOptions{Unique: &unique},
 		},
 		{
 			Keys:    bson.D{{Key: "email", Value: 1}},
-			Options: options.Index().SetUnique(true),
+			Options: &options.IndexOptions{Unique: &unique},
 		},
 	}
 	if _, err := usersCollection.Indexes().CreateMany(ctx, usersIndexes); err != nil {

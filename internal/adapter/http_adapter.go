@@ -53,11 +53,20 @@ func (a *HTTPAdapter) Parse(rawRequest interface{}) (*Request, error) {
 	// 获取客户端IP
 	clientIP := c.ClientIP()
 
+	// 获取实际的API路径（移除 /:projectID/:environmentID 前缀）
+	// Gin的路由格式：/:projectID/:environmentID/*path
+	// c.Param("path") 会返回包含前导斜杠的路径，如 "/api/users/1"
+	actualPath := c.Param("path")
+	if actualPath == "" {
+		// 如果没有path参数，使用完整路径
+		actualPath = c.Request.URL.Path
+	}
+
 	// 创建统一请求模型
 	request := &Request{
 		ID:         requestID,
 		Protocol:   models.ProtocolHTTP,
-		Path:       c.Request.URL.Path,
+		Path:       actualPath,
 		Headers:    headers,
 		Body:       body,
 		SourceIP:   clientIP,

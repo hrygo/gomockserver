@@ -145,7 +145,7 @@ func TestRuleHandler_CreateRule(t *testing.T) {
 			tt.mockSetup(mockRepo)
 
 			// 创建 Handler
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 
 			// 创建路由
 			router := setupTestRouter()
@@ -224,7 +224,7 @@ func TestRuleHandler_GetRule(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 			router := setupTestRouter()
 			router.GET("/rules/:id", handler.GetRule)
 
@@ -293,7 +293,7 @@ func TestRuleHandler_UpdateRule(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 			router := setupTestRouter()
 			router.PUT("/rules/:id", handler.UpdateRule)
 
@@ -355,7 +355,7 @@ func TestRuleHandler_DeleteRule(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 			router := setupTestRouter()
 			router.DELETE("/rules/:id", handler.DeleteRule)
 
@@ -442,7 +442,7 @@ func TestRuleHandler_ListRules(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 			router := setupTestRouter()
 			router.GET("/rules", handler.ListRules)
 
@@ -527,7 +527,7 @@ func TestRuleHandler_EnableRule(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 			router := setupTestRouter()
 			router.POST("/rules/:id/enable", handler.EnableRule)
 
@@ -589,7 +589,7 @@ func TestRuleHandler_DisableRule(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.mockSetup(mockRepo)
 
-			handler := NewRuleHandler(mockRepo)
+			handler := NewRuleHandler(mockRepo, new(MockProjectRepository), new(MockEnvironmentRepository))
 			router := setupTestRouter()
 			router.POST("/rules/:id/disable", handler.DisableRule)
 

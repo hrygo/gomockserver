@@ -118,6 +118,40 @@ var (
 )
 
 // ============================================
+// 批量操作相关 6000-6999
+// ============================================
+
+var (
+	// ErrBatchOperationFailed 批量操作失败
+	ErrBatchOperationFailed = ErrorCode{6001, "Batch operation failed", "批量操作失败"}
+	// ErrBatchPartialSuccess 批量操作部分成功
+	ErrBatchPartialSuccess = ErrorCode{6002, "Batch operation partially succeeded", "批量操作部分成功"}
+	// ErrBatchInvalidInput 批量操作输入无效
+	ErrBatchInvalidInput = ErrorCode{6003, "Invalid batch operation input", "批量操作输入无效"}
+	// ErrBatchEmptyInput 批量操作输入为空
+	ErrBatchEmptyInput = ErrorCode{6004, "Batch operation input is empty", "批量操作输入为空"}
+)
+
+// ============================================
+// 导入导出相关 7000-7999
+// ============================================
+
+var (
+	// ErrImportDataInvalid 导入数据无效
+	ErrImportDataInvalid = ErrorCode{7001, "Import data is invalid", "导入数据无效"}
+	// ErrExportFailed 导出操作失败
+	ErrExportFailed = ErrorCode{7002, "Export operation failed", "导出操作失败"}
+	// ErrImportConflict 导入数据冲突
+	ErrImportConflict = ErrorCode{7003, "Import data conflicts with existing data", "导入数据与现有数据冲突"}
+	// ErrUnsupportedVersion 不支持的数据版本
+	ErrUnsupportedVersion = ErrorCode{7004, "Unsupported import data version", "不支持的导入数据版本"}
+	// ErrImportStrategyInvalid 导入策略无效
+	ErrImportStrategyInvalid = ErrorCode{7005, "Invalid import strategy", "导入策略无效"}
+	// ErrExportTypeInvalid 导出类型无效
+	ErrExportTypeInvalid = ErrorCode{7006, "Invalid export type", "导出类型无效"}
+)
+
+// ============================================
 // 数据库相关 5000-5999
 // ============================================
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/gomockserver/mockserver/internal/models"
@@ -58,17 +57,17 @@ func (s *batchOperationService) batchUpdateEnabled(ctx context.Context, ruleIDs 
 	for _, ruleID := range ruleIDs {
 		rule, err := s.ruleRepo.FindByID(ctx, ruleID)
 		if err != nil {
-			s.handleError(result, ruleID, fmt.Sprintf("failed to find rule: %v", err))
+			s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
 			continue
 		}
 		if rule == nil {
-			s.handleError(result, ruleID, "rule not found")
+			s.handleError(result, ruleID, models.ErrRuleNotFound.Message)
 			continue
 		}
 
 		rule.Enabled = enabled
 		if err := s.ruleRepo.Update(ctx, rule); err != nil {
-			s.handleError(result, ruleID, fmt.Sprintf("failed to update rule: %v", err))
+			s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
 			continue
 		}
 
@@ -95,7 +94,7 @@ func (s *batchOperationService) BatchDelete(ctx context.Context, ruleIDs []strin
 
 	for _, ruleID := range ruleIDs {
 		if err := s.ruleRepo.Delete(ctx, ruleID); err != nil {
-			s.handleError(result, ruleID, fmt.Sprintf("failed to delete rule: %v", err))
+			s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
 			continue
 		}
 
@@ -117,27 +116,27 @@ func (s *batchOperationService) BatchUpdate(ctx context.Context, ruleIDs []strin
 		Errors:       []string{},
 	}
 
-	// 验证更新字段
-	allowedFields := map[string]bool{
-		"priority": true,
-		"tags":     true,
-		"enabled":  true,
-	}
-
-	for field := range updates {
-		if !allowedFields[field] {
-			return nil, fmt.Errorf("field '%s' is not allowed for batch update", field)
+		// 验证更新字段
+		allowedFields := map[string]bool{
+			"priority": true,
+			"tags":     true,
+			"enabled":  true,
 		}
-	}
+
+		for field := range updates {
+			if !allowedFields[field] {
+				return nil, fmt.Errorf("%s: field '%s' is not allowed for batch update", models.ErrBatchInvalidInput.Message, field)
+			}
+		}
 
 	for _, ruleID := range ruleIDs {
 		rule, err := s.ruleRepo.FindByID(ctx, ruleID)
 		if err != nil {
-			s.handleError(result, ruleID, fmt.Sprintf("failed to find rule: %v", err))
+			s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
 			continue
 		}
 		if rule == nil {
-			s.handleError(result, ruleID, "rule not found")
+			s.handleError(result, ruleID, models.ErrRuleNotFound.Message)
 			continue
 		}
 
@@ -165,7 +164,7 @@ func (s *batchOperationService) BatchUpdate(ctx context.Context, ruleIDs []strin
 		}
 
 		if err := s.ruleRepo.Update(ctx, rule); err != nil {
-			s.handleError(result, ruleID, fmt.Sprintf("failed to update rule: %v", err))
+			s.handleError(result, ruleID, models.ErrBatchOperationFailed.Message)
 			continue
 		}
 
@@ -192,7 +191,7 @@ func ExecuteBatchOperation(
 	req *models.BatchOperationRequest,
 ) (*models.BatchOperationResult, error) {
 	if len(req.RuleIDs) == 0 {
-		return nil, errors.New("rule_ids cannot be empty")
+		return nil, models.ErrBatchEmptyInput
 	}
 
 	switch req.Operation {
@@ -202,12 +201,12 @@ func ExecuteBatchOperation(
 		return service.BatchDisable(ctx, req.RuleIDs)
 	case "delete":
 		return service.BatchDelete(ctx, req.RuleIDs)
-	case "update":
-		if req.Updates == nil || len(req.Updates) == 0 {
-			return nil, errors.New("updates cannot be empty for update operation")
-		}
-		return service.BatchUpdate(ctx, req.RuleIDs, req.Updates)
+		case "update":
+			if req.Updates == nil || len(req.Updates) == 0 {
+				return nil, fmt.Errorf("%s: updates cannot be empty for update operation", models.ErrBatchInvalidInput.Message)
+			}
+			return service.BatchUpdate(ctx, req.RuleIDs, req.Updates)
 	default:
-		return nil, fmt.Errorf("unknown operation: %s", req.Operation)
+		return nil, fmt.Errorf("%s: unknown operation: %s", models.ErrBatchInvalidInput.Message, req.Operation)
 	}
 }
