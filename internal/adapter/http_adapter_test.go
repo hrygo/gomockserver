@@ -29,23 +29,23 @@ func TestHTTPAdapter_Parse(t *testing.T) {
 		expectedQuery map[string]string
 	}{
 		{
-			name:         "GET请求解析",
-			method:       "GET",
-			path:         "/api/users",
-			query:        "",
-			headers:      map[string]string{"Content-Type": "application/json"},
-			body:         "",
-			expectedPath: "/api/users",
+			name:          "GET请求解析",
+			method:        "GET",
+			path:          "/api/users",
+			query:         "",
+			headers:       map[string]string{"Content-Type": "application/json"},
+			body:          "",
+			expectedPath:  "/api/users",
 			expectedQuery: map[string]string{},
 		},
 		{
-			name:         "POST请求解析",
-			method:       "POST",
-			path:         "/api/users",
-			query:        "",
-			headers:      map[string]string{"Content-Type": "application/json"},
-			body:         `{"name":"test"}`,
-			expectedPath: "/api/users",
+			name:          "POST请求解析",
+			method:        "POST",
+			path:          "/api/users",
+			query:         "",
+			headers:       map[string]string{"Content-Type": "application/json"},
+			body:          `{"name":"test"}`,
+			expectedPath:  "/api/users",
 			expectedQuery: map[string]string{},
 		},
 		{
@@ -145,10 +145,10 @@ func TestHTTPAdapter_Parse_EmptyBody(t *testing.T) {
 
 func TestHTTPAdapter_Parse_InvalidInput(t *testing.T) {
 	adapter := NewHTTPAdapter()
-	
+
 	// 传入非gin.Context类型
 	result, err := adapter.Parse("invalid")
-	
+
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -206,7 +206,7 @@ func TestHTTPAdapter_WriteResponse(t *testing.T) {
 			name:       "自定义Header响应",
 			statusCode: 200,
 			headers: map[string]string{
-				"Content-Type":  "text/plain",
+				"Content-Type":    "text/plain",
 				"X-Custom-Header": "custom-value",
 			},
 			body:           []byte("plain text response"),
@@ -297,7 +297,7 @@ func TestHTTPAdapter_Parse_ClientIP(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/api/test", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
-	
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req

@@ -66,7 +66,7 @@ func (m *MockRuleRepository) List(ctx context.Context, filter map[string]interfa
 func TestNewMatchEngine(t *testing.T) {
 	mockRepo := new(MockRuleRepository)
 	engine := NewMatchEngine(mockRepo)
-	
+
 	assert.NotNil(t, engine)
 	assert.Equal(t, mockRepo, engine.ruleRepo)
 }
@@ -216,8 +216,8 @@ func TestMatch(t *testing.T) {
 			setupMock: func(m *MockRuleRepository) {
 				rules := []*models.Rule{
 					{
-						ID:       "rule-1",
-						Protocol: models.ProtocolWebSocket,
+						ID:        "rule-1",
+						Protocol:  models.ProtocolWebSocket,
 						MatchType: models.MatchTypeSimple,
 					},
 				}
@@ -239,23 +239,23 @@ func TestMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockRuleRepository)
 			tt.setupMock(mockRepo)
-			
+
 			engine := NewMatchEngine(mockRepo)
 			rule, err := engine.Match(context.Background(), tt.request, tt.projectID, tt.environmentID)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			
+
 			if tt.expectedRule == nil {
 				assert.Nil(t, rule)
 			} else {
 				assert.NotNil(t, rule)
 				assert.Equal(t, tt.expectedRule.ID, rule.ID)
 			}
-			
+
 			mockRepo.AssertExpectations(t)
 		})
 	}
@@ -264,10 +264,10 @@ func TestMatch(t *testing.T) {
 // TestMatchIPWhitelist 测试IP白名单匹配
 func TestMatchIPWhitelist(t *testing.T) {
 	tests := []struct {
-		name       string
-		requestIP  string
-		whitelist  []string
-		expected   bool
+		name      string
+		requestIP string
+		whitelist []string
+		expected  bool
 	}{
 		{
 			name:      "IP在白名单内",
@@ -473,13 +473,13 @@ func TestMatchRule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			matched, err := engine.matchRule(tt.request, tt.rule)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			
+
 			assert.Equal(t, tt.expectMatch, matched)
 		})
 	}
@@ -685,13 +685,13 @@ func TestSimpleMatch_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			matched, err := engine.simpleMatch(tt.request, tt.rule)
-			
+
 			if tt.hasError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			
+
 			assert.Equal(t, tt.expected, matched)
 		})
 	}

@@ -116,7 +116,7 @@ func createIndexes(ctx context.Context) error {
 			Keys: bson.D{{Key: "protocol", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "timestamp", Value: 1}},
+			Keys:    bson.D{{Key: "timestamp", Value: 1}},
 			Options: options.Index().SetExpireAfterSeconds(7 * 24 * 60 * 60), // 7天过期
 		},
 		{

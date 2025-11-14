@@ -763,9 +763,9 @@ func TestComplexJSONBody(t *testing.T) {
 				},
 			},
 			"pagination": map[string]interface{}{
-				"page":       1,
-				"page_size":  10,
-				"total":      100,
+				"page":        1,
+				"page_size":   10,
+				"total":       100,
 				"total_pages": 10,
 			},
 		},

@@ -300,9 +300,9 @@ func TestMockService_HandleMockRequest_WithHeaders(t *testing.T) {
 	mockResponse := &adapter.Response{
 		StatusCode: 200,
 		Headers: map[string]string{
-			"Content-Type":      "application/json",
-			"X-Custom-Header":   "custom-value",
-			"X-Request-ID":      "req-123",
+			"Content-Type":    "application/json",
+			"X-Custom-Header": "custom-value",
+			"X-Request-ID":    "req-123",
 		},
 		Body: []byte(`{"message": "success"}`),
 	}

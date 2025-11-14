@@ -11,40 +11,40 @@ import (
 // TestMatchMethod 测试HTTP方法匹配
 func TestMatchMethod(t *testing.T) {
 	tests := []struct {
-		name           string
-		requestMethod  string
+		name            string
+		requestMethod   string
 		conditionMethod interface{}
-		expected       bool
+		expected        bool
 	}{
 		{
-			name:           "单个方法精确匹配",
-			requestMethod:  "GET",
+			name:            "单个方法精确匹配",
+			requestMethod:   "GET",
 			conditionMethod: "GET",
-			expected:       true,
+			expected:        true,
 		},
 		{
-			name:           "单个方法不匹配",
-			requestMethod:  "POST",
+			name:            "单个方法不匹配",
+			requestMethod:   "POST",
 			conditionMethod: "GET",
-			expected:       false,
+			expected:        false,
 		},
 		{
-			name:           "方法数组匹配",
-			requestMethod:  "POST",
+			name:            "方法数组匹配",
+			requestMethod:   "POST",
 			conditionMethod: []interface{}{"GET", "POST"},
-			expected:       true,
+			expected:        true,
 		},
 		{
-			name:           "方法数组不匹配",
-			requestMethod:  "DELETE",
+			name:            "方法数组不匹配",
+			requestMethod:   "DELETE",
 			conditionMethod: []interface{}{"GET", "POST"},
-			expected:       false,
+			expected:        false,
 		},
 		{
-			name:           "大小写不敏感",
-			requestMethod:  "get",
+			name:            "大小写不敏感",
+			requestMethod:   "get",
 			conditionMethod: "GET",
-			expected:       true,
+			expected:        true,
 		},
 	}
 

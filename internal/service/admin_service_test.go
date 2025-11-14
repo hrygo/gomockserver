@@ -112,7 +112,7 @@ func TestGetVersion(t *testing.T) {
 func TestAdminServiceRoutes(t *testing.T) {
 	// 创建一个临时的 AdminService 用于路由测试
 	// 注意：这里不启动真实的服务器，只测试路由配置
-	
+
 	tests := []struct {
 		name           string
 		method         string
@@ -139,7 +139,7 @@ func TestAdminServiceRoutes(t *testing.T) {
 			// 创建测试路由器并配置系统路由
 			router := setupTestRouter()
 			router.Use(CORSMiddleware())
-			
+
 			v1 := router.Group("/api/v1")
 			{
 				system := v1.Group("/system")

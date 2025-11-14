@@ -547,7 +547,7 @@ func TestRuleResponse(t *testing.T) {
 	assert.NotNil(t, response.Delay)
 	assert.Equal(t, 100, response.Delay.Fixed)
 	assert.NotEmpty(t, response.Content)
-	
+
 	statusCode, ok := response.Content["status_code"].(int)
 	assert.True(t, ok)
 	assert.Equal(t, 200, statusCode)

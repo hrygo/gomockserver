@@ -62,7 +62,7 @@ func (r *projectRepository) Update(ctx context.Context, project *models.Project)
 	// 排除 _id 字段，避免更新不可变字段
 	update := bson.M{"$set": bson.M{
 		"name":         project.Name,
-		"workspace_id":  project.WorkspaceID,
+		"workspace_id": project.WorkspaceID,
 		"description":  project.Description,
 		"updated_at":   project.UpdatedAt,
 	}}
@@ -201,11 +201,11 @@ func (r *environmentRepository) Update(ctx context.Context, environment *models.
 	filter := bson.M{"_id": objectID}
 	// 排除 _id 字段，避免更新不可变字段
 	update := bson.M{"$set": bson.M{
-		"name":        environment.Name,
-		"project_id":  environment.ProjectID,
-		"base_url":    environment.BaseURL,
-		"variables":   environment.Variables,
-		"updated_at":  environment.UpdatedAt,
+		"name":       environment.Name,
+		"project_id": environment.ProjectID,
+		"base_url":   environment.BaseURL,
+		"variables":  environment.Variables,
+		"updated_at": environment.UpdatedAt,
 	}}
 
 	_, err = r.collection.UpdateOne(ctx, filter, update)
