@@ -1,0 +1,130 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # PR 基本检查
+  pr-checks:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check for large files
+        run: |
+          find . -type f -size +1M ! -path "./.git/*" ! -path "./vendor/*" -exec ls -lh {} \; | awk '{print $9 ": " $5}'
+      
+      - name: Check for sensitive data
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  # 测试覆盖率检查
+  coverage-check:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      
+      - name: Run tests with coverage
+        run: |
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out > coverage.txt
+      
+      - name: Generate coverage badge
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
+          echo "Coverage: $COVERAGE"
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+      
+      - name: Comment PR with coverage
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage
+          message: |
+            ## Test Coverage Report
+            
+            **Total Coverage:** ${{ env.COVERAGE }}
+            
+            <details>
+            <summary>Detailed Coverage</summary>
+            
+            ```
+            $(cat coverage.txt)
+            ```
+            </details>
+      
+      - name: Check coverage threshold
+        run: |
+          COVERAGE_NUM=$(echo $COVERAGE | sed 's/%//')
+          if (( $(echo "$COVERAGE_NUM < 50.0" | bc -l) )); then
+            echo "::warning::Coverage $COVERAGE is below 50% threshold"
+          fi
+        env:
+          COVERAGE: ${{ env.COVERAGE }}
+
+  # 变更文件检查
+  changed-files:
+    name: Changed Files Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files: |
+            **/*.go
+            go.mod
+            go.sum
+      
+      - name: List changed files
+        run: |
+          echo "Changed files:"
+          echo "${{ steps.changed-files.outputs.all_changed_files }}"
+      
+      - name: Check if tests are needed
+        run: |
+          if [ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]; then
+            echo "::notice::Go files changed - tests required"
+          fi
+
+  # 依赖安全检查
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v3
+        with:
+          fail-on-severity: moderate

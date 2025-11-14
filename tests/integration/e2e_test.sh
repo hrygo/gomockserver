@@ -1,0 +1,666 @@
+#!/bin/bash
+
+# Mock Server 端到端集成测试脚本
+# 功能：测试完整业务流程 - 项目创建→环境创建→规则创建→Mock请求→规则更新→验证
+
+set -e
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+BINARY="$PROJECT_ROOT/mockserver"
+CONFIG_FILE="$PROJECT_ROOT/config.yaml"
+
+# 使用环境变量或默认值
+ADMIN_API="${ADMIN_API:-http://localhost:8080/api/v1}"
+MOCK_API="${MOCK_API:-http://localhost:9090}"
+
+# 测试数据变量
+PROJECT_ID=""
+ENVIRONMENT_ID=""
+RULE_ID=""
+TEST_PASSED=0
+TEST_FAILED=0
+
+echo -e "${BLUE}=========================================${NC}"
+echo -e "${BLUE}   Mock Server 端到端集成测试${NC}"
+echo -e "${BLUE}=========================================${NC}"
+echo ""
+
+# 清理函数
+cleanup() {
+    if [ ! -z "$SERVER_PID" ]; then
+        echo -e "${YELLOW}正在停止服务器...${NC}"
+        kill $SERVER_PID 2>/dev/null || true
+        wait $SERVER_PID 2>/dev/null || true
+        echo -e "${GREEN}✓ 服务器已停止${NC}"
+    fi
+    
+    echo ""
+    echo -e "${BLUE}=========================================${NC}"
+    echo -e "${BLUE}   测试结果统计${NC}"
+    echo -e "${BLUE}=========================================${NC}"
+    echo -e "通过测试: ${GREEN}$TEST_PASSED${NC}"
+    echo -e "失败测试: ${RED}$TEST_FAILED${NC}"
+    echo -e "总计测试: $((TEST_PASSED + TEST_FAILED))"
+    
+    if [ $TEST_FAILED -eq 0 ]; then
+        echo -e "${GREEN}✓ 所有测试通过！${NC}"
+        exit 0
+    else
+        echo -e "${RED}✗ 部分测试失败${NC}"
+        exit 1
+    fi
+}
+
+# 设置退出时清理
+trap cleanup EXIT INT TERM
+
+# 测试结果记录函数
+test_pass() {
+    echo -e "${GREEN}✓ $1${NC}"
+    TEST_PASSED=$((TEST_PASSED + 1))
+}
+
+test_fail() {
+    echo -e "${RED}✗ $1${NC}"
+    TEST_FAILED=$((TEST_FAILED + 1))
+}
+
+# JSON 提取函数
+extract_json_field() {
+    echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | cut -d'"' -f4
+}
+
+# ========================================
+# 阶段 0: 准备工作
+# ========================================
+
+echo -e "${CYAN}[阶段 0] 准备工作${NC}"
+echo ""
+
+# 检查是否在 Docker 环境中运行
+if [ -z "$SKIP_SERVER_START" ]; then
+    # 0.1 检查并编译二进制文件
+    echo -e "${YELLOW}[0.1] 检查二进制文件...${NC}"
+    if [ ! -f "$BINARY" ]; then
+        echo "二进制文件不存在，正在编译..."
+        cd "$PROJECT_ROOT"
+        go build -o mockserver ./cmd/mockserver
+        if [ $? -ne 0 ]; then
+            test_fail "编译失败"
+            exit 1
+        fi
+        test_pass "编译成功"
+    else
+        test_pass "二进制文件存在"
+    fi
+    echo ""
+
+    # 0.2 启动服务器
+    echo -e "${YELLOW}[0.2] 启动服务器...${NC}"
+    cd "$PROJECT_ROOT"
+    $BINARY -config="$CONFIG_FILE" > /tmp/mockserver_e2e_test.log 2>&1 &
+    SERVER_PID=$!
+
+    if [ -z "$SERVER_PID" ]; then
+        test_fail "服务器启动失败"
+        exit 1
+    fi
+    test_pass "服务器已启动 (PID: $SERVER_PID)"
+    echo ""
+else
+    echo -e "${YELLOW}[0.1] 跳过服务器启动（使用已运行的服务）${NC}"
+    test_pass "使用已运行的服务器"
+    echo ""
+fi
+
+# 0.3 等待服务器就绪
+echo -e "${YELLOW}[0.3] 等待服务器就绪...${NC}"
+MAX_WAIT=30
+WAIT_COUNT=0
+
+while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+    if curl -s "$ADMIN_API/system/health" > /dev/null 2>&1; then
+        test_pass "服务器已就绪"
+        break
+    fi
+    sleep 1
+    WAIT_COUNT=$((WAIT_COUNT + 1))
+    echo -n "."
+done
+
+if [ $WAIT_COUNT -eq $MAX_WAIT ]; then
+    echo ""
+    test_fail "服务器启动超时"
+    if [ -f "/tmp/mockserver_e2e_test.log" ]; then
+        tail -20 /tmp/mockserver_e2e_test.log
+    fi
+    exit 1
+fi
+echo ""
+
+# ========================================
+# 阶段 1: 项目管理
+# ========================================
+
+echo -e "${CYAN}[阶段 1] 项目管理测试${NC}"
+echo ""
+
+# 1.1 创建项目
+echo -e "${YELLOW}[1.1] 创建项目...${NC}"
+PROJECT_RESPONSE=$(curl -s -X POST "$ADMIN_API/projects" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "E2E测试项目",
+        "workspace_id": "e2e-test-workspace",
+        "description": "端到端集成测试项目"
+    }')
+
+PROJECT_ID=$(extract_json_field "$PROJECT_RESPONSE" "id")
+if [ -z "$PROJECT_ID" ]; then
+    test_fail "项目创建失败"
+    echo "响应: $PROJECT_RESPONSE"
+    exit 1
+else
+    test_pass "项目创建成功 (ID: $PROJECT_ID)"
+fi
+echo ""
+
+# 1.2 查询项目
+echo -e "${YELLOW}[1.2] 查询项目详情...${NC}"
+PROJECT_GET=$(curl -s "$ADMIN_API/projects/$PROJECT_ID")
+if echo "$PROJECT_GET" | grep -q "E2E测试项目"; then
+    test_pass "项目查询成功"
+else
+    test_fail "项目查询失败"
+    echo "响应: $PROJECT_GET"
+fi
+echo ""
+
+# 1.3 更新项目
+echo -e "${YELLOW}[1.3] 更新项目信息...${NC}"
+PROJECT_UPDATE=$(curl -s -X PUT "$ADMIN_API/projects/$PROJECT_ID" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "E2E测试项目(已更新)",
+        "description": "更新后的描述"
+    }')
+
+if echo "$PROJECT_UPDATE" | grep -q "已更新"; then
+    test_pass "项目更新成功"
+else
+    test_fail "项目更新失败"
+fi
+echo ""
+
+# 1.4 列出所有项目
+echo -e "${YELLOW}[1.4] 列出所有项目...${NC}"
+PROJECTS_LIST=$(curl -s "$ADMIN_API/projects")
+if echo "$PROJECTS_LIST" | grep -q "$PROJECT_ID"; then
+    test_pass "项目列表查询成功"
+else
+    test_fail "项目列表查询失败"
+fi
+echo ""
+
+# ========================================
+# 阶段 2: 环境管理
+# ========================================
+
+echo -e "${CYAN}[阶段 2] 环境管理测试${NC}"
+echo ""
+
+# 2.1 创建环境
+echo -e "${YELLOW}[2.1] 创建环境...${NC}"
+ENV_RESPONSE=$(curl -s -X POST "$ADMIN_API/projects/$PROJECT_ID/environments" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "开发环境",
+        "base_url": "http://dev.example.com",
+        "variables": {
+            "api_version": "v1",
+            "timeout": "30s"
+        }
+    }')
+
+ENVIRONMENT_ID=$(extract_json_field "$ENV_RESPONSE" "id")
+if [ -z "$ENVIRONMENT_ID" ]; then
+    test_fail "环境创建失败"
+    echo "响应: $ENV_RESPONSE"
+    exit 1
+else
+    test_pass "环境创建成功 (ID: $ENVIRONMENT_ID)"
+fi
+echo ""
+
+# 2.2 查询环境
+echo -e "${YELLOW}[2.2] 查询环境详情...${NC}"
+ENV_GET=$(curl -s "$ADMIN_API/projects/$PROJECT_ID/environments/$ENVIRONMENT_ID")
+if echo "$ENV_GET" | grep -q "开发环境"; then
+    test_pass "环境查询成功"
+else
+    test_fail "环境查询失败"
+fi
+echo ""
+
+# 2.3 更新环境
+echo -e "${YELLOW}[2.3] 更新环境信息...${NC}"
+ENV_UPDATE=$(curl -s -X PUT "$ADMIN_API/projects/$PROJECT_ID/environments/$ENVIRONMENT_ID" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "开发环境(已更新)",
+        "base_url": "http://dev-updated.example.com"
+    }')
+
+if echo "$ENV_UPDATE" | grep -q "已更新"; then
+    test_pass "环境更新成功"
+else
+    test_fail "环境更新失败"
+fi
+echo ""
+
+# 2.4 列出项目的所有环境
+echo -e "${YELLOW}[2.4] 列出项目所有环境...${NC}"
+ENVS_LIST=$(curl -s "$ADMIN_API/projects/$PROJECT_ID/environments")
+if echo "$ENVS_LIST" | grep -q "$ENVIRONMENT_ID"; then
+    test_pass "环境列表查询成功"
+else
+    test_fail "环境列表查询失败"
+fi
+echo ""
+
+# ========================================
+# 阶段 3: 规则管理
+# ========================================
+
+echo -e "${CYAN}[阶段 3] 规则管理测试${NC}"
+echo ""
+
+# 3.1 创建 HTTP Mock 规则
+echo -e "${YELLOW}[3.1] 创建 HTTP Mock 规则...${NC}"
+RULE_RESPONSE=$(curl -s -X POST "$ADMIN_API/rules" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "获取用户列表API",
+        "project_id": "'"$PROJECT_ID"'",
+        "environment_id": "'"$ENVIRONMENT_ID"'",
+        "protocol": "HTTP",
+        "match_type": "Simple",
+        "priority": 100,
+        "enabled": true,
+        "match_condition": {
+            "method": "GET",
+            "path": "/api/users"
+        },
+        "response": {
+            "type": "Static",
+            "content": {
+                "status_code": 200,
+                "content_type": "JSON",
+                "headers": {
+                    "X-Custom-Header": "test-value"
+                },
+                "body": {
+                    "code": 0,
+                    "message": "success",
+                    "data": [
+                        {"id": 1, "name": "张三"},
+                        {"id": 2, "name": "李四"}
+                    ]
+                }
+            }
+        }
+    }')
+
+RULE_ID=$(extract_json_field "$RULE_RESPONSE" "id")
+if [ -z "$RULE_ID" ]; then
+    test_fail "规则创建失败"
+    echo "响应: $RULE_RESPONSE"
+    exit 1
+else
+    test_pass "规则创建成功 (ID: $RULE_ID)"
+fi
+echo ""
+
+# 3.2 查询规则
+echo -e "${YELLOW}[3.2] 查询规则详情...${NC}"
+RULE_GET=$(curl -s "$ADMIN_API/rules/$RULE_ID")
+if echo "$RULE_GET" | grep -q "获取用户列表API"; then
+    test_pass "规则查询成功"
+else
+    test_fail "规则查询失败"
+fi
+echo ""
+
+# 3.3 更新规则
+echo -e "${YELLOW}[3.3] 更新规则...${NC}"
+RULE_UPDATE=$(curl -s -X PUT "$ADMIN_API/rules/$RULE_ID" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "获取用户列表API(v2)",
+        "priority": 200,
+        "response": {
+            "type": "Static",
+            "content": {
+                "status_code": 200,
+                "content_type": "JSON",
+                "body": {
+                    "code": 0,
+                    "message": "success",
+                    "data": [
+                        {"id": 1, "name": "张三", "age": 25},
+                        {"id": 2, "name": "李四", "age": 30},
+                        {"id": 3, "name": "王五", "age": 28}
+                    ]
+                }
+            }
+        }
+    }')
+
+if echo "$RULE_UPDATE" | grep -q "v2"; then
+    test_pass "规则更新成功"
+else
+    test_fail "规则更新失败"
+fi
+echo ""
+
+# 3.4 创建带延迟的规则
+echo -e "${YELLOW}[3.4] 创建带延迟的规则...${NC}"
+DELAY_RULE_RESPONSE=$(curl -s -X POST "$ADMIN_API/rules" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "延迟响应测试",
+        "project_id": "'"$PROJECT_ID"'",
+        "environment_id": "'"$ENVIRONMENT_ID"'",
+        "protocol": "HTTP",
+        "match_type": "Simple",
+        "priority": 50,
+        "enabled": true,
+        "match_condition": {
+            "method": "GET",
+            "path": "/api/slow"
+        },
+        "response": {
+            "type": "Static",
+            "delay": {
+                "type": "fixed",
+                "fixed": 100
+            },
+            "content": {
+                "status_code": 200,
+                "content_type": "JSON",
+                "body": {
+                    "message": "delayed response"
+                }
+            }
+        }
+    }')
+
+DELAY_RULE_ID=$(extract_json_field "$DELAY_RULE_RESPONSE" "id")
+if [ -z "$DELAY_RULE_ID" ]; then
+    test_fail "延迟规则创建失败"
+else
+    test_pass "延迟规则创建成功 (ID: $DELAY_RULE_ID)"
+fi
+echo ""
+
+# 3.5 列出所有规则
+echo -e "${YELLOW}[3.5] 列出所有规则...${NC}"
+RULES_LIST=$(curl -s "$ADMIN_API/rules?project_id=$PROJECT_ID&environment_id=$ENVIRONMENT_ID")
+if echo "$RULES_LIST" | grep -q "$RULE_ID"; then
+    test_pass "规则列表查询成功"
+else
+    test_fail "规则列表查询失败"
+fi
+echo ""
+
+# ========================================
+# 阶段 4: Mock 请求测试
+# ========================================
+
+echo -e "${CYAN}[阶段 4] Mock 请求测试${NC}"
+echo ""
+
+# 给服务器一点时间处理规则
+sleep 1
+
+# 4.1 测试基本 Mock 请求
+echo -e "${YELLOW}[4.1] 测试基本 Mock 请求...${NC}"
+MOCK_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    "$MOCK_API/api/users")
+
+HTTP_CODE=$(echo "$MOCK_RESPONSE" | tail -n 1)
+RESPONSE_BODY=$(echo "$MOCK_RESPONSE" | head -n -1)
+
+if [ "$HTTP_CODE" = "200" ]; then
+    if echo "$RESPONSE_BODY" | grep -q "张三"; then
+        test_pass "Mock 请求成功，返回正确数据"
+        echo "  响应体: $RESPONSE_BODY"
+    else
+        test_fail "Mock 请求返回数据不正确"
+        echo "  响应体: $RESPONSE_BODY"
+    fi
+else
+    test_fail "Mock 请求失败，HTTP状态码: $HTTP_CODE"
+fi
+echo ""
+
+# 4.2 测试自定义 Header
+echo -e "${YELLOW}[4.2] 测试自定义 Header...${NC}"
+HEADER_RESPONSE=$(curl -s -i \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    "$MOCK_API/api/users")
+
+if echo "$HEADER_RESPONSE" | grep -q "X-Custom-Header: test-value"; then
+    test_pass "自定义 Header 正确返回"
+else
+    test_fail "自定义 Header 未返回"
+fi
+echo ""
+
+# 4.3 测试延迟响应
+echo -e "${YELLOW}[4.3] 测试延迟响应...${NC}"
+START_TIME=$(date +%s%3N)
+DELAY_RESPONSE=$(curl -s \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    "$MOCK_API/api/slow")
+END_TIME=$(date +%s%3N)
+DURATION=$((END_TIME - START_TIME))
+
+if [ $DURATION -ge 100 ]; then
+    test_pass "延迟响应正确 (耗时: ${DURATION}ms)"
+else
+    test_fail "延迟时间不足 (耗时: ${DURATION}ms)"
+fi
+echo ""
+
+# 4.4 测试不匹配的请求（应返回404）
+echo -e "${YELLOW}[4.4] 测试不匹配的请求...${NC}"
+NOT_FOUND_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    "$MOCK_API/api/not-exists")
+
+NOT_FOUND_CODE=$(echo "$NOT_FOUND_RESPONSE" | tail -n 1)
+if [ "$NOT_FOUND_CODE" = "404" ]; then
+    test_pass "不匹配请求正确返回404"
+else
+    test_fail "不匹配请求状态码错误: $NOT_FOUND_CODE"
+fi
+echo ""
+
+# 4.5 测试POST请求
+echo -e "${YELLOW}[4.5] 创建并测试 POST 请求规则...${NC}"
+
+# 先创建POST规则
+POST_RULE_RESPONSE=$(curl -s -X POST "$ADMIN_API/rules" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "创建用户API",
+        "project_id": "'"$PROJECT_ID"'",
+        "environment_id": "'"$ENVIRONMENT_ID"'",
+        "protocol": "HTTP",
+        "match_type": "Simple",
+        "priority": 100,
+        "enabled": true,
+        "match_condition": {
+            "method": "POST",
+            "path": "/api/users"
+        },
+        "response": {
+            "type": "Static",
+            "content": {
+                "status_code": 201,
+                "content_type": "JSON",
+                "body": {
+                    "code": 0,
+                    "message": "用户创建成功",
+                    "data": {
+                        "id": 123,
+                        "name": "新用户"
+                    }
+                }
+            }
+        }
+    }')
+
+sleep 1  # 等待规则生效
+
+# 测试POST请求
+POST_MOCK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    -H "Content-Type: application/json" \
+    -d '{"name": "测试用户"}' \
+    "$MOCK_API/api/users")
+
+POST_CODE=$(echo "$POST_MOCK_RESPONSE" | tail -n 1)
+POST_BODY=$(echo "$POST_MOCK_RESPONSE" | head -n -1)
+
+if [ "$POST_CODE" = "201" ]; then
+    if echo "$POST_BODY" | grep -q "用户创建成功"; then
+        test_pass "POST 请求 Mock 成功"
+    else
+        test_fail "POST 请求返回数据不正确"
+    fi
+else
+    test_fail "POST 请求失败，状态码: $POST_CODE"
+fi
+echo ""
+
+# ========================================
+# 阶段 5: 规则状态管理
+# ========================================
+
+echo -e "${CYAN}[阶段 5] 规则状态管理测试${NC}"
+echo ""
+
+# 5.1 禁用规则
+echo -e "${YELLOW}[5.1] 禁用规则...${NC}"
+DISABLE_RULE=$(curl -s -X PUT "$ADMIN_API/rules/$RULE_ID" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "enabled": false
+    }')
+
+if echo "$DISABLE_RULE" | grep -q "false"; then
+    test_pass "规则禁用成功"
+else
+    test_fail "规则禁用失败"
+fi
+
+sleep 1
+
+# 验证禁用后请求返回404
+DISABLED_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    "$MOCK_API/api/users")
+
+DISABLED_CODE=$(echo "$DISABLED_RESPONSE" | tail -n 1)
+if [ "$DISABLED_CODE" = "404" ]; then
+    test_pass "禁用规则后正确返回404"
+else
+    test_fail "禁用规则后状态码错误: $DISABLED_CODE"
+fi
+echo ""
+
+# 5.2 重新启用规则
+echo -e "${YELLOW}[5.2] 重新启用规则...${NC}"
+ENABLE_RULE=$(curl -s -X PUT "$ADMIN_API/rules/$RULE_ID" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "enabled": true
+    }')
+
+if echo "$ENABLE_RULE" | grep -q "true"; then
+    test_pass "规则启用成功"
+else
+    test_fail "规则启用失败"
+fi
+
+sleep 1
+
+# 验证启用后请求正常
+ENABLED_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -H "X-Project-ID: $PROJECT_ID" \
+    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+    "$MOCK_API/api/users")
+
+ENABLED_CODE=$(echo "$ENABLED_RESPONSE" | tail -n 1)
+if [ "$ENABLED_CODE" = "200" ]; then
+    test_pass "启用规则后请求正常"
+else
+    test_fail "启用规则后请求失败: $ENABLED_CODE"
+fi
+echo ""
+
+# ========================================
+# 阶段 6: 清理测试数据
+# ========================================
+
+echo -e "${CYAN}[阶段 6] 清理测试数据${NC}"
+echo ""
+
+# 6.1 删除规则
+echo -e "${YELLOW}[6.1] 删除规则...${NC}"
+DELETE_RULE=$(curl -s -X DELETE "$ADMIN_API/rules/$RULE_ID")
+if [ $? -eq 0 ]; then
+    test_pass "规则删除成功"
+else
+    test_fail "规则删除失败"
+fi
+echo ""
+
+# 6.2 删除环境
+echo -e "${YELLOW}[6.2] 删除环境...${NC}"
+DELETE_ENV=$(curl -s -X DELETE "$ADMIN_API/projects/$PROJECT_ID/environments/$ENVIRONMENT_ID")
+if [ $? -eq 0 ]; then
+    test_pass "环境删除成功"
+else
+    test_fail "环境删除失败"
+fi
+echo ""
+
+# 6.3 删除项目
+echo -e "${YELLOW}[6.3] 删除项目...${NC}"
+DELETE_PROJECT=$(curl -s -X DELETE "$ADMIN_API/projects/$PROJECT_ID")
+if [ $? -eq 0 ]; then
+    test_pass "项目删除成功"
+else
+    test_fail "项目删除失败"
+fi
+echo ""
+
+# cleanup 函数会在脚本退出时自动调用，打印测试统计

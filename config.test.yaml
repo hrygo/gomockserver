@@ -1,0 +1,80 @@
+# Mock Server 测试环境配置文件
+
+server:
+  # 管理 API 服务配置
+  admin:
+    host: "0.0.0.0"
+    port: 8080
+  # Mock 服务配置
+  mock:
+    host: "0.0.0.0"
+    port: 9090
+
+# 数据库配置
+database:
+  mongodb:
+    uri: "mongodb://mongodb-test:27017"  # 使用Docker网络中的服务名
+    database: "mockserver_test"
+    timeout: 10s
+    pool:
+      min: 5
+      max: 50
+
+# Redis 配置
+redis:
+  enabled: false
+  host: "redis-test"
+  port: 6379
+  password: ""
+  db: 0
+  pool:
+    min: 2
+    max: 20
+
+# 安全配置
+security:
+  # JWT 配置
+  jwt:
+    secret: "test-secret-key-do-not-use-in-production"
+    expiration: 7200
+  # API Key
+  api_key:
+    enabled: false
+  # IP 白名单
+  ip_whitelist:
+    enabled: false
+    ips: []
+
+# 日志配置
+logging:
+  level: "debug"  # 测试环境使用 debug 级别
+  format: "json"
+  output: "stdout"
+  file:
+    path: "./logs/mockserver-test.log"
+    max_size: 50
+    max_backups: 3
+    max_age: 7
+
+# 性能配置
+performance:
+  # 请求日志保留期
+  log_retention_days: 3  # 测试环境缩短保留期
+  # 缓存配置
+  cache:
+    rule_ttl: 60  # 测试环境缩短缓存时间
+    config_ttl: 300
+  # 限流配置
+  rate_limit:
+    enabled: false  # 测试环境禁用限流
+    ip_limit: 10000
+    global_limit: 100000
+
+# 功能开关
+features:
+  # 启用规则版本控制
+  version_control: true
+  # 启用审计日志
+  audit_log: true
+  # 启用监控指标
+  metrics: true

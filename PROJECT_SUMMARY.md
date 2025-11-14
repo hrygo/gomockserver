@@ -66,25 +66,56 @@ Mock Server 是一个功能强大、灵活可配置的接口模拟系统，已�
 
 ```
 gomockserver/
-├── cmd/mockserver/          # 主程序入口
-├── internal/
-│   ├── adapter/             # 协议适配器（HTTP）
-│   ├── api/                 # API 处理器
-│   ├── config/              # 配置管理
-│   ├── engine/              # 规则匹配引擎
-│   ├── executor/            # Mock 执行器
-│   ├── models/              # 数据模型
-│   ├── repository/          # 数据访问层
-│   └── service/             # 服务层
-├── pkg/
-│   ├── logger/              # 日志工具
-│   └── utils/               # 通用工具
-├── config.yaml              # 配置文件
-├── docker-compose.yml       # Docker Compose 配置
-├── Dockerfile               # Docker 镜像
-├── README.md                # 使用文档
-├── DEPLOYMENT.md            # 部署指南
-└── test.sh                  # 测试脚本
+├── cmd/                      # 应用程序入口
+│   ├── admin/                # 管理服务（预留）
+│   └── mockserver/           # Mock 服务主程序
+├── internal/                 # 内部代码
+│   ├── adapter/              # 协议适配器（HTTP）
+│   ├── api/                  # API 处理器
+│   ├── config/               # 配置管理
+│   ├── engine/               # 规则匹配引擎
+│   ├── executor/             # Mock 执行器
+│   ├── models/               # 数据模型
+│   ├── repository/           # 数据访问层
+│   └── service/              # 服务层
+├── pkg/                      # 公共包
+│   ├── logger/               # 日志工具
+│   └── utils/                # 通用工具
+├── tests/                    # 测试目录
+│   ├── data/                 # 测试数据
+│   ├── integration/          # 集成测试
+│   ├── performance/          # 性能测试
+│   └── smoke/                # 冒烟测试
+├── scripts/                  # 脚本工具
+│   ├── coverage/             # 覆盖率报告
+│   ├── cleanup_docs.sh       # 文档清理
+│   ├── run_unit_tests.sh     # 单元测试
+│   ├── test-env.sh           # 环境测试
+│   └── *.sh                  # 其他脚本
+├── docker/                   # Docker 配置
+│   └── Dockerfile.test-runner # 测试镜像
+├── docs/                     # 文档目录
+│   ├── ARCHITECTURE.md       # 架构设计
+│   ├── api/                  # API 文档（预留）
+│   ├── guides/               # 使用指南（预留）
+│   └── archive/              # 历史文档归档
+├── web/                      # Web 前端（预留）
+│   └── frontend/             # 前端代码
+├── .github/                  # GitHub 配置
+│   └── workflows/            # CI/CD 工作流
+├── config.yaml               # 主配置文件
+├── config.test.yaml          # 测试配置
+├── docker-compose.yml        # 生产部署
+├── docker-compose.test.yml   # 测试环境
+├── Dockerfile                # 生产镜像
+├── Makefile                  # 构建脚本
+├── README.md                 # 项目介绍
+├── CHANGELOG.md              # 变更日志
+├── CONTRIBUTING.md           # 贡献指南
+├── LICENSE                   # 开源许可证
+├── PROJECT_SUMMARY.md        # 项目总结
+├── DEPLOYMENT.md             # 部署指南
+└── RELEASE_NOTES_v0.1.0.md   # 发布说明
 ```
 
 ## 核心模块说明
@@ -264,9 +295,21 @@ curl http://localhost:9090/{项目ID}/{环境ID}/api/users
 
 ## 文档资源
 
+### 用户文档
 - [README.md](README.md) - 项目介绍和快速开始
 - [DEPLOYMENT.md](DEPLOYMENT.md) - 详细部署指南
+- [RELEASE_NOTES_v0.1.0.md](RELEASE_NOTES_v0.1.0.md) - v0.1.0 发布说明
+
+### 开发文档
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - 系统架构设计
+- [CONTRIBUTING.md](CONTRIBUTING.md) - 贡献指南
+- [CHANGELOG.md](CHANGELOG.md) - 版本变更历史
 - [设计文档](.qoder/quests/mock-server-implementation.md) - 完整的系统设计
+
+### 测试文档
+- [覆盖率报告](scripts/coverage/) - 单元测试覆盖率
+- [集成测试](tests/integration/) - 端到端测试
+- [性能测试](tests/performance/) - 性能基准测试
 
 ## 贡献指南
 
@@ -288,6 +331,7 @@ MIT License
 
 ---
 
-**项目状态**: ✅ MVP 版本已完成  
-**开发进度**: 阶段一完成，阶段二～七待实施  
-**最后更新**: 2025-01-13
+**项目状态**: ✅ MVP v0.1.0 版本已完成  
+**开发进度**: 阶段一完成，阶段二～六待实施  
+**测试覆盖率**: 总体 50.8%，核心模块 80%+  
+**最后更新**: 2025-01-14

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gomockserver/mockserver/internal/config"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -55,35 +56,25 @@ func createIndexes(ctx context.Context) error {
 	rulesCollection := database.Collection("rules")
 	rulesIndexes := []mongo.IndexModel{
 		{
-			Keys: map[string]interface{}{
-				"project_id":     1,
-				"environment_id": 1,
+			Keys: bson.D{
+				{Key: "project_id", Value: 1},
+				{Key: "environment_id", Value: 1},
 			},
 		},
 		{
-			Keys: map[string]interface{}{
-				"protocol": 1,
-			},
+			Keys: bson.D{{Key: "protocol", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"enabled": 1,
-			},
+			Keys: bson.D{{Key: "enabled", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"priority": 1,
-			},
+			Keys: bson.D{{Key: "priority", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"tags": 1,
-			},
+			Keys: bson.D{{Key: "tags", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"created_at": 1,
-			},
+			Keys: bson.D{{Key: "created_at", Value: 1}},
 		},
 	}
 	if _, err := rulesCollection.Indexes().CreateMany(ctx, rulesIndexes); err != nil {
@@ -94,9 +85,7 @@ func createIndexes(ctx context.Context) error {
 	projectsCollection := database.Collection("projects")
 	projectsIndexes := []mongo.IndexModel{
 		{
-			Keys: map[string]interface{}{
-				"workspace_id": 1,
-			},
+			Keys: bson.D{{Key: "workspace_id", Value: 1}},
 		},
 	}
 	if _, err := projectsCollection.Indexes().CreateMany(ctx, projectsIndexes); err != nil {
@@ -107,9 +96,7 @@ func createIndexes(ctx context.Context) error {
 	environmentsCollection := database.Collection("environments")
 	environmentsIndexes := []mongo.IndexModel{
 		{
-			Keys: map[string]interface{}{
-				"project_id": 1,
-			},
+			Keys: bson.D{{Key: "project_id", Value: 1}},
 		},
 	}
 	if _, err := environmentsCollection.Indexes().CreateMany(ctx, environmentsIndexes); err != nil {
@@ -120,30 +107,22 @@ func createIndexes(ctx context.Context) error {
 	logsCollection := database.Collection("logs")
 	logsIndexes := []mongo.IndexModel{
 		{
-			Keys: map[string]interface{}{
-				"request_id": 1,
-			},
+			Keys: bson.D{{Key: "request_id", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"rule_id": 1,
-			},
+			Keys: bson.D{{Key: "rule_id", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"protocol": 1,
-			},
+			Keys: bson.D{{Key: "protocol", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"timestamp": 1,
-			},
+			Keys: bson.D{{Key: "timestamp", Value: 1}},
 			Options: options.Index().SetExpireAfterSeconds(7 * 24 * 60 * 60), // 7天过期
 		},
 		{
-			Keys: map[string]interface{}{
-				"project_id":     1,
-				"environment_id": 1,
+			Keys: bson.D{
+				{Key: "project_id", Value: 1},
+				{Key: "environment_id", Value: 1},
 			},
 		},
 	}
@@ -155,14 +134,10 @@ func createIndexes(ctx context.Context) error {
 	versionsCollection := database.Collection("versions")
 	versionsIndexes := []mongo.IndexModel{
 		{
-			Keys: map[string]interface{}{
-				"rule_id": 1,
-			},
+			Keys: bson.D{{Key: "rule_id", Value: 1}},
 		},
 		{
-			Keys: map[string]interface{}{
-				"created_at": 1,
-			},
+			Keys: bson.D{{Key: "created_at", Value: 1}},
 		},
 	}
 	if _, err := versionsCollection.Indexes().CreateMany(ctx, versionsIndexes); err != nil {
@@ -173,15 +148,11 @@ func createIndexes(ctx context.Context) error {
 	usersCollection := database.Collection("users")
 	usersIndexes := []mongo.IndexModel{
 		{
-			Keys: map[string]interface{}{
-				"username": 1,
-			},
+			Keys:    bson.D{{Key: "username", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		},
 		{
-			Keys: map[string]interface{}{
-				"email": 1,
-			},
+			Keys:    bson.D{{Key: "email", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		},
 	}

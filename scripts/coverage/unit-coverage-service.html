@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>service: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/gomockserver/mockserver/internal/service/admin_service.go (26.1%)</option>
+				
+				<option value="file1">github.com/gomockserver/mockserver/internal/service/mock_service.go (72.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package service
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/api"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// AdminService 管理服务
+type AdminService struct {
+        ruleHandler    *api.RuleHandler
+        projectHandler *api.ProjectHandler
+}
+
+// NewAdminService 创建管理服务
+func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHandler) *AdminService <span class="cov8" title="1">{
+        return &amp;AdminService{
+                ruleHandler:    ruleHandler,
+                projectHandler: projectHandler,
+        }
+}</span>
+
+// StartAdminServer 启动管理服务器
+func StartAdminServer(addr string, service *AdminService) error <span class="cov0" title="0">{
+        gin.SetMode(gin.ReleaseMode)
+        r := gin.New()
+        r.Use(gin.Recovery())
+        r.Use(CORSMiddleware())
+
+        // API 路由组
+        v1 := r.Group("/api/v1")
+        </span><span class="cov0" title="0">{
+                // 规则管理 API
+                rules := v1.Group("/rules")
+                </span><span class="cov0" title="0">{
+                        rules.GET("", service.ruleHandler.ListRules)
+                        rules.POST("", service.ruleHandler.CreateRule)
+                        rules.GET("/:id", service.ruleHandler.GetRule)
+                        rules.PUT("/:id", service.ruleHandler.UpdateRule)
+                        rules.DELETE("/:id", service.ruleHandler.DeleteRule)
+                        rules.POST("/:id/enable", service.ruleHandler.EnableRule)
+                        rules.POST("/:id/disable", service.ruleHandler.DisableRule)
+                }</span>
+
+                // 项目管理 API
+                <span class="cov0" title="0">projects := v1.Group("/projects")
+                </span><span class="cov0" title="0">{
+                        projects.POST("", service.projectHandler.CreateProject)
+                        projects.GET("/:id", service.projectHandler.GetProject)
+                        projects.PUT("/:id", service.projectHandler.UpdateProject)
+                        projects.DELETE("/:id", service.projectHandler.DeleteProject)
+                }</span>
+
+                // 环境管理 API
+                <span class="cov0" title="0">environments := v1.Group("/environments")
+                </span><span class="cov0" title="0">{
+                        environments.GET("", service.projectHandler.ListEnvironments)
+                        environments.POST("", service.projectHandler.CreateEnvironment)
+                        environments.GET("/:id", service.projectHandler.GetEnvironment)
+                        environments.PUT("/:id", service.projectHandler.UpdateEnvironment)
+                        environments.DELETE("/:id", service.projectHandler.DeleteEnvironment)
+                }</span>
+
+                // 系统管理 API
+                <span class="cov0" title="0">system := v1.Group("/system")
+                </span><span class="cov0" title="0">{
+                        system.GET("/health", HealthCheck)
+                        system.GET("/version", GetVersion)
+                }</span>
+        }
+
+        <span class="cov0" title="0">logger.Info("starting admin server", zap.String("address", addr))
+        return r.Run(addr)</span>
+}
+
+// CORSMiddleware CORS 中间件
+func CORSMiddleware() gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
+                c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+                c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+                c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+                c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+                if c.Request.Method == "OPTIONS" </span><span class="cov8" title="1">{
+                        c.AbortWithStatus(204)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">c.Next()</span>
+        }
+}
+
+// HealthCheck 健康检查
+func HealthCheck(c *gin.Context) <span class="cov8" title="1">{
+        c.JSON(200, gin.H{
+                "status": "healthy",
+        })
+}</span>
+
+// GetVersion 获取版本信息
+func GetVersion(c *gin.Context) <span class="cov8" title="1">{
+        c.JSON(200, gin.H{
+                "version": "0.1.0",
+                "name":    "MockServer",
+        })
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package service
+
+import (
+        "context"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/adapter"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// MatchEngineInterface 匹配引擎接口
+type MatchEngineInterface interface {
+        Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error)
+}
+
+// MockExecutorInterface Mock 执行器接口
+type MockExecutorInterface interface {
+        Execute(request *adapter.Request, rule *models.Rule) (*adapter.Response, error)
+        GetDefaultResponse() *adapter.Response
+}
+
+// MockService Mock 服务
+type MockService struct {
+        httpAdapter  *adapter.HTTPAdapter
+        matchEngine  MatchEngineInterface
+        mockExecutor MockExecutorInterface
+}
+
+// NewMockService 创建 Mock 服务
+func NewMockService(matchEngine MatchEngineInterface, mockExecutor MockExecutorInterface) *MockService <span class="cov8" title="1">{
+        return &amp;MockService{
+                httpAdapter:  adapter.NewHTTPAdapter(),
+                matchEngine:  matchEngine,
+                mockExecutor: mockExecutor,
+        }
+}</span>
+
+// HandleMockRequest 处理 Mock 请求
+func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov8" title="1">{
+        // 从路径中提取项目ID和环境ID
+        // 请求格式：/:projectID/:environmentID/*path
+        projectID := c.Param("projectID")
+        environmentID := c.Param("environmentID")
+
+        if projectID == "" || environmentID == "" </span><span class="cov8" title="1">{
+                c.JSON(400, gin.H{
+                        "error": "projectID and environmentID are required",
+                })
+                return
+        }</span>
+
+        // 解析请求为统一模型
+        <span class="cov8" title="1">request, err := s.httpAdapter.Parse(c)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to parse request", zap.Error(err))
+                c.JSON(500, gin.H{
+                        "error": "Failed to parse request",
+                })
+                return
+        }</span>
+
+        // 匹配规则
+        <span class="cov8" title="1">ctx := context.Background()
+        rule, err := s.matchEngine.Match(ctx, request, projectID, environmentID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to match rule", zap.Error(err))
+                c.JSON(500, gin.H{
+                        "error": "Failed to match rule",
+                })
+                return
+        }</span>
+
+        <span class="cov8" title="1">var response *adapter.Response
+
+        // 如果没有匹配的规则，返回默认响应
+        if rule == nil </span><span class="cov8" title="1">{
+                logger.Info("no rule matched, using default response",
+                        zap.String("path", request.Path),
+                        zap.String("project_id", projectID),
+                        zap.String("environment_id", environmentID))
+                response = s.mockExecutor.GetDefaultResponse()
+        }</span> else<span class="cov8" title="1"> {
+                // 执行 Mock 响应生成
+                response, err = s.mockExecutor.Execute(request, rule)
+                if err != nil </span><span class="cov8" title="1">{
+                        logger.Error("failed to execute mock", zap.Error(err))
+                        c.JSON(500, gin.H{
+                                "error": "Failed to execute mock",
+                        })
+                        return
+                }</span>
+        }
+
+        // 写入响应
+        <span class="cov8" title="1">s.httpAdapter.WriteResponse(c, response)</span>
+}
+
+// StartMockServer 启动 Mock 服务器
+func StartMockServer(addr string, service *MockService) error <span class="cov0" title="0">{
+        gin.SetMode(gin.ReleaseMode)
+        r := gin.New()
+        r.Use(gin.Recovery())
+
+        // Mock 请求处理路由
+        // 格式：/:projectID/:environmentID/*path
+        r.Any("/:projectID/:environmentID/*path", service.HandleMockRequest)
+
+        logger.Info("starting mock server", zap.String("address", addr))
+        return r.Run(addr)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

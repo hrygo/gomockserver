@@ -60,7 +60,21 @@ func (r *ruleRepository) Update(ctx context.Context, rule *models.Rule) error {
 	}
 
 	filter := bson.M{"_id": objectID}
-	update := bson.M{"$set": rule}
+	// 排除 _id 字段，避免更新不可变字段
+	update := bson.M{"$set": bson.M{
+		"name":             rule.Name,
+		"project_id":       rule.ProjectID,
+		"environment_id":   rule.EnvironmentID,
+		"protocol":         rule.Protocol,
+		"match_type":       rule.MatchType,
+		"priority":         rule.Priority,
+		"enabled":          rule.Enabled,
+		"match_condition":  rule.MatchCondition,
+		"response":         rule.Response,
+		"tags":             rule.Tags,
+		"creator":          rule.Creator,
+		"updated_at":       rule.UpdatedAt,
+	}}
 
 	_, err = r.collection.UpdateOne(ctx, filter, update)
 	return err

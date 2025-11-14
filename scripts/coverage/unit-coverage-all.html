@@ -55,17 +55,17 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/gomockserver/mockserver/internal/adapter/http_adapter.go (0.0%)</option>
+				<option value="file0">github.com/gomockserver/mockserver/internal/adapter/http_adapter.go (96.3%)</option>
 				
-				<option value="file1">github.com/gomockserver/mockserver/internal/api/project_handler.go (0.0%)</option>
+				<option value="file1">github.com/gomockserver/mockserver/internal/api/project_handler.go (100.0%)</option>
 				
-				<option value="file2">github.com/gomockserver/mockserver/internal/api/rule_handler.go (0.0%)</option>
+				<option value="file2">github.com/gomockserver/mockserver/internal/api/rule_handler.go (81.3%)</option>
 				
-				<option value="file3">github.com/gomockserver/mockserver/internal/config/config.go (0.0%)</option>
+				<option value="file3">github.com/gomockserver/mockserver/internal/config/config.go (94.4%)</option>
 				
-				<option value="file4">github.com/gomockserver/mockserver/internal/engine/match_engine.go (58.0%)</option>
+				<option value="file4">github.com/gomockserver/mockserver/internal/engine/match_engine.go (89.8%)</option>
 				
-				<option value="file5">github.com/gomockserver/mockserver/internal/executor/mock_executor.go (71.9%)</option>
+				<option value="file5">github.com/gomockserver/mockserver/internal/executor/mock_executor.go (86.0%)</option>
 				
 				<option value="file6">github.com/gomockserver/mockserver/internal/repository/database.go (0.0%)</option>
 				
@@ -73,9 +73,9 @@
 				
 				<option value="file8">github.com/gomockserver/mockserver/internal/repository/rule_repository.go (0.0%)</option>
 				
-				<option value="file9">github.com/gomockserver/mockserver/internal/service/admin_service.go (0.0%)</option>
+				<option value="file9">github.com/gomockserver/mockserver/internal/service/admin_service.go (26.1%)</option>
 				
-				<option value="file10">github.com/gomockserver/mockserver/internal/service/mock_service.go (0.0%)</option>
+				<option value="file10">github.com/gomockserver/mockserver/internal/service/mock_service.go (72.7%)</option>
 				
 				</select>
 			</div>
@@ -105,19 +105,19 @@ import (
 type HTTPAdapter struct{}
 
 // NewHTTPAdapter 创建 HTTP 适配器
-func NewHTTPAdapter() *HTTPAdapter <span class="cov0" title="0">{
+func NewHTTPAdapter() *HTTPAdapter <span class="cov8" title="1">{
         return &amp;HTTPAdapter{}
 }</span>
 
 // Parse 解析 HTTP 请求为统一模型
-func (a *HTTPAdapter) Parse(rawRequest interface{}) (*Request, error) <span class="cov0" title="0">{
+func (a *HTTPAdapter) Parse(rawRequest interface{}) (*Request, error) <span class="cov8" title="1">{
         c, ok := rawRequest.(*gin.Context)
-        if !ok </span><span class="cov0" title="0">{
+        if !ok </span><span class="cov8" title="1">{
                 return nil, nil
         }</span>
 
         // 生成请求ID
-        <span class="cov0" title="0">requestID := uuid.New().String()
+        <span class="cov8" title="1">requestID := uuid.New().String()
 
         // 读取请求体
         body, err := io.ReadAll(c.Request.Body)
@@ -126,23 +126,23 @@ func (a *HTTPAdapter) Parse(rawRequest interface{}) (*Request, error) <span clas
         }</span>
 
         // 提取Headers
-        <span class="cov0" title="0">headers := make(map[string]string)
-        for key, values := range c.Request.Header </span><span class="cov0" title="0">{
-                if len(values) &gt; 0 </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">headers := make(map[string]string)
+        for key, values := range c.Request.Header </span><span class="cov8" title="1">{
+                if len(values) &gt; 0 </span><span class="cov8" title="1">{
                         headers[key] = values[0]
                 }</span>
         }
 
         // 提取 Query 参数
-        <span class="cov0" title="0">query := make(map[string]string)
-        for key, values := range c.Request.URL.Query() </span><span class="cov0" title="0">{
-                if len(values) &gt; 0 </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">query := make(map[string]string)
+        for key, values := range c.Request.URL.Query() </span><span class="cov8" title="1">{
+                if len(values) &gt; 0 </span><span class="cov8" title="1">{
                         query[key] = values[0]
                 }</span>
         }
 
         // 获取客户端IP
-        <span class="cov0" title="0">clientIP := c.ClientIP()
+        <span class="cov8" title="1">clientIP := c.ClientIP()
 
         // 创建统一请求模型
         request := &amp;Request{
@@ -167,30 +167,30 @@ func (a *HTTPAdapter) Parse(rawRequest interface{}) (*Request, error) <span clas
 }
 
 // Build 构建 HTTP 响应
-func (a *HTTPAdapter) Build(response *Response) (interface{}, error) <span class="cov0" title="0">{
+func (a *HTTPAdapter) Build(response *Response) (interface{}, error) <span class="cov8" title="1">{
         // 返回响应配置，由调用方设置到 gin.Context
         return response, nil
 }</span>
 
 // WriteResponse 将响应写入 gin.Context
-func (a *HTTPAdapter) WriteResponse(c *gin.Context, response *Response) <span class="cov0" title="0">{
+func (a *HTTPAdapter) WriteResponse(c *gin.Context, response *Response) <span class="cov8" title="1">{
         // 设置响应头
-        for key, value := range response.Headers </span><span class="cov0" title="0">{
+        for key, value := range response.Headers </span><span class="cov8" title="1">{
                 c.Header(key, value)
         }</span>
 
         // 设置状态码和响应体
-        <span class="cov0" title="0">c.Data(response.StatusCode, getContentType(response.Headers), response.Body)</span>
+        <span class="cov8" title="1">c.Data(response.StatusCode, getContentType(response.Headers), response.Body)</span>
 }
 
 // getContentType 从响应头中获取 Content-Type
-func getContentType(headers map[string]string) string <span class="cov0" title="0">{
-        for key, value := range headers </span><span class="cov0" title="0">{
-                if strings.ToLower(key) == "content-type" </span><span class="cov0" title="0">{
+func getContentType(headers map[string]string) string <span class="cov8" title="1">{
+        for key, value := range headers </span><span class="cov8" title="1">{
+                if strings.ToLower(key) == "content-type" </span><span class="cov8" title="1">{
                         return value
                 }</span>
         }
-        <span class="cov0" title="0">return "application/json"</span>
+        <span class="cov8" title="1">return "application/json"</span>
 }
 </pre>
 		
@@ -213,7 +213,7 @@ type ProjectHandler struct {
 }
 
 // NewProjectHandler 创建项目处理器
-func NewProjectHandler(projectRepo repository.ProjectRepository, environmentRepo repository.EnvironmentRepository) *ProjectHandler <span class="cov0" title="0">{
+func NewProjectHandler(projectRepo repository.ProjectRepository, environmentRepo repository.EnvironmentRepository) *ProjectHandler <span class="cov8" title="1">{
         return &amp;ProjectHandler{
                 projectRepo:     projectRepo,
                 environmentRepo: environmentRepo,
@@ -221,163 +221,163 @@ func NewProjectHandler(projectRepo repository.ProjectRepository, environmentRepo
 }</span>
 
 // CreateProject 创建项目
-func (h *ProjectHandler) CreateProject(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) CreateProject(c *gin.Context) <span class="cov8" title="1">{
         var project models.Project
-        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov0" title="0">{
+        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
         }</span>
 
-        <span class="cov0" title="0">if err := h.projectRepo.Create(c.Request.Context(), &amp;project); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := h.projectRepo.Create(c.Request.Context(), &amp;project); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to create project", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create project"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusCreated, project)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, project)</span>
 }
 
 // GetProject 获取项目详情
-func (h *ProjectHandler) GetProject(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) GetProject(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
 
         project, err := h.projectRepo.FindByID(c.Request.Context(), id)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to get project", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if project == nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if project == nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, project)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, project)</span>
 }
 
 // UpdateProject 更新项目
-func (h *ProjectHandler) UpdateProject(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) UpdateProject(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
 
         var project models.Project
-        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov0" title="0">{
+        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
         }</span>
 
-        <span class="cov0" title="0">project.ID = id
+        <span class="cov8" title="1">project.ID = id
 
-        if err := h.projectRepo.Update(c.Request.Context(), &amp;project); err != nil </span><span class="cov0" title="0">{
+        if err := h.projectRepo.Update(c.Request.Context(), &amp;project); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to update project", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, project)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, project)</span>
 }
 
 // DeleteProject 删除项目
-func (h *ProjectHandler) DeleteProject(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) DeleteProject(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
 
-        if err := h.projectRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov0" title="0">{
+        if err := h.projectRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to delete project", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete project"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"message": "Project deleted successfully"})</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Project deleted successfully"})</span>
 }
 
 // CreateEnvironment 创建环境
-func (h *ProjectHandler) CreateEnvironment(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) CreateEnvironment(c *gin.Context) <span class="cov8" title="1">{
         var environment models.Environment
-        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov0" title="0">{
+        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
         }</span>
 
-        <span class="cov0" title="0">if err := h.environmentRepo.Create(c.Request.Context(), &amp;environment); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := h.environmentRepo.Create(c.Request.Context(), &amp;environment); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to create environment", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create environment"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusCreated, environment)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, environment)</span>
 }
 
 // GetEnvironment 获取环境详情
-func (h *ProjectHandler) GetEnvironment(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) GetEnvironment(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
 
         environment, err := h.environmentRepo.FindByID(c.Request.Context(), id)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to get environment", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get environment"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if environment == nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if environment == nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusNotFound, gin.H{"error": "Environment not found"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, environment)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, environment)</span>
 }
 
 // ListEnvironments 列出项目下的环境
-func (h *ProjectHandler) ListEnvironments(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) ListEnvironments(c *gin.Context) <span class="cov8" title="1">{
         projectID := c.Query("project_id")
-        if projectID == "" </span><span class="cov0" title="0">{
+        if projectID == "" </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
                 return
         }</span>
 
-        <span class="cov0" title="0">environments, err := h.environmentRepo.FindByProject(c.Request.Context(), projectID)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">environments, err := h.environmentRepo.FindByProject(c.Request.Context(), projectID)
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to list environments", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list environments"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
                 "data": environments,
         })</span>
 }
 
 // UpdateEnvironment 更新环境
-func (h *ProjectHandler) UpdateEnvironment(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) UpdateEnvironment(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
 
         var environment models.Environment
-        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov0" title="0">{
+        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
         }</span>
 
-        <span class="cov0" title="0">environment.ID = id
+        <span class="cov8" title="1">environment.ID = id
 
-        if err := h.environmentRepo.Update(c.Request.Context(), &amp;environment); err != nil </span><span class="cov0" title="0">{
+        if err := h.environmentRepo.Update(c.Request.Context(), &amp;environment); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to update environment", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update environment"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, environment)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, environment)</span>
 }
 
 // DeleteEnvironment 删除环境
-func (h *ProjectHandler) DeleteEnvironment(c *gin.Context) <span class="cov0" title="0">{
+func (h *ProjectHandler) DeleteEnvironment(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
 
-        if err := h.environmentRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov0" title="0">{
+        if err := h.environmentRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to delete environment", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete environment"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"message": "Environment deleted successfully"})</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Environment deleted successfully"})</span>
 }
 </pre>
 		
@@ -400,103 +400,103 @@ type RuleHandler struct {
 }
 
 // NewRuleHandler 创建规则处理器
-func NewRuleHandler(ruleRepo repository.RuleRepository) *RuleHandler <span class="cov0" title="0">{
+func NewRuleHandler(ruleRepo repository.RuleRepository) *RuleHandler <span class="cov8" title="1">{
         return &amp;RuleHandler{
                 ruleRepo: ruleRepo,
         }
 }</span>
 
 // CreateRule 创建规则
-func (h *RuleHandler) CreateRule(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) CreateRule(c *gin.Context) <span class="cov8" title="1">{
         var rule models.Rule
-        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov0" title="0">{
+        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
         }</span>
 
         // 验证必填字段
-        <span class="cov0" title="0">if rule.Name == "" || rule.ProjectID == "" || rule.EnvironmentID == "" </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if rule.Name == "" || rule.ProjectID == "" || rule.EnvironmentID == "" </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "name, project_id and environment_id are required"})
                 return
         }</span>
 
         // 创建规则
-        <span class="cov0" title="0">if err := h.ruleRepo.Create(c.Request.Context(), &amp;rule); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := h.ruleRepo.Create(c.Request.Context(), &amp;rule); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to create rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusCreated, rule)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, rule)</span>
 }
 
 // GetRule 获取规则详情
-func (h *RuleHandler) GetRule(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) GetRule(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
         if id == "" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
                 return
         }</span>
 
-        <span class="cov0" title="0">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to get rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if rule == nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if rule == nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, rule)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, rule)</span>
 }
 
 // UpdateRule 更新规则
-func (h *RuleHandler) UpdateRule(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) UpdateRule(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
         if id == "" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
                 return
         }</span>
 
-        <span class="cov0" title="0">var rule models.Rule
-        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">var rule models.Rule
+        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
         }</span>
 
-        <span class="cov0" title="0">rule.ID = id
+        <span class="cov8" title="1">rule.ID = id
 
-        if err := h.ruleRepo.Update(c.Request.Context(), &amp;rule); err != nil </span><span class="cov0" title="0">{
+        if err := h.ruleRepo.Update(c.Request.Context(), &amp;rule); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to update rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, rule)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, rule)</span>
 }
 
 // DeleteRule 删除规则
-func (h *RuleHandler) DeleteRule(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) DeleteRule(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
         if id == "" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if err := h.ruleRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := h.ruleRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to delete rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"message": "Rule deleted successfully"})</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule deleted successfully"})</span>
 }
 
 // ListRules 列出规则
-func (h *RuleHandler) ListRules(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) ListRules(c *gin.Context) <span class="cov8" title="1">{
         // 分页参数
         page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
         pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "20"), 10, 64)
@@ -504,35 +504,35 @@ func (h *RuleHandler) ListRules(c *gin.Context) <span class="cov0" title="0">{
         if page &lt; 1 </span><span class="cov0" title="0">{
                 page = 1
         }</span>
-        <span class="cov0" title="0">if pageSize &lt; 1 || pageSize &gt; 100 </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if pageSize &lt; 1 || pageSize &gt; 100 </span><span class="cov0" title="0">{
                 pageSize = 20
         }</span>
 
-        <span class="cov0" title="0">skip := (page - 1) * pageSize
+        <span class="cov8" title="1">skip := (page - 1) * pageSize
 
         // 过滤条件
         filter := make(map[string]interface{})
-        if projectID := c.Query("project_id"); projectID != "" </span><span class="cov0" title="0">{
+        if projectID := c.Query("project_id"); projectID != "" </span><span class="cov8" title="1">{
                 filter["project_id"] = projectID
         }</span>
-        <span class="cov0" title="0">if environmentID := c.Query("environment_id"); environmentID != "" </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if environmentID := c.Query("environment_id"); environmentID != "" </span><span class="cov0" title="0">{
                 filter["environment_id"] = environmentID
         }</span>
-        <span class="cov0" title="0">if protocol := c.Query("protocol"); protocol != "" </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if protocol := c.Query("protocol"); protocol != "" </span><span class="cov0" title="0">{
                 filter["protocol"] = protocol
         }</span>
-        <span class="cov0" title="0">if enabled := c.Query("enabled"); enabled != "" </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if enabled := c.Query("enabled"); enabled != "" </span><span class="cov8" title="1">{
                 filter["enabled"] = enabled == "true"
         }</span>
 
-        <span class="cov0" title="0">rules, total, err := h.ruleRepo.List(c.Request.Context(), filter, skip, pageSize)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">rules, total, err := h.ruleRepo.List(c.Request.Context(), filter, skip, pageSize)
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to list rules", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list rules"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
                 "data":      rules,
                 "total":     total,
                 "page":      page,
@@ -541,63 +541,63 @@ func (h *RuleHandler) ListRules(c *gin.Context) <span class="cov0" title="0">{
 }
 
 // EnableRule 启用规则
-func (h *RuleHandler) EnableRule(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) EnableRule(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
         if id == "" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
                 return
         }</span>
 
-        <span class="cov0" title="0">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to get rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if rule == nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if rule == nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
                 return
         }</span>
 
-        <span class="cov0" title="0">rule.Enabled = true
-        if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">rule.Enabled = true
+        if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to enable rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enable rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"message": "Rule enabled successfully"})</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule enabled successfully"})</span>
 }
 
 // DisableRule 禁用规则
-func (h *RuleHandler) DisableRule(c *gin.Context) <span class="cov0" title="0">{
+func (h *RuleHandler) DisableRule(c *gin.Context) <span class="cov8" title="1">{
         id := c.Param("id")
         if id == "" </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
                 return
         }</span>
 
-        <span class="cov0" title="0">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        <span class="cov8" title="1">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
         if err != nil </span><span class="cov0" title="0">{
                 logger.Error("failed to get rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if rule == nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if rule == nil </span><span class="cov8" title="1">{
                 c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
                 return
         }</span>
 
-        <span class="cov0" title="0">rule.Enabled = false
+        <span class="cov8" title="1">rule.Enabled = false
         if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov0" title="0">{
                 logger.Error("failed to disable rule", zap.Error(err))
                 c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disable rule"})
                 return
         }</span>
 
-        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"message": "Rule disabled successfully"})</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule disabled successfully"})</span>
 }
 </pre>
 		
@@ -738,13 +738,13 @@ type FeaturesConfig struct {
 var globalConfig *Config
 
 // Load 加载配置文件
-func Load(configPath string) (*Config, error) <span class="cov0" title="0">{
+func Load(configPath string) (*Config, error) <span class="cov8" title="1">{
         v := viper.New()
 
         // 设置配置文件路径
-        if configPath != "" </span><span class="cov0" title="0">{
+        if configPath != "" </span><span class="cov8" title="1">{
                 v.SetConfigFile(configPath)
-        }</span> else<span class="cov0" title="0"> {
+        }</span> else<span class="cov8" title="1"> {
                 v.SetConfigName("config")
                 v.SetConfigType("yaml")
                 v.AddConfigPath(".")
@@ -752,35 +752,35 @@ func Load(configPath string) (*Config, error) <span class="cov0" title="0">{
         }</span>
 
         // 读取环境变量
-        <span class="cov0" title="0">v.AutomaticEnv()
+        <span class="cov8" title="1">v.AutomaticEnv()
 
         // 读取配置文件
-        if err := v.ReadInConfig(); err != nil </span><span class="cov0" title="0">{
+        if err := v.ReadInConfig(); err != nil </span><span class="cov8" title="1">{
                 return nil, fmt.Errorf("failed to read config file: %w", err)
         }</span>
 
         // 解析配置
-        <span class="cov0" title="0">var cfg Config
+        <span class="cov8" title="1">var cfg Config
         if err := v.Unmarshal(&amp;cfg); err != nil </span><span class="cov0" title="0">{
                 return nil, fmt.Errorf("failed to unmarshal config: %w", err)
         }</span>
 
-        <span class="cov0" title="0">globalConfig = &amp;cfg
+        <span class="cov8" title="1">globalConfig = &amp;cfg
         return &amp;cfg, nil</span>
 }
 
 // Get 获取全局配置
-func Get() *Config <span class="cov0" title="0">{
+func Get() *Config <span class="cov8" title="1">{
         return globalConfig
 }</span>
 
 // GetAdminAddress 获取管理服务地址
-func (c *Config) GetAdminAddress() string <span class="cov0" title="0">{
+func (c *Config) GetAdminAddress() string <span class="cov8" title="1">{
         return fmt.Sprintf("%s:%d", c.Server.Admin.Host, c.Server.Admin.Port)
 }</span>
 
 // GetMockAddress 获取 Mock 服务地址
-func (c *Config) GetMockAddress() string <span class="cov0" title="0">{
+func (c *Config) GetMockAddress() string <span class="cov8" title="1">{
         return fmt.Sprintf("%s:%d", c.Server.Mock.Host, c.Server.Mock.Port)
 }</span>
 </pre>
@@ -806,14 +806,14 @@ type MatchEngine struct {
 }
 
 // NewMatchEngine 创建匹配引擎
-func NewMatchEngine(ruleRepo repository.RuleRepository) *MatchEngine <span class="cov0" title="0">{
+func NewMatchEngine(ruleRepo repository.RuleRepository) *MatchEngine <span class="cov8" title="1">{
         return &amp;MatchEngine{
                 ruleRepo: ruleRepo,
         }
 }</span>
 
 // Match 匹配规则
-func (e *MatchEngine) Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error) <span class="cov0" title="0">{
+func (e *MatchEngine) Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error) <span class="cov8" title="1">{
         // 加载环境下所有启用的规则
         rules, err := e.ruleRepo.FindEnabledByEnvironment(ctx, projectID, environmentID)
         if err != nil </span><span class="cov0" title="0">{
@@ -822,14 +822,14 @@ func (e *MatchEngine) Match(ctx context.Context, request *adapter.Request, proje
         }</span>
 
         // 按优先级已排序，逐条匹配
-        <span class="cov0" title="0">for _, rule := range rules </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">for _, rule := range rules </span><span class="cov8" title="1">{
                 // 检查协议类型
-                if rule.Protocol != request.Protocol </span><span class="cov0" title="0">{
+                if rule.Protocol != request.Protocol </span><span class="cov8" title="1">{
                         continue</span>
                 }
 
                 // 根据匹配类型执行匹配
-                <span class="cov0" title="0">matched, err := e.matchRule(request, rule)
+                <span class="cov8" title="1">matched, err := e.matchRule(request, rule)
                 if err != nil </span><span class="cov0" title="0">{
                         logger.Warn("rule match error",
                                 zap.String("rule_id", rule.ID),
@@ -837,7 +837,7 @@ func (e *MatchEngine) Match(ctx context.Context, request *adapter.Request, proje
                         continue</span>
                 }
 
-                <span class="cov0" title="0">if matched </span><span class="cov0" title="0">{
+                <span class="cov8" title="1">if matched </span><span class="cov8" title="1">{
                         logger.Info("rule matched",
                                 zap.String("rule_id", rule.ID),
                                 zap.String("rule_name", rule.Name))
@@ -846,26 +846,26 @@ func (e *MatchEngine) Match(ctx context.Context, request *adapter.Request, proje
         }
 
         // 没有匹配的规则
-        <span class="cov0" title="0">return nil, nil</span>
+        <span class="cov8" title="1">return nil, nil</span>
 }
 
 // matchRule 匹配单条规则
-func (e *MatchEngine) matchRule(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov0" title="0">{
+func (e *MatchEngine) matchRule(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov8" title="1">{
         switch rule.MatchType </span>{
-        case models.MatchTypeSimple:<span class="cov0" title="0">
+        case models.MatchTypeSimple:<span class="cov8" title="1">
                 return e.simpleMatch(request, rule)</span>
-        case models.MatchTypeRegex:<span class="cov0" title="0">
+        case models.MatchTypeRegex:<span class="cov8" title="1">
                 return e.regexMatch(request, rule)</span>
-        case models.MatchTypeScript:<span class="cov0" title="0">
+        case models.MatchTypeScript:<span class="cov8" title="1">
                 return e.scriptMatch(request, rule)</span>
-        default:<span class="cov0" title="0">
+        default:<span class="cov8" title="1">
                 return false, fmt.Errorf("unsupported match type: %s", rule.MatchType)</span>
         }
 }
 
 // simpleMatch 简单匹配
 func (e *MatchEngine) simpleMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov8" title="1">{
-        if rule.Protocol != models.ProtocolHTTP </span><span class="cov0" title="0">{
+        if rule.Protocol != models.ProtocolHTTP </span><span class="cov8" title="1">{
                 return false, nil
         }</span>
 
@@ -900,21 +900,21 @@ func (e *MatchEngine) simpleMatch(request *adapter.Request, rule *models.Rule) (
         // 匹配 Query 参数
         <span class="cov8" title="1">if len(condition.Query) &gt; 0 </span><span class="cov8" title="1">{
                 query, _ := request.Metadata["query"].(map[string]string)
-                if !matchQuery(query, condition.Query) </span><span class="cov0" title="0">{
+                if !matchQuery(query, condition.Query) </span><span class="cov8" title="1">{
                         return false, nil
                 }</span>
         }
 
         // 匹配 Headers
         <span class="cov8" title="1">if len(condition.Headers) &gt; 0 </span><span class="cov8" title="1">{
-                if !matchHeaders(request.Headers, condition.Headers) </span><span class="cov0" title="0">{
+                if !matchHeaders(request.Headers, condition.Headers) </span><span class="cov8" title="1">{
                         return false, nil
                 }</span>
         }
 
         // 匹配 IP 白名单
-        <span class="cov8" title="1">if len(condition.IPWhitelist) &gt; 0 </span><span class="cov0" title="0">{
-                if !matchIPWhitelist(request.SourceIP, condition.IPWhitelist) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if len(condition.IPWhitelist) &gt; 0 </span><span class="cov8" title="1">{
+                if !matchIPWhitelist(request.SourceIP, condition.IPWhitelist) </span><span class="cov8" title="1">{
                         return false, nil
                 }</span>
         }
@@ -923,13 +923,13 @@ func (e *MatchEngine) simpleMatch(request *adapter.Request, rule *models.Rule) (
 }
 
 // regexMatch 正则表达式匹配（阶段一暂不实现）
-func (e *MatchEngine) regexMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov0" title="0">{
+func (e *MatchEngine) regexMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov8" title="1">{
         // TODO: 阶段三实现
         return false, fmt.Errorf("regex match not implemented yet")
 }</span>
 
 // scriptMatch 脚本匹配（阶段一暂不实现）
-func (e *MatchEngine) scriptMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov0" title="0">{
+func (e *MatchEngine) scriptMatch(request *adapter.Request, rule *models.Rule) (bool, error) <span class="cov8" title="1">{
         // TODO: 阶段三实现
         return false, fmt.Errorf("script match not implemented yet")
 }</span>
@@ -1013,14 +1013,14 @@ func matchHeaders(requestHeaders, conditionHeaders map[string]string) bool <span
 }
 
 // matchIPWhitelist 匹配 IP 白名单（简单实现）
-func matchIPWhitelist(requestIP string, whitelist []string) bool <span class="cov0" title="0">{
-        for _, ip := range whitelist </span><span class="cov0" title="0">{
-                if requestIP == ip </span><span class="cov0" title="0">{
+func matchIPWhitelist(requestIP string, whitelist []string) bool <span class="cov8" title="1">{
+        for _, ip := range whitelist </span><span class="cov8" title="1">{
+                if requestIP == ip </span><span class="cov8" title="1">{
                         return true
                 }</span>
                 // TODO: 支持 CIDR 格式的 IP 段匹配
         }
-        <span class="cov0" title="0">return false</span>
+        <span class="cov8" title="1">return false</span>
 }
 </pre>
 		
@@ -1076,7 +1076,7 @@ func (e *MockExecutor) Execute(request *adapter.Request, rule *models.Rule) (*ad
 
 // staticResponse 生成静态响应
 func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rule) (*adapter.Response, error) <span class="cov8" title="1">{
-        if rule.Protocol != models.ProtocolHTTP </span><span class="cov0" title="0">{
+        if rule.Protocol != models.ProtocolHTTP </span><span class="cov8" title="1">{
                 return nil, fmt.Errorf("only HTTP protocol is supported in static response")
         }</span>
 
@@ -1104,16 +1104,16 @@ func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rul
         case models.ContentTypeText, models.ContentTypeHTML, models.ContentTypeXML:<span class="cov8" title="1">
                 if str, ok := httpResp.Body.(string); ok </span><span class="cov8" title="1">{
                         body = []byte(str)
-                }</span> else<span class="cov0" title="0"> {
+                }</span> else<span class="cov8" title="1"> {
                         body, err = json.Marshal(httpResp.Body)
                         if err != nil </span><span class="cov0" title="0">{
                                 return nil, err
                         }</span>
                 }
-        case models.ContentTypeBinary:<span class="cov0" title="0">
+        case models.ContentTypeBinary:<span class="cov8" title="1">
                 // TODO: 处理二进制数据
                 body = []byte{}</span>
-        default:<span class="cov0" title="0">
+        default:<span class="cov8" title="1">
                 body, err = json.Marshal(httpResp.Body)
                 if err != nil </span><span class="cov0" title="0">{
                         return nil, err
@@ -1145,14 +1145,14 @@ func (e *MockExecutor) calculateDelay(config *models.DelayConfig) int <span clas
         case "fixed":<span class="cov8" title="1">
                 return config.Fixed</span>
         case "random":<span class="cov8" title="1">
-                if config.Max &lt;= config.Min </span><span class="cov0" title="0">{
+                if config.Max &lt;= config.Min </span><span class="cov8" title="1">{
                         return config.Min
                 }</span>
                 <span class="cov8" title="1">return config.Min + rand.Intn(config.Max-config.Min)</span>
         case "normal":<span class="cov8" title="1">
                 // TODO: 实现正态分布延迟
                 return config.Mean</span>
-        case "step":<span class="cov0" title="0">
+        case "step":<span class="cov8" title="1">
                 // TODO: 实现阶梯延迟
                 return config.Fixed</span>
         default:<span class="cov8" title="1">
@@ -1466,7 +1466,13 @@ func (r *projectRepository) Update(ctx context.Context, project *models.Project)
         }</span>
 
         <span class="cov0" title="0">filter := bson.M{"_id": objectID}
-        update := bson.M{"$set": project}
+        // 排除 _id 字段，避免更新不可变字段
+        update := bson.M{"$set": bson.M{
+                "name":         project.Name,
+                "workspace_id":  project.WorkspaceID,
+                "description":  project.Description,
+                "updated_at":   project.UpdatedAt,
+        }}
 
         _, err = r.collection.UpdateOne(ctx, filter, update)
         return err</span>
@@ -1600,7 +1606,14 @@ func (r *environmentRepository) Update(ctx context.Context, environment *models.
         }</span>
 
         <span class="cov0" title="0">filter := bson.M{"_id": objectID}
-        update := bson.M{"$set": environment}
+        // 排除 _id 字段，避免更新不可变字段
+        update := bson.M{"$set": bson.M{
+                "name":        environment.Name,
+                "project_id":  environment.ProjectID,
+                "base_url":    environment.BaseURL,
+                "variables":   environment.Variables,
+                "updated_at":  environment.UpdatedAt,
+        }}
 
         _, err = r.collection.UpdateOne(ctx, filter, update)
         return err</span>
@@ -1720,7 +1733,21 @@ func (r *ruleRepository) Update(ctx context.Context, rule *models.Rule) error <s
         }</span>
 
         <span class="cov0" title="0">filter := bson.M{"_id": objectID}
-        update := bson.M{"$set": rule}
+        // 排除 _id 字段，避免更新不可变字段
+        update := bson.M{"$set": bson.M{
+                "name":             rule.Name,
+                "project_id":       rule.ProjectID,
+                "environment_id":   rule.EnvironmentID,
+                "protocol":         rule.Protocol,
+                "match_type":       rule.MatchType,
+                "priority":         rule.Priority,
+                "enabled":          rule.Enabled,
+                "match_condition":  rule.MatchCondition,
+                "response":         rule.Response,
+                "tags":             rule.Tags,
+                "creator":          rule.Creator,
+                "updated_at":       rule.UpdatedAt,
+        }}
 
         _, err = r.collection.UpdateOne(ctx, filter, update)
         return err</span>
@@ -1857,7 +1884,7 @@ type AdminService struct {
 }
 
 // NewAdminService 创建管理服务
-func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHandler) *AdminService <span class="cov0" title="0">{
+func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHandler) *AdminService <span class="cov8" title="1">{
         return &amp;AdminService{
                 ruleHandler:    ruleHandler,
                 projectHandler: projectHandler,
@@ -1918,31 +1945,31 @@ func StartAdminServer(addr string, service *AdminService) error <span class="cov
 }
 
 // CORSMiddleware CORS 中间件
-func CORSMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
-        return func(c *gin.Context) </span><span class="cov0" title="0">{
+func CORSMiddleware() gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
                 c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
                 c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
                 c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
                 c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
-                if c.Request.Method == "OPTIONS" </span><span class="cov0" title="0">{
+                if c.Request.Method == "OPTIONS" </span><span class="cov8" title="1">{
                         c.AbortWithStatus(204)
                         return
                 }</span>
 
-                <span class="cov0" title="0">c.Next()</span>
+                <span class="cov8" title="1">c.Next()</span>
         }
 }
 
 // HealthCheck 健康检查
-func HealthCheck(c *gin.Context) <span class="cov0" title="0">{
+func HealthCheck(c *gin.Context) <span class="cov8" title="1">{
         c.JSON(200, gin.H{
                 "status": "healthy",
         })
 }</span>
 
 // GetVersion 获取版本信息
-func GetVersion(c *gin.Context) <span class="cov0" title="0">{
+func GetVersion(c *gin.Context) <span class="cov8" title="1">{
         c.JSON(200, gin.H{
                 "version": "0.1.0",
                 "name":    "MockServer",
@@ -1957,21 +1984,31 @@ import (
 
         "github.com/gin-gonic/gin"
         "github.com/gomockserver/mockserver/internal/adapter"
-        "github.com/gomockserver/mockserver/internal/engine"
-        "github.com/gomockserver/mockserver/internal/executor"
+        "github.com/gomockserver/mockserver/internal/models"
         "github.com/gomockserver/mockserver/pkg/logger"
         "go.uber.org/zap"
 )
 
+// MatchEngineInterface 匹配引擎接口
+type MatchEngineInterface interface {
+        Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error)
+}
+
+// MockExecutorInterface Mock 执行器接口
+type MockExecutorInterface interface {
+        Execute(request *adapter.Request, rule *models.Rule) (*adapter.Response, error)
+        GetDefaultResponse() *adapter.Response
+}
+
 // MockService Mock 服务
 type MockService struct {
         httpAdapter  *adapter.HTTPAdapter
-        matchEngine  *engine.MatchEngine
-        mockExecutor *executor.MockExecutor
+        matchEngine  MatchEngineInterface
+        mockExecutor MockExecutorInterface
 }
 
 // NewMockService 创建 Mock 服务
-func NewMockService(matchEngine *engine.MatchEngine, mockExecutor *executor.MockExecutor) *MockService <span class="cov0" title="0">{
+func NewMockService(matchEngine MatchEngineInterface, mockExecutor MockExecutorInterface) *MockService <span class="cov8" title="1">{
         return &amp;MockService{
                 httpAdapter:  adapter.NewHTTPAdapter(),
                 matchEngine:  matchEngine,
@@ -1980,13 +2017,13 @@ func NewMockService(matchEngine *engine.MatchEngine, mockExecutor *executor.Mock
 }</span>
 
 // HandleMockRequest 处理 Mock 请求
-func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov0" title="0">{
+func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov8" title="1">{
         // 从路径中提取项目ID和环境ID
         // 请求格式：/:projectID/:environmentID/*path
         projectID := c.Param("projectID")
         environmentID := c.Param("environmentID")
 
-        if projectID == "" || environmentID == "" </span><span class="cov0" title="0">{
+        if projectID == "" || environmentID == "" </span><span class="cov8" title="1">{
                 c.JSON(400, gin.H{
                         "error": "projectID and environmentID are required",
                 })
@@ -1994,7 +2031,7 @@ func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov0" title
         }</span>
 
         // 解析请求为统一模型
-        <span class="cov0" title="0">request, err := s.httpAdapter.Parse(c)
+        <span class="cov8" title="1">request, err := s.httpAdapter.Parse(c)
         if err != nil </span><span class="cov0" title="0">{
                 logger.Error("failed to parse request", zap.Error(err))
                 c.JSON(500, gin.H{
@@ -2004,9 +2041,9 @@ func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov0" title
         }</span>
 
         // 匹配规则
-        <span class="cov0" title="0">ctx := context.Background()
+        <span class="cov8" title="1">ctx := context.Background()
         rule, err := s.matchEngine.Match(ctx, request, projectID, environmentID)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
                 logger.Error("failed to match rule", zap.Error(err))
                 c.JSON(500, gin.H{
                         "error": "Failed to match rule",
@@ -2014,19 +2051,19 @@ func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov0" title
                 return
         }</span>
 
-        <span class="cov0" title="0">var response *adapter.Response
+        <span class="cov8" title="1">var response *adapter.Response
 
         // 如果没有匹配的规则，返回默认响应
-        if rule == nil </span><span class="cov0" title="0">{
+        if rule == nil </span><span class="cov8" title="1">{
                 logger.Info("no rule matched, using default response",
                         zap.String("path", request.Path),
                         zap.String("project_id", projectID),
                         zap.String("environment_id", environmentID))
                 response = s.mockExecutor.GetDefaultResponse()
-        }</span> else<span class="cov0" title="0"> {
+        }</span> else<span class="cov8" title="1"> {
                 // 执行 Mock 响应生成
                 response, err = s.mockExecutor.Execute(request, rule)
-                if err != nil </span><span class="cov0" title="0">{
+                if err != nil </span><span class="cov8" title="1">{
                         logger.Error("failed to execute mock", zap.Error(err))
                         c.JSON(500, gin.H{
                                 "error": "Failed to execute mock",
@@ -2036,7 +2073,7 @@ func (s *MockService) HandleMockRequest(c *gin.Context) <span class="cov0" title
         }
 
         // 写入响应
-        <span class="cov0" title="0">s.httpAdapter.WriteResponse(c, response)</span>
+        <span class="cov8" title="1">s.httpAdapter.WriteResponse(c, response)</span>
 }
 
 // StartMockServer 启动 Mock 服务器

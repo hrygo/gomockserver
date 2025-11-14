@@ -1,0 +1,29 @@
+# 测试运行器 Dockerfile
+# 用于在容器中执行集成测试和端到端测试
+
+FROM alpine:latest
+
+# 安装必要的工具
+RUN apk add --no-cache \
+    bash \
+    curl \
+    wget \
+    jq \
+    ca-certificates \
+    grep \
+    sed
+
+WORKDIR /workspace
+
+# 复制测试脚本
+COPY tests/ /tests/
+
+# 赋予执行权限
+RUN chmod +x /tests/integration/*.sh /tests/smoke/*.sh
+
+# 设置环境变量
+ENV ADMIN_API=http://mockserver-test:8080/api/v1
+ENV MOCK_API=http://mockserver-test:9090
+
+# 默认执行集成测试
+CMD ["/bin/bash", "/tests/integration/e2e_test.sh"]

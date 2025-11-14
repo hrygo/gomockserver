@@ -1,0 +1,125 @@
+version: '3.8'
+
+# Docker Compose 测试环境配置
+# 用于运行集成测试、端到端测试和性能测试
+
+services:
+  # MongoDB 测试数据库
+  mongodb-test:
+    image: mongo:6.0
+    container_name: mockserver-test-mongodb
+    ports:
+      - "27018:27017"  # 使用不同端口避免与生产环境冲突
+    environment:
+      MONGO_INITDB_DATABASE: mockserver_test
+    volumes:
+      - mongodb_test_data:/data/db
+      - ./tests/data/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - test-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: --quiet  # 减少日志输出
+
+  # Mock Server 测试实例
+  mockserver-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: mockserver-test-app
+    ports:
+      - "8081:8080"  # Admin API (测试端口)
+      - "9091:9090"  # Mock Server (测试端口)
+    environment:
+      - TZ=Asia/Shanghai
+      - GO_ENV=test
+      - LOG_LEVEL=debug
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+    volumes:
+      - ./config.test.yaml:/root/config.yaml:ro
+      - ./tests/data:/root/tests/data:ro
+      - test_logs:/root/logs
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/system/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  # Redis (可选 - 用于缓存测试)
+  redis-test:
+    image: redis:7-alpine
+    container_name: mockserver-test-redis
+    ports:
+      - "6380:6379"  # 使用不同端口
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - with-redis  # 使用 profile 控制是否启动
+
+  # 性能测试工具 - wrk
+  wrk-test:
+    image: williamyeh/wrk
+    container_name: mockserver-wrk
+    networks:
+      - test-network
+    volumes:
+      - ./tests/performance:/scripts:ro
+      - performance_results:/results
+    profiles:
+      - performance  # 仅在性能测试时启动
+    entrypoint: /bin/sh
+    command: -c "sleep infinity"  # 保持运行，手动执行测试
+
+  # 测试运行器 - 用于执行集成测试
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test-runner
+    container_name: mockserver-test-runner
+    depends_on:
+      mockserver-test:
+        condition: service_healthy
+    environment:
+      - ADMIN_API=http://mockserver-test:8080/api/v1
+      - MOCK_API=http://mockserver-test:9090
+      - MONGODB_URI=mongodb://mongodb-test:27017
+      - TEST_DATABASE=mockserver_test
+      - SKIP_SERVER_START=true
+    volumes:
+      - ./tests:/tests:ro
+      - ./docs/testing/reports:/reports
+      - test_coverage:/coverage
+    networks:
+      - test-network
+    profiles:
+      - integration  # 仅在集成测试时启动
+    command: /bin/sh -c "sleep 5 && /tests/integration/e2e_test.sh"
+
+volumes:
+  mongodb_test_data:
+    name: mockserver_test_mongodb_data
+  test_logs:
+    name: mockserver_test_logs
+  performance_results:
+    name: mockserver_performance_results
+  test_coverage:
+    name: mockserver_test_coverage
+
+networks:
+  test-network:
+    name: mockserver-test-network
+    driver: bridge

@@ -5,21 +5,31 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gomockserver/mockserver/internal/adapter"
-	"github.com/gomockserver/mockserver/internal/engine"
-	"github.com/gomockserver/mockserver/internal/executor"
+	"github.com/gomockserver/mockserver/internal/models"
 	"github.com/gomockserver/mockserver/pkg/logger"
 	"go.uber.org/zap"
 )
 
+// MatchEngineInterface 匹配引擎接口
+type MatchEngineInterface interface {
+	Match(ctx context.Context, request *adapter.Request, projectID, environmentID string) (*models.Rule, error)
+}
+
+// MockExecutorInterface Mock 执行器接口
+type MockExecutorInterface interface {
+	Execute(request *adapter.Request, rule *models.Rule) (*adapter.Response, error)
+	GetDefaultResponse() *adapter.Response
+}
+
 // MockService Mock 服务
 type MockService struct {
 	httpAdapter  *adapter.HTTPAdapter
-	matchEngine  *engine.MatchEngine
-	mockExecutor *executor.MockExecutor
+	matchEngine  MatchEngineInterface
+	mockExecutor MockExecutorInterface
 }
 
 // NewMockService 创建 Mock 服务
-func NewMockService(matchEngine *engine.MatchEngine, mockExecutor *executor.MockExecutor) *MockService {
+func NewMockService(matchEngine MatchEngineInterface, mockExecutor MockExecutorInterface) *MockService {
 	return &MockService{
 		httpAdapter:  adapter.NewHTTPAdapter(),
 		matchEngine:  matchEngine,
