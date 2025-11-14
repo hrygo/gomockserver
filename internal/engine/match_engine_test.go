@@ -299,6 +299,61 @@ func TestMatchIPWhitelist(t *testing.T) {
 			whitelist: []string{"127.0.0.1", "::1"},
 			expected:  true,
 		},
+		// CIDR格式测试用例
+		{
+			name:      "CIDR格式匹配成功",
+			requestIP: "192.168.1.100",
+			whitelist: []string{"192.168.1.0/24"},
+			expected:  true,
+		},
+		{
+			name:      "CIDR格式匹配失败",
+			requestIP: "192.168.2.100",
+			whitelist: []string{"192.168.1.0/24"},
+			expected:  false,
+		},
+		{
+			name:      "混合格式白名单匹配",
+			requestIP: "10.0.0.50",
+			whitelist: []string{"192.168.1.100", "10.0.0.0/16", "172.16.0.1"},
+			expected:  true,
+		},
+		{
+			name:      "IPv6 CIDR匹配",
+			requestIP: "::1",
+			whitelist: []string{"::1/128"},
+			expected:  true,
+		},
+		{
+			name:      "无效CIDR格式",
+			requestIP: "192.168.1.100",
+			whitelist: []string{"invalid-cidr", "192.168.1.100"},
+			expected:  true,
+		},
+		{
+			name:      "无效IP地址",
+			requestIP: "invalid-ip",
+			whitelist: []string{"192.168.1.0/24"},
+			expected:  false,
+		},
+		{
+			name:      "边界IP匹配",
+			requestIP: "192.168.1.1",
+			whitelist: []string{"192.168.1.0/24"},
+			expected:  true,
+		},
+		{
+			name:      "边界IP匹配2",
+			requestIP: "192.168.1.254",
+			whitelist: []string{"192.168.1.0/24"},
+			expected:  true,
+		},
+		{
+			name:      "超出CIDR范围",
+			requestIP: "192.168.2.1",
+			whitelist: []string{"192.168.1.0/24"},
+			expected:  false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -400,7 +455,7 @@ func TestSimpleMatch_WithIPWhitelist(t *testing.T) {
 
 // TestMatchRule 测试matchRule函数
 func TestMatchRule(t *testing.T) {
-	engine := &MatchEngine{}
+	engine := NewMatchEngine(nil)
 
 	tests := []struct {
 		name        string
@@ -430,7 +485,7 @@ func TestMatchRule(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "正则匹配类型(未实现)",
+			name: "正则匹配类型(已实现)",
 			request: &adapter.Request{
 				Protocol: models.ProtocolHTTP,
 				Path:     "/api/test",
@@ -438,9 +493,12 @@ func TestMatchRule(t *testing.T) {
 			rule: &models.Rule{
 				Protocol:  models.ProtocolHTTP,
 				MatchType: models.MatchTypeRegex,
+				MatchCondition: map[string]interface{}{
+					"path": "/api/test",
+				},
 			},
-			expectMatch: false,
-			expectError: true,
+			expectMatch: true,
+			expectError: false,
 		},
 		{
 			name: "脚本匹配类型(未实现)",

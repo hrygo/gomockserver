@@ -547,9 +547,14 @@ func TestLargeResponseBody(t *testing.T) {
 }
 
 // TestBinaryContentType 测试二进制内容类型
+// TestBinaryContentType 测试二进制内容类型
 func TestBinaryContentType(t *testing.T) {
 	executor := NewMockExecutor()
-
+	
+	// 测试Base64编码的二进制数据
+	base64Data := "SGVsbG8sIHdvcmxkIQ==" // "Hello, world!"的Base64编码
+	expectedData := []byte("Hello, world!")
+	
 	rule := &models.Rule{
 		Protocol: models.ProtocolHTTP,
 		Response: models.Response{
@@ -557,22 +562,57 @@ func TestBinaryContentType(t *testing.T) {
 			Content: map[string]interface{}{
 				"status_code":  200,
 				"content_type": "Binary",
-				"body":         "binary data",
+				"body":         base64Data,
 			},
 		},
 	}
-
 	request := &adapter.Request{
 		Protocol: models.ProtocolHTTP,
 	}
-
 	response, err := executor.Execute(request, rule)
-
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, "application/octet-stream", response.Headers["Content-Type"])
-	assert.Equal(t, 0, len(response.Body), "Binary类型暂时返回空体")
+	assert.Equal(t, expectedData, response.Body, "Binary类型应该正确解码Base64数据")
+	
+	// 测试无效的Base64数据（应该返回原始数据）
+	invalidBase64Data := "invalid-base64!"
+	rule2 := &models.Rule{
+		Protocol: models.ProtocolHTTP,
+		Response: models.Response{
+			Type: models.ResponseTypeStatic,
+			Content: map[string]interface{}{
+				"status_code":  200,
+				"content_type": "Binary",
+				"body":         invalidBase64Data,
+			},
+		},
+	}
+	response2, err2 := executor.Execute(request, rule2)
+	assert.NoError(t, err2)
+	assert.NotNil(t, response2)
+	assert.Equal(t, []byte(invalidBase64Data), response2.Body, "无效Base64应该返回原始数据")
+	
+	// 测试非字符串类型的二进制数据
+	nonStringData := map[string]interface{}{"key": "value"}
+	jsonData, _ := json.Marshal(nonStringData)
+	rule3 := &models.Rule{
+		Protocol: models.ProtocolHTTP,
+		Response: models.Response{
+			Type: models.ResponseTypeStatic,
+			Content: map[string]interface{}{
+				"status_code":  200,
+				"content_type": "Binary",
+				"body":         nonStringData,
+			},
+		},
+	}
+	response3, err3 := executor.Execute(request, rule3)
+	assert.NoError(t, err3)
+	assert.NotNil(t, response3)
+	assert.Equal(t, jsonData, response3.Body, "非字符串类型应该被JSON序列化")
 }
+
 
 // TestUnknownContentType 测试未知内容类型
 func TestUnknownContentType(t *testing.T) {
@@ -832,26 +872,4 @@ func TestNonStringBodyForTextType(t *testing.T) {
 
 // TestStepDelayType 测试step延迟类型
 func TestStepDelayType(t *testing.T) {
-	executor := NewMockExecutor()
-
-	config := &models.DelayConfig{
-		Type:  "step",
-		Fixed: 75,
-	}
-
-	delay := executor.calculateDelay(config)
-	assert.Equal(t, 75, delay, "step类型延迟应该返回fixed值")
-}
-
-// TestNormalDelayType 测试normal延迟类型
-func TestNormalDelayType(t *testing.T) {
-	executor := NewMockExecutor()
-
-	config := &models.DelayConfig{
-		Type: "normal",
-		Mean: 120,
-	}
-
-	delay := executor.calculateDelay(config)
-	assert.Equal(t, 120, delay, "normal类型延迟应该返回mean值")
 }

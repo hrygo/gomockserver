@@ -1,9 +1,12 @@
 package executor
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/gomockserver/mockserver/internal/adapter"
@@ -13,11 +16,22 @@ import (
 )
 
 // MockExecutor Mock 执行器
-type MockExecutor struct{}
+type MockExecutor struct {
+	normalRandMu sync.Mutex
+	normalRandS  float64
+	normalRandV  float64
+	normalRandOK bool
+
+	// 阶梯延迟相关字段
+	stepCounters   map[string]int64
+	stepCountersMu sync.RWMutex
+}
 
 // NewMockExecutor 创建 Mock 执行器
 func NewMockExecutor() *MockExecutor {
-	return &MockExecutor{}
+	return &MockExecutor{
+		stepCounters: make(map[string]int64),
+	}
 }
 
 // Execute 执行 Mock 响应生成
@@ -85,8 +99,24 @@ func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rul
 			}
 		}
 	case models.ContentTypeBinary:
-		// TODO: 处理二进制数据
-		body = []byte{}
+		// 处理二进制数据 - 支持Base64编码
+		if str, ok := httpResp.Body.(string); ok {
+			// 尝试Base64解码
+			decoded, err := base64.StdEncoding.DecodeString(str)
+			if err != nil {
+				// 如果解码失败，记录警告并返回原始数据
+				logger.Warn("failed to decode base64 binary data, returning raw data", zap.Error(err))
+				body = []byte(str)
+			} else {
+				body = decoded
+			}
+		} else {
+			// 非字符串类型，尝试JSON序列化
+			body, err = json.Marshal(httpResp.Body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal binary body: %w", err)
+			}
+		}
 	default:
 		body, err = json.Marshal(httpResp.Body)
 		if err != nil {
@@ -124,13 +154,95 @@ func (e *MockExecutor) calculateDelay(config *models.DelayConfig) int {
 		}
 		return config.Min + rand.Intn(config.Max-config.Min)
 	case "normal":
-		// TODO: 实现正态分布延迟
-		return config.Mean
+		// 实现正态分布延迟 - 使用Marsaglia polar method
+		if config.StdDev <= 0 {
+			// 标准差必须为正数
+			return config.Mean
+		}
+
+		// 生成正态分布随机数
+		normalRand := e.generateNormalRand(float64(config.Mean), float64(config.StdDev))
+
+		// 确保结果为非负整数
+		result := int(math.Round(normalRand))
+		if result < 0 {
+			result = 0
+		}
+
+		return result
 	case "step":
-		// TODO: 实现阶梯延迟
-		return config.Fixed
+		// 实现阶梯延迟 - 基于请求计数的阶梯延迟算法
+		return e.calculateStepDelay(config)
 	default:
 		return 0
+	}
+}
+
+// calculateStepDelay 计算阶梯延迟
+func (e *MockExecutor) calculateStepDelay(config *models.DelayConfig) int {
+	// 使用固定值作为计数器键（在实际应用中可能需要更复杂的键）
+	counterKey := "default"
+
+	// 增加计数器
+	e.stepCountersMu.Lock()
+	e.stepCounters[counterKey]++
+	count := e.stepCounters[counterKey]
+	e.stepCountersMu.Unlock()
+
+	// 计算阶梯延迟
+	baseDelay := config.Fixed
+	step := config.Step
+	limit := config.Limit
+
+	if step <= 0 {
+		// 步长必须为正数
+		return baseDelay
+	}
+
+	// 计算阶梯值: baseDelay + (count-1) * step
+	delay := baseDelay + int(count-1)*step
+
+	// 如果设置了上限，则不超过上限
+	if limit > 0 && delay > limit {
+		delay = limit
+	}
+
+	return delay
+}
+
+// generateNormalRand 使用Marsaglia polar method生成正态分布随机数
+func (e *MockExecutor) generateNormalRand(mean, stdDev float64) float64 {
+	e.normalRandMu.Lock()
+	defer e.normalRandMu.Unlock()
+
+	// 如果有缓存的随机数，直接使用
+	if e.normalRandOK {
+		e.normalRandOK = false
+		return mean + stdDev*e.normalRandV
+	}
+
+	// 生成新的正态分布随机数对
+	for {
+		// 生成[-1, 1]范围内的均匀分布随机数
+		u := 2.0*rand.Float64() - 1.0
+		v := 2.0*rand.Float64() - 1.0
+
+		// 计算s = u^2 + v^2
+		s := u*u + v*v
+
+		// 如果s在(0, 1)范围内，则接受
+		if s > 0.0 && s < 1.0 {
+			// 计算乘数
+			multiplier := math.Sqrt(-2.0 * math.Log(s) / s)
+
+			// 缓存其中一个值供下次使用
+			e.normalRandS = s
+			e.normalRandV = v * multiplier
+			e.normalRandOK = true
+
+			// 返回另一个值
+			return mean + stdDev*u*multiplier
+		}
 	}
 }
 
