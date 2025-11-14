@@ -16,18 +16,26 @@ import (
 	"go.uber.org/zap"
 )
 
+// RegexCacheStats 缓存统计信息
+type RegexCacheStats struct {
+	Hits   int64
+	Misses int64
+	Size   int
+}
+
 // MatchEngine 规则匹配引擎
 type MatchEngine struct {
 	ruleRepo     repository.RuleRepository
-	regexCache   map[string]*regexp.Regexp
-	regexCacheMu sync.RWMutex
+	regexCache   *LRURegexCache
+	cacheStats   RegexCacheStats
+	statsMu      sync.RWMutex
 }
 
 // NewMatchEngine 创建匹配引擎
 func NewMatchEngine(ruleRepo repository.RuleRepository) *MatchEngine {
 	return &MatchEngine{
 		ruleRepo:   ruleRepo,
-		regexCache: make(map[string]*regexp.Regexp),
+		regexCache: NewLRURegexCache(1000), // 默认缓存容量1000
 	}
 }
 
@@ -144,12 +152,16 @@ func (e *MatchEngine) simpleMatch(request *adapter.Request, rule *models.Rule) (
 // compileRegex 编译正则表达式并缓存
 func (e *MatchEngine) compileRegex(pattern string) (*regexp.Regexp, error) {
 	// 先尝试从缓存中获取
-	e.regexCacheMu.RLock()
-	if re, exists := e.regexCache[pattern]; exists {
-		e.regexCacheMu.RUnlock()
+	if re, exists := e.regexCache.Get(pattern); exists {
+		e.statsMu.Lock()
+		e.cacheStats.Hits++
+		e.statsMu.Unlock()
 		return re, nil
 	}
-	e.regexCacheMu.RUnlock()
+
+	e.statsMu.Lock()
+	e.cacheStats.Misses++
+	e.statsMu.Unlock()
 
 	// 编译正则表达式
 	re, err := regexp.Compile(pattern)
@@ -158,11 +170,18 @@ func (e *MatchEngine) compileRegex(pattern string) (*regexp.Regexp, error) {
 	}
 
 	// 存入缓存
-	e.regexCacheMu.Lock()
-	e.regexCache[pattern] = re
-	e.regexCacheMu.Unlock()
+	e.regexCache.Put(pattern, re)
 
 	return re, nil
+}
+
+// GetCacheStats 获取缓存统计信息
+func (e *MatchEngine) GetCacheStats() RegexCacheStats {
+	e.statsMu.RLock()
+	defer e.statsMu.RUnlock()
+	stats := e.cacheStats
+	stats.Size = e.regexCache.Size()
+	return stats
 }
 
 // regexMatch 正则表达式匹配
