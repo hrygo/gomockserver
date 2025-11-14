@@ -101,7 +101,7 @@ func HealthCheck(c *gin.Context) {
 // GetVersion 获取版本信息
 func GetVersion(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"version": "0.1.0",
+		"version": "0.1.1",
 		"name":    "MockServer",
 	})
 }

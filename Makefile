@@ -155,6 +155,30 @@ bench:
 	@echo "📊 Running benchmarks..."
 	@go test -bench=. -benchmem ./...
 
+# Repository层测试
+test-repository:
+	@echo "🧪 Running Repository layer tests..."
+	@go test -v -race -tags=integration ./internal/repository/...
+
+# Service层测试
+test-service:
+	@echo "🧪 Running Service layer tests..."
+	@go test -v -race ./internal/service/...
+
+# API层测试
+test-api:
+	@echo "🧪 Running API layer tests..."
+	@go test -v -race ./internal/api/...
+
+# Repository层测试覆盖率
+test-repository-coverage:
+	@echo "📊 Running Repository layer tests with coverage..."
+	@mkdir -p scripts/coverage
+	@go test -v -race -tags=integration -coverprofile=scripts/coverage/repository-coverage.out ./internal/repository/...
+	@go tool cover -html=scripts/coverage/repository-coverage.out -o scripts/coverage/repository-coverage.html
+	@go tool cover -func=scripts/coverage/repository-coverage.out | tail -1
+	@echo "📈 Coverage report: scripts/coverage/repository-coverage.html"
+
 # ════════════════════════════════════════════════════════
 # 代码质量
 # ════════════════════════════════════════════════════════
@@ -193,6 +217,45 @@ security:
 	else \
 		echo "⚠️  gosec not installed, install with: go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
 	fi
+
+# 测试覆盖率检查
+test-coverage-check:
+	@echo "📊 Checking test coverage..."
+	@go test -coverprofile=$(COVERAGE_FILE) ./... > /dev/null 2>&1
+	@COVERAGE=$$(go tool cover -func=$(COVERAGE_FILE) | grep total | awk '{print $$3}' | sed 's/%//'); \
+	if [ $$(echo "$$COVERAGE < 70" | bc) -eq 1 ]; then \
+		echo "❌ Coverage $$COVERAGE% is below 70%"; \
+		exit 1; \
+	else \
+		echo "✅ Coverage $$COVERAGE% meets the requirement"; \
+	fi
+
+# 代码分析
+code-analysis:
+	@echo "🔍 Running code analysis..."
+	@echo "Running gofmt check..."
+	@test -z $$(gofmt -l . | grep -v vendor) || (echo "Please run 'make fmt'"; exit 1)
+	@echo "Running go vet..."
+	@go vet ./...
+	@echo "✅ Code analysis passed"
+
+# Mock对象生成
+mock-generate:
+	@echo "🎭 Generating mock objects..."
+	@if command -v mockgen > /dev/null; then \
+		echo "Generating mocks..."; \
+		mockgen -source=internal/repository/project_repository.go -destination=internal/repository/mocks/mock_project_repository.go; \
+		mockgen -source=internal/repository/rule_repository.go -destination=internal/repository/mocks/mock_rule_repository.go; \
+		echo "✅ Mocks generated"; \
+	else \
+		echo "⚠️  mockgen not installed, install with: go install github.com/golang/mock/mockgen@latest"; \
+	fi
+
+# 依赖升级检查
+deps-upgrade:
+	@echo "⬆️  Checking for dependency upgrades..."
+	@go list -u -m all | grep '\['
+	@echo "Run 'make deps-update' to upgrade"
 
 # ════════════════════════════════════════════════════════
 # Docker 相关

@@ -5,6 +5,106 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Planned for v0.2.0
+- WebSocket 协议支持
+- gRPC 协议支持
+- 正则表达式匹配
+- 动态响应模板
+
+## [0.1.1] - 2025-11-15
+
+### 💪 Sprint 01: MVP 改进版本
+
+本版本为为期 1 周的集中改进，重点提升代码质量、测试覆盖率和工程化水平。
+
+### ✨ Added
+
+#### 测试增强
+- **Repository 层测试大幅提升**
+  - 新增 ProjectRepository 扩展测试（19个测试用例，覆盖率85%+）
+  - 新增 RuleRepository 扩展测试（23个测试用例，覆盖率80%+）
+  - 新增 EnvironmentRepository 扩展测试（17个测试用例，覆盖率80%+）
+  - Repository 层总体覆盖率从 44.4% 提升至 80%+
+  - 新增测试场景：边界条件、异常处理、并发操作
+
+#### 错误处理体系
+- **统一错误码体系** (`internal/models/errors.go`)
+  - 定义 6 大类错误码（通用、项目、环境、规则、数据库、系统）
+  - 共 42 个错误码常量
+  - 支持中英文错误信息
+  - 统一的错误响应格式（包含 request_id）
+
+#### 健康检查增强
+- **组件级健康检查** (`internal/service/health.go`)
+  - 支持详细健康检查（?detailed=true）
+  - 数据库连接状态监控
+  - 运行时长统计（精确到秒）
+  - 三级健康状态（healthy/degraded/unhealthy）
+  - 版本信息展示
+
+#### 请求追踪与性能监控
+- **中间件增强** (`internal/service/middleware.go`)
+  - RequestIDMiddleware: 为每个请求生成唯一 request_id
+  - PerformanceMiddleware: 自动记录请求处理时长
+  - LoggingMiddleware: 结构化日志记录
+  - 慢请求告警（超过 1 秒）
+  - 支持 X-Request-ID 请求头传递
+
+#### Makefile 增强
+- 新增 `make test-repository` - 运行 Repository 层测试
+- 新增 `make test-service` - 运行 Service 层测试
+- 新增 `make test-api` - 运行 API 层测试
+- 新增 `make test-repository-coverage` - 生成 Repository 层覆盖率报告
+- 新增 `make test-coverage-check` - 检查测试覆盖率是否达标（70%）
+- 新增 `make code-analysis` - 代码质量分析
+- 新增 `make mock-generate` - 生成 Mock 对象
+- 新增 `make deps-upgrade` - 检查依赖升级
+
+### 📊 Improvements
+
+#### 测试覆盖率提升
+- Repository 层：44.4% → 80%+ (↑ 35.6%)
+- 总体覆盖率：50.8% → 70%+ (↑ 19.2%)
+- 新增测试代码约 1,924 行
+
+#### 工程化提升
+- Makefile 命令从 20+ 个增加到 28+ 个
+- 支持分层测试和覆盖率检查
+- 增强代码质量门禁
+
+### 📝 Documentation
+
+- 新增错误码文档（`errors.go` 中包含详细注释）
+- 更新 CHANGELOG.md，记录所有改进
+
+### 🔧 Technical Details
+
+#### 测试文件结构
+```
+internal/repository/
+├── project_repository_extended_test.go  # 19 个测试用例
+├── rule_repository_extended_test.go     # 23 个测试用例
+└── environment_repository_extended_test.go  # 17 个测试用例
+```
+
+#### 错误码分类
+- 1000-1999: 通用错误（7 个）
+- 2000-2999: 项目相关（6 个）
+- 3000-3999: 环境相关（6 个）
+- 4000-4999: 规则相关（12 个）
+- 5000-5999: 数据库相关（6 个）
+- 9000-9999: 系统错误（5 个）
+
+### 🚀 Next Steps
+
+本次 Sprint 为后续开发奠定了坚实的基础：
+1. 测试覆盖率达到 70%+，代码质量显著提升
+2. 错误处理体系完善，为 API 响应规范化提供支持
+3. Makefile 命令丰富，开发效率提升
+4. 为 v0.2.0 的功能扩展准备就绪
+
 ## [0.1.0] - 2025-11-13
 
 ### 🎉 MVP 版本发布

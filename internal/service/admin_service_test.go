@@ -104,7 +104,7 @@ func TestGetVersion(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "version")
-	assert.Contains(t, w.Body.String(), "0.1.0")
+	assert.Contains(t, w.Body.String(), "0.1.1")
 	assert.Contains(t, w.Body.String(), "MockServer")
 }
 
