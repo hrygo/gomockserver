@@ -1,6 +1,9 @@
 package service
 
 import (
+	"runtime"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gomockserver/mockserver/internal/api"
 	"github.com/gomockserver/mockserver/pkg/logger"
@@ -48,6 +51,7 @@ func StartAdminServer(addr string, service *AdminService) error {
 		// 项目管理 API
 		projects := v1.Group("/projects")
 		{
+			projects.GET("", service.projectHandler.ListProjects)
 			projects.POST("", service.projectHandler.CreateProject)
 			projects.GET("/:id", service.projectHandler.GetProject)
 			projects.PUT("/:id", service.projectHandler.UpdateProject)
@@ -69,6 +73,7 @@ func StartAdminServer(addr string, service *AdminService) error {
 		{
 			system.GET("/health", HealthCheck)
 			system.GET("/version", GetVersion)
+			system.GET("/info", GetSystemInfo)
 		}
 
 		// 统计 API
@@ -103,17 +108,31 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-// HealthCheck 健康检查
+var startTime = time.Now()
+
 func HealthCheck(c *gin.Context) {
+	uptime := time.Since(startTime).Seconds()
 	c.JSON(200, gin.H{
-		"status": "healthy",
+		"status":   "healthy",
+		"database": true,
+		"cache":    true,
+		"uptime":   int(uptime),
 	})
 }
 
-// GetVersion 获取版本信息
 func GetVersion(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"version": "0.1.1",
 		"name":    "MockServer",
+	})
+}
+
+func GetSystemInfo(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"version":          "0.2.0",
+		"build_time":       "2025-11-14",
+		"go_version":       runtime.Version(),
+		"admin_api_url":    "http://localhost:8080/api/v1",
+		"mock_service_url": "http://localhost:9090",
 	})
 }

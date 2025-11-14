@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { Card, Row, Col, Statistic, Table, Spin, Empty } from 'antd'
 import {
   ProjectOutlined,
@@ -22,12 +22,45 @@ import {
 import type { ProjectStatistics, RuleStatistics } from '@/types/statistics'
 
 const Dashboard: React.FC = () => {
+  // ECharts 实例引用
+  const trendChartRef = useRef<any>(null)
+  const pieChartRef = useRef<any>(null)
+
   // 获取统计数据
   const { data: dashboardStats, isLoading: dashboardLoading } = useDashboardStatistics()
-  const { data: projectStats = [] } = useProjectStatistics()
-  const { data: ruleStats = [] } = useRuleStatistics()
-  const { data: requestTrend = [] } = useRequestTrend()
-  const { data: responseTimeDist = [] } = useResponseTimeDistribution()
+  const { data: projectStats } = useProjectStatistics()
+  const { data: ruleStats } = useRuleStatistics()
+  const { data: requestTrend } = useRequestTrend()
+  const { data: responseTimeDist } = useResponseTimeDistribution()
+
+  // 确保数据为数组，防止 null 或 undefined
+  const safeProjectStats = projectStats || []
+  const safeRuleStats = ruleStats || []
+  const safeRequestTrend = requestTrend || []
+  const safeResponseTimeDist = responseTimeDist || []
+
+  // 组件卸载时清理 ECharts 实例
+  useEffect(() => {
+    return () => {
+      try {
+        if (trendChartRef.current) {
+          const instance = trendChartRef.current.getEchartsInstance()
+          if (instance && !instance.isDisposed()) {
+            instance.dispose()
+          }
+        }
+        if (pieChartRef.current) {
+          const instance = pieChartRef.current.getEchartsInstance()
+          if (instance && !instance.isDisposed()) {
+            instance.dispose()
+          }
+        }
+      } catch (error) {
+        // 忽略清理错误
+        console.debug('ECharts cleanup error:', error)
+      }
+    }
+  }, [])
 
   // 请求趋势图表配置
   const requestTrendOption: EChartsOption = {
@@ -42,7 +75,7 @@ const Dashboard: React.FC = () => {
     },
     xAxis: {
       type: 'category',
-      data: requestTrend.map((item) => dayjs(item.date).format('MM-DD')),
+      data: safeRequestTrend.map((item) => dayjs(item.date).format('MM-DD')),
       axisLabel: { fontSize: 12 },
     },
     yAxis: {
@@ -51,7 +84,7 @@ const Dashboard: React.FC = () => {
     },
     series: [
       {
-        data: requestTrend.map((item) => item.count),
+        data: safeRequestTrend.map((item) => item.count),
         type: 'line',
         smooth: true,
         areaStyle: {
@@ -114,7 +147,7 @@ const Dashboard: React.FC = () => {
         labelLine: {
           show: false,
         },
-        data: responseTimeDist.map((item) => ({
+        data: safeResponseTimeDist.map((item) => ({
           value: item.count,
           name: item.range,
         })),
@@ -283,8 +316,13 @@ const Dashboard: React.FC = () => {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={16}>
           <Card bodyStyle={{ padding: '20px' }}>
-            {requestTrend.length > 0 ? (
-              <ReactECharts option={requestTrendOption} style={{ height: 300 }} />
+            {safeRequestTrend.length > 0 ? (
+              <ReactECharts 
+                ref={trendChartRef}
+                option={requestTrendOption} 
+                style={{ height: 300 }}
+                opts={{ renderer: 'svg' }}
+              />
             ) : (
               <Empty description="暂无请求数据" style={{ padding: '80px 0' }} />
             )}
@@ -292,8 +330,13 @@ const Dashboard: React.FC = () => {
         </Col>
         <Col span={8}>
           <Card bodyStyle={{ padding: '20px' }}>
-            {responseTimeDist.length > 0 ? (
-              <ReactECharts option={responseTimeOption} style={{ height: 300 }} />
+            {safeResponseTimeDist.length > 0 ? (
+              <ReactECharts 
+                ref={pieChartRef}
+                option={responseTimeOption} 
+                style={{ height: 300 }}
+                opts={{ renderer: 'svg' }}
+              />
             ) : (
               <Empty description="暂无响应数据" style={{ padding: '80px 0' }} />
             )}
@@ -305,7 +348,7 @@ const Dashboard: React.FC = () => {
       <Card title="项目统计" style={{ marginBottom: 16 }}>
         <Table
           columns={projectColumns}
-          dataSource={projectStats}
+          dataSource={safeProjectStats}
           rowKey="project_id"
           pagination={false}
           size="small"
@@ -316,7 +359,7 @@ const Dashboard: React.FC = () => {
       <Card title="热门规则 (Top 10)">
         <Table
           columns={ruleColumns}
-          dataSource={ruleStats.slice(0, 10)}
+          dataSource={safeRuleStats.slice(0, 10)}
           rowKey="rule_id"
           pagination={false}
           size="small"

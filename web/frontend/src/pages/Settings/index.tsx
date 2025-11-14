@@ -248,7 +248,7 @@ const Settings: React.FC = () => {
                 value={selectedProjectId}
                 onChange={setSelectedProjectId}
               >
-                {projects.map((p) => (
+                {projects?.map((p) => (
                   <Option key={p.id} value={p.id}>
                     {p.name}
                   </Option>
@@ -329,7 +329,7 @@ const Settings: React.FC = () => {
                 value={selectedProjectId}
                 onChange={setSelectedProjectId}
               >
-                {projects.map((p) => (
+                {projects?.map((p) => (
                   <Option key={p.id} value={p.id}>
                     {p.name}
                   </Option>

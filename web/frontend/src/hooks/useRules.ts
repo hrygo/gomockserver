@@ -18,7 +18,7 @@ export const useRules = (filter?: RuleFilter) => {
     queryKey: ruleKeys.list(filter),
     queryFn: async () => {
       const response = await ruleApi.list(filter)
-      return response.data
+      return response.data.data
     },
   })
 }

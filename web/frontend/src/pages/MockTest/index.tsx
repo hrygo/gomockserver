@@ -47,7 +47,7 @@ const MockTest: React.FC = () => {
 
   // 数据查询
   const { data: projects = [] } = useProjects()
-  const { data: environments = [] } = useEnvironments(selectedProjectId || '')
+  const { data: environments = [], isLoading: environmentsLoading } = useEnvironments(selectedProjectId || '')
   const { data: history = [], isLoading: historyLoading } = useMockHistory(
     selectedProjectId || '',
     selectedEnvironmentId
@@ -242,7 +242,7 @@ const MockTest: React.FC = () => {
                 setSelectedEnvironmentId(undefined)
               }}
             >
-              {projects.map((p) => (
+              {projects?.map((p) => (
                 <Option key={p.id} value={p.id}>
                   {p.name}
                 </Option>
@@ -259,7 +259,7 @@ const MockTest: React.FC = () => {
               onChange={setSelectedEnvironmentId}
               disabled={!selectedProjectId || environments.length === 0}
             >
-              {environments.map((e) => (
+              {environments?.map((e) => (
                 <Option key={e.id} value={e.id}>
                   {e.name}
                 </Option>

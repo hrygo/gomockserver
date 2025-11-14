@@ -41,6 +41,18 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	c.JSON(http.StatusCreated, project)
 }
 
+// ListProjects 获取项目列表
+func (h *ProjectHandler) ListProjects(c *gin.Context) {
+	projects, _, err := h.projectRepo.List(c.Request.Context(), 0, 10000)
+	if err != nil {
+		logger.Error("failed to list projects", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list projects"})
+		return
+	}
+
+	c.JSON(http.StatusOK, projects)
+}
+
 // GetProject 获取项目详情
 func (h *ProjectHandler) GetProject(c *gin.Context) {
 	id := c.Param("id")

@@ -116,18 +116,18 @@ func (s *batchOperationService) BatchUpdate(ctx context.Context, ruleIDs []strin
 		Errors:       []string{},
 	}
 
-		// 验证更新字段
-		allowedFields := map[string]bool{
-			"priority": true,
-			"tags":     true,
-			"enabled":  true,
-		}
+	// 验证更新字段
+	allowedFields := map[string]bool{
+		"priority": true,
+		"tags":     true,
+		"enabled":  true,
+	}
 
-		for field := range updates {
-			if !allowedFields[field] {
-				return nil, fmt.Errorf("%s: field '%s' is not allowed for batch update", models.ErrBatchInvalidInput.Message, field)
-			}
+	for field := range updates {
+		if !allowedFields[field] {
+			return nil, fmt.Errorf("%s: field '%s' is not allowed for batch update", models.ErrBatchInvalidInput.Message, field)
 		}
+	}
 
 	for _, ruleID := range ruleIDs {
 		rule, err := s.ruleRepo.FindByID(ctx, ruleID)
@@ -201,11 +201,11 @@ func ExecuteBatchOperation(
 		return service.BatchDisable(ctx, req.RuleIDs)
 	case "delete":
 		return service.BatchDelete(ctx, req.RuleIDs)
-		case "update":
-			if req.Updates == nil || len(req.Updates) == 0 {
-				return nil, fmt.Errorf("%s: updates cannot be empty for update operation", models.ErrBatchInvalidInput.Message)
-			}
-			return service.BatchUpdate(ctx, req.RuleIDs, req.Updates)
+	case "update":
+		if len(req.Updates) == 0 {
+			return nil, fmt.Errorf("%s: updates cannot be empty for update operation", models.ErrBatchInvalidInput.Message)
+		}
+		return service.BatchUpdate(ctx, req.RuleIDs, req.Updates)
 	default:
 		return nil, fmt.Errorf("%s: unknown operation: %s", models.ErrBatchInvalidInput.Message, req.Operation)
 	}
