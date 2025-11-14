@@ -13,13 +13,17 @@ import (
 
 // RuleHandler 规则处理器
 type RuleHandler struct {
-	ruleRepo repository.RuleRepository
+	ruleRepo    repository.RuleRepository
+	projectRepo repository.ProjectRepository
+	envRepo     repository.EnvironmentRepository
 }
 
 // NewRuleHandler 创建规则处理器
-func NewRuleHandler(ruleRepo repository.RuleRepository) *RuleHandler {
+func NewRuleHandler(ruleRepo repository.RuleRepository, projectRepo repository.ProjectRepository, envRepo repository.EnvironmentRepository) *RuleHandler {
 	return &RuleHandler{
-		ruleRepo: ruleRepo,
+		ruleRepo:    ruleRepo,
+		projectRepo: projectRepo,
+		envRepo:     envRepo,
 	}
 }
 

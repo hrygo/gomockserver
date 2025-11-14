@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### In Progress - v0.1.2 (Sprint 02)
+
+#### ✨ Added (Core Implementation)
+
+**导入导出功能（核心完成）**
+- **数据模型** (`internal/models/import_export.go`)
+  - 导出类型：rules、environment、project
+  - 导入策略：skip、overwrite、append
+  - 版本化JSON格式（version: 1.0）
+  - 完整的导入结果追踪
+
+- **导入导出服务** (`internal/service/import_export_service.go`)
+  - ExportRules: 支持按项目/环境/规则ID导出
+  - ExportProject: 完整项目导出（包含环境和规则）
+  - ImportData: 智能导入服务，支持3种策略
+  - ValidateImportData: 导入数据验证
+  - CloneRule: 规则克隆服务（同项目/跨项目）
+
+**批量操作功能（核心完成）**
+- **批量操作服务** (`internal/service/batch_operation_service.go`)
+  - BatchEnable: 批量启用规则
+  - BatchDisable: 批量禁用规则
+  - BatchDelete: 批量删除规则
+  - BatchUpdate: 批量更新规则（priority, tags, enabled）
+  - 详细的执行结果报告
+
+#### 🚧 Known Issues
+
+- **API Handler 未集成**: 由于Go包循环依赖问题，API层集成待重构
+- **单元测试未完成**: 新增服务缺少测试用例
+- **Swagger文档未集成**: 计划下一迭代完成
+
+#### 📊 Statistics
+
+- 新增代码：841行（3个文件）
+- 数据模型：136行
+- 服务层：705行
+- 状态：⚠️ 核心功能完成，API集成待完善
+
 ### Planned for v0.2.0
 - WebSocket 协议支持
 - gRPC 协议支持
