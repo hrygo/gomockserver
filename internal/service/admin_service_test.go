@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gomockserver/mockserver/internal/middleware"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,11 +19,12 @@ func setupTestRouter() *gin.Engine {
 
 // TestNewAdminService 测试创建管理服务
 func TestNewAdminService(t *testing.T) {
-	service := NewAdminService(nil, nil, nil)
+	service := NewAdminService(nil, nil, nil, nil)
 	assert.NotNil(t, service)
 	assert.Nil(t, service.ruleHandler)
 	assert.Nil(t, service.projectHandler)
 	assert.Nil(t, service.statisticsHandler)
+	assert.Nil(t, service.importExportService)
 }
 
 // TestCORSMiddleware 测试 CORS 中间件
@@ -30,24 +32,28 @@ func TestCORSMiddleware(t *testing.T) {
 	tests := []struct {
 		name           string
 		method         string
+		origin         string
 		expectedStatus int
 		checkHeaders   bool
 	}{
 		{
 			name:           "OPTIONS 请求返回 204",
 			method:         http.MethodOptions,
+			origin:         "http://localhost:5173",
 			expectedStatus: http.StatusNoContent,
 			checkHeaders:   true,
 		},
 		{
 			name:           "GET 请求正常处理",
 			method:         http.MethodGet,
+			origin:         "http://localhost:5173",
 			expectedStatus: http.StatusOK,
 			checkHeaders:   true,
 		},
 		{
 			name:           "POST 请求正常处理",
 			method:         http.MethodPost,
+			origin:         "http://localhost:8080",
 			expectedStatus: http.StatusOK,
 			checkHeaders:   true,
 		},
@@ -56,7 +62,7 @@ func TestCORSMiddleware(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			router := setupTestRouter()
-			router.Use(CORSMiddleware())
+			router.Use(middleware.CORS())
 			router.GET("/test", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "ok"})
 			})
@@ -65,6 +71,7 @@ func TestCORSMiddleware(t *testing.T) {
 			})
 
 			req := httptest.NewRequest(tt.method, "/test", nil)
+			req.Header.Set("Origin", tt.origin)
 			w := httptest.NewRecorder()
 
 			router.ServeHTTP(w, req)
@@ -72,10 +79,9 @@ func TestCORSMiddleware(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
 			if tt.checkHeaders {
-				assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
+				assert.Equal(t, tt.origin, w.Header().Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "true", w.Header().Get("Access-Control-Allow-Credentials"))
-				assert.NotEmpty(t, w.Header().Get("Access-Control-Allow-Headers"))
-				assert.NotEmpty(t, w.Header().Get("Access-Control-Allow-Methods"))
+				// gin-contrib/cors 只在 OPTIONS 请求时返回完整的 CORS 头
 			}
 		})
 	}
@@ -160,7 +166,7 @@ func TestAdminServiceRoutes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 创建测试路由器并配置系统路由
 			router := setupTestRouter()
-			router.Use(CORSMiddleware())
+			router.Use(middleware.CORS())
 
 			v1 := router.Group("/api/v1")
 			{
@@ -184,43 +190,37 @@ func TestAdminServiceRoutes(t *testing.T) {
 // TestCORSMiddleware_OptionsRequest 测试 CORS 预检请求
 func TestCORSMiddleware_OptionsRequest(t *testing.T) {
 	router := setupTestRouter()
-	router.Use(CORSMiddleware())
+	router.Use(middleware.CORS())
 	router.GET("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "ok"})
 	})
 
 	req := httptest.NewRequest(http.MethodOptions, "/test", nil)
+	req.Header.Set("Origin", "http://localhost:5173")
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
 
 	// OPTIONS 请求应该返回 204 并且不继续处理
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	assert.Empty(t, w.Body.String())
 }
 
 // TestCORSMiddleware_Headers 测试 CORS 头部设置
 func TestCORSMiddleware_Headers(t *testing.T) {
 	router := setupTestRouter()
-	router.Use(CORSMiddleware())
+	router.Use(middleware.CORS())
 	router.GET("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "ok"})
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Origin", "http://localhost:5173")
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
 
-	// 验证所有必要的 CORS 头部都已设置
-	headers := map[string]string{
-		"Access-Control-Allow-Origin":      "*",
-		"Access-Control-Allow-Credentials": "true",
-		"Access-Control-Allow-Headers":     "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With",
-		"Access-Control-Allow-Methods":     "POST, OPTIONS, GET, PUT, DELETE",
-	}
-
-	for key, expectedValue := range headers {
-		assert.Equal(t, expectedValue, w.Header().Get(key), "Header %s should be %s", key, expectedValue)
-	}
+	// 验证必要的 CORS 头部
+	assert.Equal(t, "http://localhost:5173", w.Header().Get("Access-Control-Allow-Origin"))
+	assert.Equal(t, "true", w.Header().Get("Access-Control-Allow-Credentials"))
+	// 非 OPTIONS 请求可能不返回所有 CORS 头，这是正常的
 }

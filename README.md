@@ -296,25 +296,24 @@ curl -X POST http://localhost:8080/api/v1/rules/507f1f77bcf86cd799439013/enable
 |------|------|------|
 | /api/v1/health/metrics | GET | Prometheus 指标端点 |
 
-### 统计分析 API
+### 统计分析 API（v0.6.0 增强）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| /api/v1/statistics/dashboard | GET | 获取 Dashboard 统计数据 |
+| /api/v1/statistics/dashboard | GET | 获取 Dashboard 统计数据（包含协议分布、Top项目） |
 | /api/v1/statistics/projects | GET | 获取项目统计列表 |
 | /api/v1/statistics/rules | GET | 获取规则统计（按项目/环境分组） |
 | /api/v1/statistics/request-trend | GET | 获取请求趋势数据（7天/30天） |
 | /api/v1/statistics/response-time-distribution | GET | 获取响应时间分布 |
 
-### 统计分析 API
+### 导入导出 API（v0.6.0 新增）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| /api/v1/statistics/dashboard | GET | 获取 Dashboard 统计数据 |
-| /api/v1/statistics/projects | GET | 获取项目统计列表 |
-| /api/v1/statistics/rules | GET | 获取规则统计（按项目/环境分组） |
-| /api/v1/statistics/request-trend | GET | 获取请求趋势数据（7天/30天） |
-| /api/v1/statistics/response-time-distribution | GET | 获取响应时间分布 |
+| /api/v1/import-export/projects/:id/export | GET | 导出项目配置（含规则、环境） |
+| /api/v1/import-export/rules/export | POST | 批量导出规则 |
+| /api/v1/import-export/import | POST | 导入数据（支持冲突策略） |
+| /api/v1/import-export/validate | POST | 验证导入数据 |
 
 ## 配置说明
 
@@ -488,10 +487,29 @@ curl http://localhost:8080/api/v1/system/health
 - ✅ 统计分析增强
 - ✅ 单元测试覆盖率提升68%+，核心模块80%+
 
-### 阶段七：企业特性（v0.6.0 计划中）
-- 用户认证和权限体系
-- 规则版本控制和回滚
-- 配置导入导出
+**阶段七：企业特性（v0.6.0）**
+- ✅ CORS 中间件（支持前后端分离）
+- ✅ 配置导入导出（支持冲突策略）
+- ✅ 统计分析增强（协议分布、Top项目）
+- ✅ 前端环境变量配置
+- ✅ Docker 多阶段构建（包含前端）
+- 🗓️ 用户认证和权限体系（降低优先级，移至 v0.9.0）
+- 🗓️ 规则版本控制和回滚（降低优先级，移至 v0.9.0）
+
+### 计划中
+
+**阶段八：性能优化（v0.7.0）**
+- 🔴 Redis 缓存集成
+- 🔴 数据库查询优化
+- 🔴 并发优化
+
+**阶段九：企业级特性（v0.8.0）**
+- 🔴 用户认证和权限体系（从 v0.6.0 移至）
+- 🔴 规则版本控制和回滚（从 v0.6.0 移至）
+
+**阶段十：协议扩展（v0.9.0）**
+- 🔴 gRPC 协议支持
+- 🔴 TCP/UDP 协议支持
 
 ## 贡献指南
 

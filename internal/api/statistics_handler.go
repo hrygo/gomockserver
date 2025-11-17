@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -169,10 +170,22 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 		successRate = float64(totalStats.SuccessRequests) / float64(totalStats.TotalRequests) * 100
 	}
 	
-	// 协议分布（简化版本，实际需要聚合查询）
-	protocolDistribution := map[string]int64{
-		"http":      0,
-		"websocket": 0,
+	// 获取协议分布统计
+	protocolDistribution, err := h.getProtocolDistribution(ctx)
+	if err != nil {
+		logger.Error("failed to get protocol distribution", zap.Error(err))
+		// 使用默认值
+		protocolDistribution = map[string]int64{
+			"http":      0,
+			"websocket": 0,
+		}
+	}
+	
+	// 获取 Top 项目统计
+	topProjects, err := h.getTopProjects(ctx, 5)
+	if err != nil {
+		logger.Error("failed to get top projects", zap.Error(err))
+		topProjects = []ProjectStats{}
 	}
 	
 	response := OverviewResponse{
@@ -183,7 +196,7 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 		RequestsToday:        todayStats.TotalRequests,
 		SuccessRate:          successRate,
 		AvgResponseTime:      totalStats.AvgDuration,
-		TopProjects:          []ProjectStats{}, // TODO: 实现Top项目统计
+		TopProjects:          topProjects,
 		ProtocolDistribution: protocolDistribution,
 	}
 	
@@ -429,4 +442,129 @@ func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusOK, response)
+}
+
+// getProtocolDistribution 获取协议分布统计
+func (h *StatisticsHandler) getProtocolDistribution(ctx context.Context) (map[string]int64, error) {
+	// 使用 MongoDB 聚合查询统计协议分布
+	pipeline := []gin.H{
+		{
+			"$group": gin.H{
+				"_id":   "$protocol",
+				"count": gin.H{"$sum": 1},
+			},
+		},
+	}
+	
+	cursor, err := h.db.Collection("request_logs").Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	
+	distribution := make(map[string]int64)
+	for cursor.Next(ctx) {
+		var result struct {
+			ID    string `bson:"_id"`
+			Count int64  `bson:"count"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return nil, err
+		}
+		if result.ID != "" {
+			distribution[result.ID] = result.Count
+		}
+	}
+	
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	
+	// 确保基本协议类型存在
+	if _, ok := distribution["http"]; !ok {
+		distribution["http"] = 0
+	}
+	if _, ok := distribution["websocket"]; !ok {
+		distribution["websocket"] = 0
+	}
+	
+	return distribution, nil
+}
+
+// getTopProjects 获取 Top 项目统计
+func (h *StatisticsHandler) getTopProjects(ctx context.Context, limit int) ([]ProjectStats, error) {
+	// 使用 MongoDB 聚合查询统计每个项目的请求量
+	pipeline := []gin.H{
+		{
+			"$group": gin.H{
+				"_id":           "$project_id",
+				"request_count": gin.H{"$sum": 1},
+				"success_count": gin.H{
+					"$sum": gin.H{
+						"$cond": []interface{}{
+							gin.H{"$and": []gin.H{
+								{"$gte": []interface{}{"$status_code", 200}},
+								{"$lt": []interface{}{"$status_code", 400}},
+							}},
+							1,
+							0,
+						},
+					},
+				},
+			},
+		},
+		{
+			"$sort": gin.H{"request_count": -1},
+		},
+		{
+			"$limit": limit,
+		},
+	}
+	
+	cursor, err := h.db.Collection("request_logs").Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	
+	var topProjects []ProjectStats
+	for cursor.Next(ctx) {
+		var result struct {
+			ID           string `bson:"_id"`
+			RequestCount int64  `bson:"request_count"`
+			SuccessCount int64  `bson:"success_count"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return nil, err
+		}
+		
+		// 计算成功率
+		successRate := 0.0
+		if result.RequestCount > 0 {
+			successRate = float64(result.SuccessCount) / float64(result.RequestCount) * 100
+		}
+		
+		// 查询项目名称
+		projectName := result.ID
+		var project struct {
+			Name string `bson:"name"`
+		}
+		err := h.db.Collection("projects").FindOne(ctx, gin.H{"_id": result.ID}).Decode(&project)
+		if err == nil {
+			projectName = project.Name
+		}
+		
+		topProjects = append(topProjects, ProjectStats{
+			ProjectID:    result.ID,
+			ProjectName:  projectName,
+			RequestCount: result.RequestCount,
+			SuccessRate:  successRate,
+		})
+	}
+	
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	
+	return topProjects, nil
 }

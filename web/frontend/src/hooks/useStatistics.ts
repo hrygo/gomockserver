@@ -17,7 +17,16 @@ export const useDashboardStatistics = () => {
     queryKey: statisticsKeys.dashboard(),
     queryFn: async () => {
       const response = await statisticsApi.getDashboard()
-      return response.data
+      // 处理空数据情况
+      return response.data || {
+        total_projects: 0,
+        total_environments: 0,
+        total_rules: 0,
+        total_requests: 0,
+        enabled_rules: 0,
+        disabled_rules: 0,
+        requests_today: 0,
+      }
     },
     refetchInterval: 30000, // 每30秒刷新一次
   })
@@ -29,7 +38,8 @@ export const useProjectStatistics = () => {
     queryKey: statisticsKeys.projects(),
     queryFn: async () => {
       const response = await statisticsApi.getProjects()
-      return response.data
+      // 确保返回数组
+      return Array.isArray(response.data) ? response.data : []
     },
   })
 }
@@ -40,7 +50,8 @@ export const useRuleStatistics = (projectId?: string) => {
     queryKey: statisticsKeys.rules(projectId),
     queryFn: async () => {
       const response = await statisticsApi.getRules(projectId)
-      return response.data
+      // 确保返回数组
+      return Array.isArray(response.data) ? response.data : []
     },
   })
 }
@@ -51,7 +62,8 @@ export const useRequestTrend = () => {
     queryKey: statisticsKeys.requestTrend(),
     queryFn: async () => {
       const response = await statisticsApi.getRequestTrend()
-      return response.data
+      // 确保返回数组
+      return Array.isArray(response.data) ? response.data : []
     },
   })
 }
@@ -62,7 +74,8 @@ export const useResponseTimeDistribution = () => {
     queryKey: statisticsKeys.responseTime(),
     queryFn: async () => {
       const response = await statisticsApi.getResponseTimeDistribution()
-      return response.data
+      // 确保返回数组
+      return Array.isArray(response.data) ? response.data : []
     },
   })
 }

@@ -1,3 +1,131 @@
+## [0.6.0] - 2025-11-17
+
+### 新增功能
+
+#### 前后端分离支持
+- ✅ **CORS 中间件**（`internal/middleware/cors.go`）
+  - 支持开发环境（localhost:5173）和生产环境（localhost:8080）
+  - 预留 Authorization 头部支持（用于 v0.9.0 认证功能）
+  - 支持请求追踪 ID（X-Request-ID）
+  - 可配置的跨域策略（origins、methods、headers）
+  - 完整的单元测试覆盖（245行测试代码）
+
+- ✅ **前端环境配置**
+  - `.env.development`：开发环境配置（Vite 代理 /api/v1）
+  - `.env.production`：生产环境配置（集成部署）
+  - 环境变量：API_BASE_URL、MOCK_BASE_URL、DEBUG、LOG_LEVEL
+
+#### 配置导入导出功能
+- ✅ **导出功能**
+  - 导出单个项目（含规则、环境）：`GET /api/v1/import-export/projects/:id/export`
+  - 批量导出规则：`POST /api/v1/import-export/rules/export`
+  - 支持元数据导出（创建时间、更新时间、版本号）
+  - 数据格式：JSON，易于版本控制和迁移
+
+- ✅ **导入功能**
+  - 智能导入：`POST /api/v1/import-export/import`
+  - 数据验证：`POST /api/v1/import-export/validate`
+  - **三种冲突策略**：
+    - `skip`：跳过已存在的记录（默认，安全）
+    - `overwrite`：覆盖已存在的记录
+    - `append`：保留已存在的记录，仅导入新记录
+  - 完整的结果反馈：成功数、跳过数、失败数、错误详情
+  - 支持部分成功（HTTP 207 Multi-Status）
+
+- ✅ **数据验证**
+  - 必填字段验证（project.name、rule.name、environment.name）
+  - 数据类型验证（priority、enabled、status_code）
+  - 引用完整性检查（project_id、environment_id）
+  - 重复性检查（基于 name 字段）
+  - 详细的验证错误提示
+
+#### 统计分析增强
+- ✅ **协议分布统计**
+  - 新增 `getProtocolDistribution()` 方法
+  - 使用 MongoDB 聚合查询（$group 管道）
+  - 返回每种协议的请求计数（HTTP、HTTPS、WebSocket）
+
+- ✅ **Top 项目统计**
+  - 新增 `getTopProjects()` 方法
+  - 按请求量排序，支持 Top N（默认 Top 10）
+  - 计算成功率（status_code 2xx/3xx）
+  - 使用复杂聚合查询优化性能
+
+### 构建和部署增强
+
+#### Makefile 优化
+- ✅ **前端构建命令**
+  - `make build-frontend`：构建前端（npm run build）
+  - `make build-fullstack`：构建完整应用（前端+后端）
+  - `make build-platforms`：跨平台编译（重命名自 build-all）
+
+- ✅ **Docker 多阶段构建**
+  - `make docker-build`：后端 Docker 镜像（仅后端）
+  - `make docker-build-full`：完整 Docker 镜像（前端+后端）
+  - 新增 `Dockerfile.fullstack`（103行，三阶段构建）
+    - Stage 1：前端构建（Node.js 18-alpine）
+    - Stage 2：后端构建（Go 1.21-alpine）
+    - Stage 3：运行时镜像（Alpine latest）
+  - 镜像优化：使用 npm 镜像源、Go 代理加速构建
+  - 安全加固：非 root 用户运行、健康检查
+  - 版本信息注入：VERSION、BUILD_TIME、GIT_COMMIT
+
+- ✅ **Docker 构建优化**
+  - 更新 `.dockerignore`：排除前端 node_modules、dist
+  - 多阶段构建减少镜像体积（预计 <50MB）
+
+### 架构改进
+
+#### 循环依赖解决
+- ✅ 避免 `api` 和 `service` 包的循环导入
+- ✅ 在 `AdminService` 中定义 `ImportExportService` 接口
+- ✅ 直接在 `AdminService` 中实现导入导出 HTTP 处理函数
+- ✅ 保持代码组织清晰，职责分离
+
+### 文档更新
+
+- ✅ 更新 `README.md`
+  - 新增 v0.6.0 功能说明
+  - 更新 API 文档（导入导出、统计分析）
+  - 更新开发计划（v0.6.0 已完成，v0.7.0-v0.9.0 规划）
+  - 调整版本规划（认证功能移至 v0.9.0）
+
+- ✅ 创建 `v0.6.0-backend-implementation-summary.md`（696行）
+  - 完整的实现总结
+  - API 使用示例
+  - 技术亮点说明
+  - 测试验证方法
+
+### 技术细节
+
+#### 依赖更新
+- ✅ 添加 `github.com/gin-contrib/cors` v1.7.6
+
+#### 测试覆盖
+- ✅ CORS 中间件测试：245行，覆盖所有场景
+  - GET/POST/OPTIONS 请求测试
+  - Headers 验证测试
+  - Credentials 测试
+  - 预检请求测试
+
+### 版本规划调整
+
+**重要变更**：将用户认证和权限功能降低优先级
+
+- 🗓️ **v0.6.0**（当前版本）：聚焦基础设施和配置管理
+- 🗓️ **v0.7.0**：性能优化（Redis 缓存、数据库优化）
+- 🗓️ **v0.8.0**：企业级特性（用户认证、权限体系、版本控制）
+- 🗓️ **v0.9.0**：协议扩展（gRPC、TCP/UDP）
+
+### 向后兼容性
+
+- ✅ 所有现有 API 保持向后兼容
+- ✅ 新增 API 不影响现有功能
+- ✅ CORS 中间件预留 Authorization 头部，为 v0.9.0 做准备
+- ✅ 导入导出支持元数据，便于版本迁移
+
+---
+
 ## [0.5.1] - 2025-01-17
 
 ### 文档优化

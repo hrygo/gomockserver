@@ -1,0 +1,102 @@
+# ════════════════════════════════════════════════════════
+# 多阶段构建 Dockerfile - 包含前端和后端
+# ════════════════════════════════════════════════════════
+
+# ════════════════════════════════════════════════════════
+# Stage 1: 前端构建
+# ════════════════════════════════════════════════════════
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+# 设置 npm 镜像源（加速构建）
+RUN npm config set registry https://registry.npmmirror.com
+
+# 复制前端项目文件
+COPY web/frontend/package*.json ./
+RUN npm install
+
+# 复制前端源代码并构建
+COPY web/frontend/ ./
+RUN npm run build
+
+# ════════════════════════════════════════════════════════
+# Stage 2: 后端构建
+# ════════════════════════════════════════════════════════
+FROM golang:1.21-alpine AS backend-builder
+
+WORKDIR /app
+
+# 设置 Go 代理和环境变量
+ENV GOPROXY=https://goproxy.cn,direct \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
+# 安装必要的构建工具
+RUN apk add --no-cache git ca-certificates tzdata
+
+# 复制 go mod 文件
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 复制源代码
+COPY . .
+
+# 构建参数
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
+
+# 构建应用（带版本信息）
+RUN go build \
+    -a \
+    -installsuffix cgo \
+    -ldflags "-s -w \
+        -X main.Version=${VERSION} \
+        -X main.BuildTime=${BUILD_TIME} \
+        -X main.GitCommit=${GIT_COMMIT}" \
+    -o mockserver \
+    ./cmd/mockserver
+
+# ════════════════════════════════════════════════════════
+# Stage 3: 运行时镜像
+# ════════════════════════════════════════════════════════
+FROM alpine:latest
+
+# 安装运行时依赖
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    bash
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+
+WORKDIR /app
+
+# 从后端构建阶段复制二进制文件
+COPY --from=backend-builder /app/mockserver .
+COPY --from=backend-builder /app/config.yaml .
+
+# 从前端构建阶段复制前端产物
+COPY --from=frontend-builder /frontend/dist ./web/frontend/dist
+
+# 创建非 root 用户运行应用
+RUN addgroup -g 1000 mockserver && \
+    adduser -D -u 1000 -G mockserver mockserver && \
+    chown -R mockserver:mockserver /app
+
+USER mockserver
+
+# 暴露端口
+# 8080: Admin API 和前端静态文件服务
+# 9090: Mock API
+EXPOSE 8080 9090
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/system/health || exit 1
+
+# 运行应用
+CMD ["./mockserver"]

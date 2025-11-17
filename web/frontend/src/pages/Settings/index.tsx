@@ -166,7 +166,7 @@ const Settings: React.FC = () => {
       <Card title="系统信息" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
           <Descriptions.Item label="系统版本">
-            {systemInfo?.version || 'v0.2.0'}
+            {systemInfo?.version || 'v0.6.0'}
           </Descriptions.Item>
           <Descriptions.Item label="构建时间">
             {systemInfo?.build_time || '-'}

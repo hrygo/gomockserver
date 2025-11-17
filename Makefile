@@ -22,9 +22,12 @@ help:
 	@echo "════════════════════════════════════════════════════════"
 	@echo ""
 	@echo "📦 构建命令:"
-	@echo "  make build           - 编译二进制文件"
+	@echo "  make build           - 编译后端二进制文件"
+	@echo "  make build-frontend  - 构建前端（npm run build）"
+	@echo "  make build-fullstack - 构建完整应用（前端+后端）"
 	@echo "  make install         - 安装到 GOPATH/bin"
 	@echo "  make clean           - 清理构建产物"
+	@echo "  make build-platforms - 跨平台编译"
 	@echo ""
 	@echo "🧪 测试命令:"
 	@echo "  make test            - 运行所有测试"
@@ -51,11 +54,12 @@ help:
 	@echo "  make pre-commit      - 提交前检查"
 	@echo ""
 	@echo "🐳 Docker 命令:"
-	@echo "  make docker-build    - 构建 Docker 镜像"
-	@echo "  make docker-up       - 启动服务"
-	@echo "  make docker-down     - 停止服务"
-	@echo "  make docker-test     - Docker 测试环境"
-	@echo "  make docker-logs     - 查看日志"
+	@echo "  make docker-build      - 构建后端 Docker 镜像"
+	@echo "  make docker-build-full - 构建完整 Docker 镜像（包含前端）"
+	@echo "  make docker-up         - 启动服务"
+	@echo "  make docker-down       - 停止服务"
+	@echo "  make docker-test       - Docker 测试环境"
+	@echo "  make docker-logs       - 查看日志"
 	@echo ""
 	@echo "🚀 运行命令:"
 	@echo "  make run             - 本地运行后端"
@@ -100,7 +104,7 @@ install:
 	@echo "✅ Installed to $(GOPATH)/bin/$(BINARY_NAME)"
 
 # 交叉编译
-build-all:
+build-platforms:
 	@echo "🔨 Building for multiple platforms..."
 	@mkdir -p $(BIN_DIR)
 	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/mockserver
@@ -109,6 +113,27 @@ build-all:
 	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/mockserver
 	@GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/mockserver
 	@echo "✅ Cross-compilation complete"
+
+# 构建前端
+build-frontend:
+	@echo "🎨 Building frontend..."
+	@if [ -d "web/frontend" ]; then \
+		cd web/frontend && \
+		echo "📦 Installing dependencies..." && \
+		npm install && \
+		echo "🔨 Building frontend..." && \
+		npm run build && \
+		echo "✅ Frontend build complete: web/frontend/dist"; \
+	else \
+		echo "❌ Frontend directory not found"; \
+		exit 1; \
+	fi
+
+# 构建完整应用（前端+后端）
+build-fullstack: build-frontend build
+	@echo "✅ Fullstack build complete"
+	@echo "  - Frontend: web/frontend/dist"
+	@echo "  - Backend:  $(BIN_DIR)/$(BINARY_NAME)"
 
 # 清理构建文件
 clean:
@@ -310,9 +335,27 @@ deps-upgrade:
 
 # 构建 Docker 镜像
 docker-build:
-	@echo "🐳 Building Docker image..."
+	@echo "🐳 Building Docker image (backend only)..."
 	@docker build -t mockserver:$(VERSION) -t mockserver:latest .
 	@echo "✅ Docker image built: mockserver:$(VERSION)"
+
+# 构建包含前端的完整 Docker 镜像（多阶段构建）
+docker-build-full:
+	@echo "🐳 Building full-stack Docker image..."
+	@if [ ! -f Dockerfile.fullstack ]; then \
+		echo "❌ Dockerfile.fullstack not found"; \
+		exit 1; \
+	fi
+	@docker build -f Dockerfile.fullstack \
+		-t mockserver-fullstack:$(VERSION) \
+		-t mockserver-fullstack:latest \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		.
+	@echo "✅ Full-stack Docker image built: mockserver-fullstack:$(VERSION)"
+	@echo "  - Frontend: web/frontend/dist (built inside container)"
+	@echo "  - Backend:  mockserver binary with version info"
 
 # 启动 Docker 服务
 docker-up:
@@ -380,12 +423,19 @@ dev:
 # 启动 MongoDB 容器
 start-mongo:
 	@echo "🍃 Starting MongoDB container..."
-	@docker ps -a | grep mongodb > /dev/null 2>&1 && \
-		(echo "ℹ️  MongoDB container already exists, starting it..." && docker start mongodb) || \
-		(echo "🚀 Creating and starting MongoDB container..." && \
-		docker run -d --name mongodb -p 27017:27017 \
-			-v mongodb_data:/data/db \
-			m.daocloud.io/docker.io/mongo:6.0)
+	@if docker ps -a --format '{{.Names}}' | grep -q '^mongodb$$'; then \
+		echo "ℹ️  MongoDB container exists, checking status..."; \
+		if docker ps --format '{{.Names}}' | grep -q '^mongodb$$'; then \
+			echo "✅ MongoDB is already running"; \
+		else \
+			echo "🔄 Starting existing MongoDB container..."; \
+			docker start mongodb || (echo "❌ Failed to start, removing broken container..." && docker rm -f mongodb && \
+			docker run -d --name mongodb -p 27017:27017 -v mongodb_data:/data/db m.daocloud.io/docker.io/mongo:6.0); \
+		fi; \
+	else \
+		echo "🚀 Creating and starting MongoDB container..."; \
+		docker run -d --name mongodb -p 27017:27017 -v mongodb_data:/data/db m.daocloud.io/docker.io/mongo:6.0; \
+	fi
 	@echo "✅ MongoDB is running on localhost:27017"
 
 # 停止 MongoDB 容器

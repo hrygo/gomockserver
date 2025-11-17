@@ -10,6 +10,7 @@ export interface MatchCondition {
   query?: Record<string, string>
   headers?: Record<string, string>
   ip_whitelist?: string[]
+  script?: string
 }
 
 export interface ResponseContent {
@@ -17,6 +18,7 @@ export interface ResponseContent {
   content_type: ContentType
   headers?: Record<string, string>
   body?: any
+  script?: string
 }
 
 export interface Response {
@@ -25,11 +27,18 @@ export interface Response {
 }
 
 export interface Delay {
+  type?: 'fixed' | 'random' | 'normal' | 'step'
   fixed?: number
   random?: {
     min: number
     max: number
   }
+  min?: number
+  max?: number
+  mean?: number
+  std_dev?: number
+  step?: number
+  limit?: number
 }
 
 export interface Rule {

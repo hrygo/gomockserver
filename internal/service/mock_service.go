@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gomockserver/mockserver/internal/adapter"
+	"github.com/gomockserver/mockserver/internal/middleware"
 	"github.com/gomockserver/mockserver/internal/models"
 	"github.com/gomockserver/mockserver/pkg/logger"
 	"go.uber.org/zap"
@@ -102,6 +103,8 @@ func StartMockServer(addr string, service *MockService) error {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
+	// 添加 CORS 支持，允许前端直接调用 Mock 服务
+	r.Use(middleware.CORS())
 
 	// Mock 请求处理路由
 	// 格式：/:projectID/:environmentID/*path
