@@ -79,22 +79,22 @@ jobs:
       
       - name: Start test environment
         run: |
-          docker-compose -f docker-compose.test.yml up -d mongodb-test mockserver-test
+          docker compose -f docker-compose.test.yml up -d mongodb-test mockserver-test
           sleep 15
       
       - name: Check services health
         run: |
-          docker-compose -f docker-compose.test.yml ps
+          docker compose -f docker-compose.test.yml ps
           curl -f http://localhost:8081/api/v1/system/health || exit 1
       
       - name: Run integration tests
         run: |
-          docker-compose -f docker-compose.test.yml run --rm test-runner
+          docker compose -f docker-compose.test.yml run --rm test-runner
       
       - name: Collect logs
         if: failure()
         run: |
-          docker-compose -f docker-compose.test.yml logs > docker-logs.txt
+          docker compose -f docker-compose.test.yml logs > docker-logs.txt
       
       - name: Upload logs
         if: failure()
@@ -106,4 +106,4 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose -f docker-compose.test.yml down -v
+          docker compose -f docker-compose.test.yml down -v

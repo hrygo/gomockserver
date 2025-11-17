@@ -13,11 +13,8 @@ RUN apk add --no-cache git
 COPY go.mod go.sum ./
 RUN go mod download
 
-# 复制源代码（确保包含关键目录）
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
-COPY pkg/ ./pkg/
-COPY config.yaml ./
+# 复制源代码
+COPY . .
 
 # 构建应用
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o mockserver ./cmd/mockserver
