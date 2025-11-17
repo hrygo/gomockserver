@@ -16,30 +16,8 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
-# 调试：验证源代码是否正确复制
-RUN echo "当前目录内容:" && ls -la .
-RUN echo "检查是否存在cmd目录:" && if [ -d "./cmd" ]; then echo "cmd目录存在"; ls -la ./cmd/; else echo "cmd目录不存在"; fi
-RUN echo "检查是否存在cmd/mockserver目录:" && if [ -d "./cmd/mockserver" ]; then echo "cmd/mockserver目录存在"; ls -la ./cmd/mockserver/; else echo "cmd/mockserver目录不存在"; fi
-RUN echo "检查main.go文件:" && if [ -f "./cmd/mockserver/main.go" ]; then echo "main.go文件存在"; cat ./cmd/mockserver/main.go | head -20; else echo "main.go文件不存在"; fi
-
 # 构建应用
-# 调试：显示详细的构建信息
-RUN echo "Building with Go version: $(go version)"
-RUN echo "Current directory: $(pwd)"
-RUN echo "Go env: $(go env)"
-RUN echo "Listing all files in current directory:"
-RUN ls -la
-RUN echo "Checking Go modules:"
-RUN go list ./...
-# 更详细的构建调试信息
-RUN echo "开始构建前检查目录结构:"
-RUN find . -type d -name "cmd" | xargs ls -la
-RUN echo "检查Go环境:"
-RUN go env
-RUN echo "检查模块依赖:"
-RUN go list -m all
-RUN echo "开始构建过程:"
-RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o mockserver ./cmd/mockserver 2>&1 || { echo "Build failed with above errors"; exit 1; }
+RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o mockserver ./cmd/mockserver
 
 # Runtime stage
 FROM alpine:latest
