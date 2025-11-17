@@ -43,13 +43,23 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
+# 调试：验证源代码是否正确复制
+RUN ls -la ./cmd/
+RUN ls -la ./cmd/mockserver/
+RUN cat ./cmd/mockserver/main.go | head -20
+
 # 构建参数
 ARG VERSION=dev
 ARG BUILD_TIME
 ARG GIT_COMMIT
 
+# 调试：显示详细的构建信息
+RUN echo "Building with Go version: $(go version)"
+RUN echo "Current directory: $(pwd)"
+RUN echo "Go env: $(go env)"
+
 # 构建应用（带版本信息）
-RUN go build \
+RUN go build -v \
     -a \
     -installsuffix cgo \
     -ldflags "-s -w \

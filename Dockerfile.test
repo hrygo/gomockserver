@@ -16,8 +16,17 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
+# 调试：验证源代码是否正确复制
+RUN ls -la ./cmd/
+RUN ls -la ./cmd/mockserver/
+RUN cat ./cmd/mockserver/main.go | head -20
+
 # 构建应用（测试环境）
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o mockserver ./cmd/mockserver
+# 调试：显示详细的构建信息
+RUN echo "Building with Go version: $(go version)"
+RUN echo "Current directory: $(pwd)"
+RUN echo "Go env: $(go env)"
+RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o mockserver ./cmd/mockserver
 
 # Runtime stage
 FROM alpine:latest
