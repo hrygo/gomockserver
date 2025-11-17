@@ -16,6 +16,12 @@
   - 修复环境列表查询项目ID获取方式错误的问题
   - 修复规则更新时关键字段丢失的问题
 
+### 文档
+
+- ✅ **经验总结文档**
+  - 添加`docs/summaries/github-actions-e2e-test-adaptation-summary.md`实施总结报告
+  - 添加`.qoder/quests/e2e-test-dual-environment-adaptation-lessons.md`经验教训文档
+
 ---
 
 ## [0.6.1] - 2025-11-17
