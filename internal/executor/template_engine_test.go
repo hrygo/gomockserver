@@ -103,6 +103,91 @@ func TestTemplateEngine_Render(t *testing.T) {
 			want:     "Hello World",
 			wantErr:  false,
 		},
+		{
+			name:     "timestampMilli function",
+			template: "{{timestampMilli}}",
+			context:  &TemplateContext{},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "date function with default format",
+			template: "{{date \"\"}}",
+			context:  &TemplateContext{},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "time function with default format",
+			template: "{{time \"\"}}",
+			context:  &TemplateContext{},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "uuidShort function",
+			template: "{{uuidShort}}",
+			context:  &TemplateContext{},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "random with equal min max",
+			template: "{{random 5 5}}",
+			context:  &TemplateContext{},
+			want:     "5",
+			wantErr:  false,
+		},
+		{
+			name:     "randomInt function",
+			template: "{{randomInt}}",
+			context:  &TemplateContext{},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "randomFloat function",
+			template: "{{randomFloat}}",
+			context:  &TemplateContext{},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "base64Decode function",
+			template: "{{base64Decode \"aGVsbG8=\"}}",
+			context:  &TemplateContext{},
+			want:     "hello",
+			wantErr:  false,
+		},
+		{
+			name:     "quote function",
+			template: "{{quote \"test\"}}",
+			context:  &TemplateContext{},
+			want:     "\"test\"",
+			wantErr:  false,
+		},
+		{
+			name:     "toJSON function",
+			template: "{{toJSON .Request}}",
+			context: &TemplateContext{
+				Request: &RequestContext{
+					Path: "/test",
+				},
+			},
+			want:     "",
+			wantErr:  false,
+		},
+		{
+			name:     "toJSONPretty function",
+			template: "{{toJSONPretty .Request}}",
+			context: &TemplateContext{
+				Request: &RequestContext{
+					Path: "/test",
+				},
+			},
+			want:     "",
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {

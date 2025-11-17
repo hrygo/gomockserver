@@ -2,6 +2,9 @@ package executor
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -862,4 +865,285 @@ func TestNonStringBodyForTextType(t *testing.T) {
 
 // TestStepDelayType 测试step延迟类型
 func TestStepDelayType(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	t.Run("Step delay basic", func(t *testing.T) {
+		config := &models.DelayConfig{
+			Type:  "step",
+			Fixed: 100,
+			Step:  50,
+			Limit: 300,
+		}
+		
+		// 第一次调用: 100 + 0*50 = 100
+		delay1 := executor.calculateStepDelay(config, "rule1")
+		assert.Equal(t, 100, delay1)
+		
+		// 第二次调用: 100 + 1*50 = 150
+		delay2 := executor.calculateStepDelay(config, "rule1")
+		assert.Equal(t, 150, delay2)
+		
+		// 第三次调用: 100 + 2*50 = 200
+		delay3 := executor.calculateStepDelay(config, "rule1")
+		assert.Equal(t, 200, delay3)
+	})
+	
+	t.Run("Step delay with limit", func(t *testing.T) {
+		executor.ResetStepCounter("rule2")
+		config := &models.DelayConfig{
+			Type:  "step",
+			Fixed: 100,
+			Step:  100,
+			Limit: 250,
+		}
+		
+		for i := 0; i < 5; i++ {
+			delay := executor.calculateStepDelay(config, "rule2")
+			if i < 2 {
+				assert.LessOrEqual(t, delay, 250)
+			} else {
+				assert.Equal(t, 250, delay, "超过limit应该返回limit值")
+			}
+		}
+	})
+	
+	t.Run("Step delay with zero step", func(t *testing.T) {
+		config := &models.DelayConfig{
+			Type:  "step",
+			Fixed: 100,
+			Step:  0,
+		}
+		
+		delay := executor.calculateStepDelay(config, "rule3")
+		assert.Equal(t, 100, delay, "step为0应该返回Fixed值")
+	})
+}
+
+func TestResetStepCounter(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	config := &models.DelayConfig{
+		Type:  "step",
+		Fixed: 100,
+		Step:  50,
+	}
+	
+	// 增加计数器
+	executor.calculateStepDelay(config, "rule1")
+	executor.calculateStepDelay(config, "rule1")
+	assert.Equal(t, int64(2), executor.GetStepCounter("rule1"))
+	
+	// 重置特定规则的计数器
+	executor.ResetStepCounter("rule1")
+	assert.Equal(t, int64(0), executor.GetStepCounter("rule1"))
+	
+	// 测试重置所有计数器
+	executor.calculateStepDelay(config, "rule2")
+	executor.calculateStepDelay(config, "rule3")
+	executor.ResetStepCounter("") // 空字符串重置所有
+	assert.Equal(t, int64(0), executor.GetStepCounter("rule2"))
+	assert.Equal(t, int64(0), executor.GetStepCounter("rule3"))
+}
+
+func TestGetStepCounter(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	// 未调用前应该为0
+	assert.Equal(t, int64(0), executor.GetStepCounter("new-rule"))
+	
+	config := &models.DelayConfig{
+		Type:  "step",
+		Fixed: 100,
+		Step:  50,
+	}
+	
+	executor.calculateStepDelay(config, "test-rule")
+	executor.calculateStepDelay(config, "test-rule")
+	executor.calculateStepDelay(config, "test-rule")
+	
+	assert.Equal(t, int64(3), executor.GetStepCounter("test-rule"))
+}
+
+func TestGenerateNormalRand(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	// 测试正态分布生成
+	mean := 100.0
+	stdDev := 20.0
+	
+	// 生成多个值并检查分布
+	values := make([]float64, 1000)
+	for i := 0; i < 1000; i++ {
+		values[i] = executor.generateNormalRand(mean, stdDev)
+	}
+	
+	// 计算平均值
+	sum := 0.0
+	for _, v := range values {
+		sum += v
+	}
+	avg := sum / float64(len(values))
+	
+	// 平均值应该接近mean（允许5%误差）
+	assert.InDelta(t, mean, avg, mean*0.1, "平均值应该接近期望值")
+	
+	// 检查值的范围（99.7%的值应该在mean±3*stdDev范围内）
+	inRangeCount := 0
+	for _, v := range values {
+		if v >= mean-3*stdDev && v <= mean+3*stdDev {
+			inRangeCount++
+		}
+	}
+	assert.GreaterOrEqual(t, inRangeCount, 990, "至少99%的值应该在±3σ范围内")
+}
+
+func TestNormalDelayType(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	t.Run("Normal delay with valid stddev", func(t *testing.T) {
+		config := &models.DelayConfig{
+			Type:   "normal",
+			Mean:   100,
+			StdDev: 20,
+		}
+		
+		delays := make([]int, 100)
+		for i := 0; i < 100; i++ {
+			delays[i] = executor.calculateDelay(config)
+			assert.GreaterOrEqual(t, delays[i], 0, "延迟不应该为负")
+		}
+		
+		// 应该有变化
+		uniqueDelays := make(map[int]bool)
+		for _, d := range delays {
+			uniqueDelays[d] = true
+		}
+		assert.Greater(t, len(uniqueDelays), 10, "正态分布应该产生多个不同值")
+	})
+	
+	t.Run("Normal delay with zero stddev", func(t *testing.T) {
+		config := &models.DelayConfig{
+			Type:   "normal",
+			Mean:   100,
+			StdDev: 0,
+		}
+		
+		delay := executor.calculateDelay(config)
+		assert.Equal(t, 100, delay, "stddev为0应该返回mean值")
+	})
+	
+	t.Run("Normal delay with negative stddev", func(t *testing.T) {
+		config := &models.DelayConfig{
+			Type:   "normal",
+			Mean:   100,
+			StdDev: -10,
+		}
+		
+		delay := executor.calculateDelay(config)
+		assert.Equal(t, 100, delay, "负stddev应该返回mean值")
+	})
+}
+
+func TestCalculateDelayNil(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	delay := executor.calculateDelay(nil)
+	assert.Equal(t, 0, delay, "nil config应该返回0")
+}
+
+func TestCalculateDelayUnknownType(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	config := &models.DelayConfig{
+		Type: "unknown",
+	}
+	
+	delay := executor.calculateDelay(config)
+	assert.Equal(t, 0, delay, "未知类型应该返回0")
+}
+
+func TestReadFileResponse(t *testing.T) {
+	executor := NewMockExecutor()
+	
+	// 创建临时测试文件
+	tmpFile, err := os.CreateTemp("", "test-response-*.txt")
+	assert.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+	
+	testContent := []byte("Test file content")
+	_, err = tmpFile.Write(testContent)
+	assert.NoError(t, err)
+	tmpFile.Close()
+	
+	// 测试读取文件
+	data, err := executor.readFileResponse(tmpFile.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, testContent, data)
+	
+	// 测试读取不存在的文件
+	_, err = executor.readFileResponse("/nonexistent/file.txt")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to open file")
+}
+
+// TestProxyResponse 测试Proxy响应
+func TestProxyResponse(t *testing.T) {
+	// 创建 mock 服务器
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message": "proxied"}`))
+	}))
+	defer mockServer.Close()
+
+	executor := NewMockExecutor()
+
+	t.Run("Valid proxy config", func(t *testing.T) {
+		rule := &models.Rule{
+			Protocol: models.ProtocolHTTP,
+			Response: models.Response{
+				Type: models.ResponseTypeProxy,
+				Content: map[string]interface{}{
+					"target_url": mockServer.URL,
+					"timeout":    5,
+				},
+			},
+		}
+
+		request := &adapter.Request{
+			Protocol: models.ProtocolHTTP,
+			Path:     "/test",
+			Metadata: map[string]interface{}{
+				"method": "GET",
+			},
+		}
+
+		response, err := executor.proxyResponse(request, rule)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+		assert.Contains(t, string(response.Body), "proxied")
+	})
+
+	t.Run("Invalid proxy config - unmarshal error", func(t *testing.T) {
+		rule := &models.Rule{
+			Protocol: models.ProtocolHTTP,
+			Response: models.Response{
+				Type: models.ResponseTypeProxy,
+				Content: map[string]interface{}{
+					"target_url": []int{1, 2, 3}, // 错误的类型
+				},
+			},
+		}
+
+		request := &adapter.Request{
+			Protocol: models.ProtocolHTTP,
+		}
+
+		response, err := executor.proxyResponse(request, rule)
+
+		assert.Error(t, err)
+		assert.Nil(t, response)
+	})
 }

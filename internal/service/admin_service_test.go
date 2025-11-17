@@ -111,6 +111,25 @@ func TestGetVersion(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "MockServer")
 }
 
+// TestGetSystemInfo 测试获取系统信息
+func TestGetSystemInfo(t *testing.T) {
+	router := setupTestRouter()
+	router.GET("/info", GetSystemInfo)
+
+	req := httptest.NewRequest(http.MethodGet, "/info", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "version")
+	assert.Contains(t, w.Body.String(), "0.2.0")
+	assert.Contains(t, w.Body.String(), "build_time")
+	assert.Contains(t, w.Body.String(), "go_version")
+	assert.Contains(t, w.Body.String(), "admin_api_url")
+	assert.Contains(t, w.Body.String(), "mock_service_url")
+}
+
 // TestAdminServiceRoutes 测试管理服务路由配置
 func TestAdminServiceRoutes(t *testing.T) {
 	// 创建一个临时的 AdminService 用于路由测试

@@ -81,11 +81,11 @@ func StartAdminServer(addr string, service *AdminService) error {
 		// 统计 API
 		statistics := v1.Group("/statistics")
 		{
-			statistics.GET("/dashboard", service.statisticsHandler.GetDashboardStatistics)
-			statistics.GET("/projects", service.statisticsHandler.GetProjectStatistics)
-			statistics.GET("/rules", service.statisticsHandler.GetRuleStatistics)
-			statistics.GET("/request-trend", service.statisticsHandler.GetRequestTrend)
-			statistics.GET("/response-time-distribution", service.statisticsHandler.GetResponseTimeDistribution)
+			statistics.GET("/dashboard", service.statisticsHandler.GetOverview)
+			statistics.GET("/projects", service.statisticsHandler.GetOverview)
+			statistics.GET("/rules", service.statisticsHandler.GetOverview)
+			statistics.GET("/request-trend", service.statisticsHandler.GetTrend)
+			statistics.GET("/response-time-distribution", service.statisticsHandler.GetTrend)
 		}
 
 		// Mock API
