@@ -13,7 +13,7 @@ server:
 # 数据库配置
 database:
   mongodb:
-    uri: "mongodb://mongodb-test:27017"  # 使用Docker网络中的服务名
+    uri: "mongodb://host.docker.internal:27018"  # 使用 host.docker.internal 连接到主机上的 MongoDB
     database: "mockserver_test"
     timeout: 10s
     pool:

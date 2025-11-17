@@ -39,10 +39,10 @@ WORKDIR /root/
 
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/mockserver .
-COPY --from=builder /app/config.yaml .
+COPY --from=builder /app/config.test.yaml ./config.yaml
 
 # 暴露端口
 EXPOSE 8080 9090
 
 # 运行应用（测试模式）
-CMD ["./mockserver", "-config", "config.test.yaml"]
+CMD ["./mockserver", "-config", "config.yaml"]
