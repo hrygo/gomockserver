@@ -333,29 +333,17 @@ deps-upgrade:
 # Docker 相关
 # ════════════════════════════════════════════════════════
 
-# 构建 Docker 镜像
+# Docker 构建后端镜像
 docker-build:
-	@echo "🐳 Building Docker image (backend only)..."
-	@docker build -t mockserver:$(VERSION) -t mockserver:latest .
-	@echo "✅ Docker image built: mockserver:$(VERSION)"
+	@echo "🐳 Building backend Docker image..."
+	@docker build -f docker/Dockerfile -t mockserver .
+	@echo "✅ Docker image built successfully"
 
-# 构建包含前端的完整 Docker 镜像（多阶段构建）
+# Docker 构建完整镜像（包含前端）
 docker-build-full:
-	@echo "🐳 Building full-stack Docker image..."
-	@if [ ! -f Dockerfile.fullstack ]; then \
-		echo "❌ Dockerfile.fullstack not found"; \
-		exit 1; \
-	fi
-	@docker build -f Dockerfile.fullstack \
-		-t mockserver-fullstack:$(VERSION) \
-		-t mockserver-fullstack:latest \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg BUILD_TIME=$(BUILD_TIME) \
-		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
-		.
-	@echo "✅ Full-stack Docker image built: mockserver-fullstack:$(VERSION)"
-	@echo "  - Frontend: web/frontend/dist (built inside container)"
-	@echo "  - Backend:  mockserver binary with version info"
+	@echo "🐳 Building fullstack Docker image..."
+	@docker build -f docker/Dockerfile.fullstack -t mockserver-fullstack .
+	@echo "✅ Fullstack Docker image built successfully"
 
 # 启动 Docker 服务
 docker-up:

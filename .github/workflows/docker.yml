@@ -51,7 +51,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -62,9 +62,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.test
+          file: ./docker/Dockerfile.test-runner
           push: false
-          tags: mockserver:test
+          tags: mockserver:test-runner
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -89,7 +89,7 @@ jobs:
       
       - name: Run integration tests
         run: |
-          docker compose -f docker-compose.test.yml run --rm test-runner
+          docker compose -f docker-compose.test.yml --profile integration run --rm test-runner
       
       - name: Collect logs
         if: failure()

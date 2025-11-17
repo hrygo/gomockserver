@@ -15,7 +15,9 @@ services:
       - mockserver-network
 
   mockserver:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     container_name: mockserver-app
     restart: always
     ports:
