@@ -68,16 +68,16 @@ func StartAdminServer(addr string, service *AdminService) error {
 			projects.GET("/:id", service.projectHandler.GetProject)
 			projects.PUT("/:id", service.projectHandler.UpdateProject)
 			projects.DELETE("/:id", service.projectHandler.DeleteProject)
-		}
-
-		// 环境管理 API
-		environments := v1.Group("/environments")
-		{
-			environments.GET("", service.projectHandler.ListEnvironments)
-			environments.POST("", service.projectHandler.CreateEnvironment)
-			environments.GET("/:id", service.projectHandler.GetEnvironment)
-			environments.PUT("/:id", service.projectHandler.UpdateEnvironment)
-			environments.DELETE("/:id", service.projectHandler.DeleteEnvironment)
+			
+			// 环境管理 API (在项目下)
+			environments := projects.Group("/:id/environments")
+			{
+				environments.GET("", service.projectHandler.ListEnvironments)
+				environments.POST("", service.projectHandler.CreateEnvironment)
+				environments.GET("/:env_id", service.projectHandler.GetEnvironment)
+				environments.PUT("/:env_id", service.projectHandler.UpdateEnvironment)
+				environments.DELETE("/:env_id", service.projectHandler.DeleteEnvironment)
+			}
 		}
 
 		// 系统管理 API
