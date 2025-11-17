@@ -31,6 +31,14 @@ RUN echo "Listing all files in current directory:"
 RUN ls -la
 RUN echo "Checking Go modules:"
 RUN go list ./...
+# 更详细的构建调试信息
+RUN echo "开始构建前检查目录结构:"
+RUN find . -type d -name "cmd" | xargs ls -la
+RUN echo "检查Go环境:"
+RUN go env
+RUN echo "检查模块依赖:"
+RUN go list -m all
+RUN echo "开始构建过程:"
 RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o mockserver ./cmd/mockserver 2>&1 || { echo "Build failed with above errors"; exit 1; }
 
 # Runtime stage

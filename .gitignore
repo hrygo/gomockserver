@@ -30,8 +30,8 @@ Thumbs.db
 
 # Application
 mockserver
-cmd/mockserver/mockserver
-cmd/admin/admin
+# cmd/mockserver/mockserver
+# cmd/admin/admin
 
 # Logs
 logs/
