@@ -26,7 +26,11 @@ RUN cat ./cmd/mockserver/main.go | head -20
 RUN echo "Building with Go version: $(go version)"
 RUN echo "Current directory: $(pwd)"
 RUN echo "Go env: $(go env)"
-RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o mockserver ./cmd/mockserver
+RUN echo "Listing all files in current directory:"
+RUN ls -la
+RUN echo "Checking Go modules:"
+RUN go list ./...
+RUN CGO_ENABLED=0 GOOS=linux go build -v -a -installsuffix cgo -o mockserver ./cmd/mockserver 2>&1 || { echo "Build failed with above errors"; exit 1; }
 
 # Runtime stage
 FROM alpine:latest

@@ -59,6 +59,10 @@ RUN echo "Current directory: $(pwd)"
 RUN echo "Go env: $(go env)"
 
 # 构建应用（带版本信息）
+RUN echo "Listing all files in current directory:"
+RUN ls -la
+RUN echo "Checking Go modules:"
+RUN go list ./...
 RUN go build -v \
     -a \
     -installsuffix cgo \
@@ -67,7 +71,7 @@ RUN go build -v \
         -X main.BuildTime=${BUILD_TIME} \
         -X main.GitCommit=${GIT_COMMIT}" \
     -o mockserver \
-    ./cmd/mockserver
+    ./cmd/mockserver 2>&1 || { echo "Build failed with above errors"; exit 1; }
 
 # ════════════════════════════════════════════════════════
 # Stage 3: 运行时镜像
