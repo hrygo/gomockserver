@@ -58,7 +58,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Build test image
+      - name: Build test runner image
         uses: docker/build-push-action@v5
         with:
           context: .
