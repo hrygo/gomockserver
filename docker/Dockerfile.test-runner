@@ -24,6 +24,7 @@ RUN chmod +x /tests/integration/*.sh /tests/smoke/*.sh
 # 设置环境变量
 ENV ADMIN_API=http://mockserver-test:8080/api/v1
 ENV MOCK_API=http://mockserver-test:9090
+ENV MONGODB_URI=mongodb://mongodb-test:27017
 
 # 默认执行集成测试
 CMD ["/bin/bash", "/tests/integration/e2e_test.sh"]
