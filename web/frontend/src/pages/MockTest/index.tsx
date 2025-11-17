@@ -47,7 +47,7 @@ const MockTest: React.FC = () => {
 
   // 数据查询
   const { data: projects = [] } = useProjects()
-  const { data: environments = [], isLoading: environmentsLoading } = useEnvironments(selectedProjectId || '')
+  const { data: environments = [] } = useEnvironments(selectedProjectId || '')
   const { data: history = [], isLoading: historyLoading } = useMockHistory(
     selectedProjectId || '',
     selectedEnvironmentId

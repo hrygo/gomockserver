@@ -37,7 +37,12 @@ export const ruleApi = {
    * 获取规则列表（支持过滤）
    */
   list: (filter?: RuleFilter) => {
-    return client.get<Rule[]>('/rules', { params: filter })
+    return client.get<{
+      data: Rule[]
+      total: number
+      page: number
+      page_size: number
+    }>('/rules', { params: filter })
   },
 
   /**

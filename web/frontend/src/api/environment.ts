@@ -25,6 +25,6 @@ export const environmentApi = {
 
   // 获取环境列表（按项目）
   listByProject: (projectId: string) => {
-    return client.get<Environment[]>(`/environments?project_id=${projectId}`)
+    return client.get<{ data: Environment[] }>(`/environments?project_id=${projectId}`)
   },
 }

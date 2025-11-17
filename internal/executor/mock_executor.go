@@ -4,8 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
 
@@ -25,12 +27,20 @@ type MockExecutor struct {
 	// 阶梯延迟相关字段
 	stepCounters   map[string]int64
 	stepCountersMu sync.RWMutex
+
+	// 模板引擎
+	templateEngine *TemplateEngine
+
+	// 代理执行器
+	proxyExecutor *ProxyExecutor
 }
 
 // NewMockExecutor 创建 Mock 执行器
 func NewMockExecutor() *MockExecutor {
 	return &MockExecutor{
-		stepCounters: make(map[string]int64),
+		stepCounters:   make(map[string]int64),
+		templateEngine: NewTemplateEngine(),
+		proxyExecutor:  NewProxyExecutor(),
 	}
 }
 
@@ -49,14 +59,12 @@ func (e *MockExecutor) Execute(request *adapter.Request, rule *models.Rule) (*ad
 	case models.ResponseTypeStatic:
 		return e.staticResponse(request, rule)
 	case models.ResponseTypeDynamic:
-		// TODO: 阶段三实现
-		return nil, fmt.Errorf("dynamic response not implemented yet")
+		return e.dynamicResponse(request, rule, nil)
 	case models.ResponseTypeScript:
-		// TODO: 阶段三实现
+		// TODO: v0.4.0 实现
 		return nil, fmt.Errorf("script response not implemented yet")
 	case models.ResponseTypeProxy:
-		// TODO: 阶段三实现
-		return nil, fmt.Errorf("proxy response not implemented yet")
+		return e.proxyResponse(request, rule)
 	default:
 		return nil, fmt.Errorf("unsupported response type: %s", rule.Response.Type)
 	}
@@ -83,42 +91,150 @@ func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rul
 
 	// 构建响应体
 	var body []byte
-	switch httpResp.ContentType {
-	case models.ContentTypeJSON:
-		body, err = json.Marshal(httpResp.Body)
-		if err != nil {
-			return nil, err
-		}
-	case models.ContentTypeText, models.ContentTypeHTML, models.ContentTypeXML:
-		if str, ok := httpResp.Body.(string); ok {
-			body = []byte(str)
+
+	// 检查是否使用文件路径引用
+	if bodyMap, ok := httpResp.Body.(map[string]interface{}); ok {
+		if filePath, ok := bodyMap["file_path"].(string); ok {
+			// 从文件读取
+			body, err = e.readFileResponse(filePath)
+			if err != nil {
+				logger.Error("failed to read file", zap.String("file_path", filePath), zap.Error(err))
+				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+			}
 		} else {
+			// 使用map内容
 			body, err = json.Marshal(httpResp.Body)
 			if err != nil {
 				return nil, err
 			}
 		}
-	case models.ContentTypeBinary:
-		// 处理二进制数据 - 支持Base64编码
-		if str, ok := httpResp.Body.(string); ok {
-			// 尝试Base64解码
-			decoded, err := base64.StdEncoding.DecodeString(str)
-			if err != nil {
-				// 如果解码失败，记录警告并返回原始数据
-				logger.Warn("failed to decode base64 binary data, returning raw data", zap.Error(err))
-				body = []byte(str)
-			} else {
-				body = decoded
-			}
-		} else {
-			// 非字符串类型，尝试JSON序列化
+	} else {
+		// 使用内嵌内容
+		switch httpResp.ContentType {
+		case models.ContentTypeJSON:
 			body, err = json.Marshal(httpResp.Body)
 			if err != nil {
-				return nil, fmt.Errorf("failed to marshal binary body: %w", err)
+				return nil, err
+			}
+		case models.ContentTypeText, models.ContentTypeHTML, models.ContentTypeXML:
+			if str, ok := httpResp.Body.(string); ok {
+				body = []byte(str)
+			} else {
+				body, err = json.Marshal(httpResp.Body)
+				if err != nil {
+					return nil, err
+				}
+			}
+		case models.ContentTypeBinary:
+			// 处理二进制数据 - 支持Base64编码
+			if str, ok := httpResp.Body.(string); ok {
+				// 尝试Base64解码
+				decoded, err := base64.StdEncoding.DecodeString(str)
+				if err != nil {
+					// 如果解码失败，记录警告并返回原始数据
+					logger.Warn("failed to decode base64 binary data, returning raw data", zap.Error(err))
+					body = []byte(str)
+				} else {
+					body = decoded
+				}
+			} else {
+				// 非字符串类型，尝试JSON序列化
+				body, err = json.Marshal(httpResp.Body)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal binary body: %w", err)
+				}
+			}
+		default:
+			body, err = json.Marshal(httpResp.Body)
+			if err != nil {
+				return nil, err
 			}
 		}
+	}
+
+	// 设置默认 Content-Type
+	if httpResp.Headers == nil {
+		httpResp.Headers = make(map[string]string)
+	}
+	if _, ok := httpResp.Headers["Content-Type"]; !ok {
+		httpResp.Headers["Content-Type"] = e.getDefaultContentType(httpResp.ContentType)
+	}
+
+	// 构建统一响应模型
+	response := &adapter.Response{
+		StatusCode: httpResp.StatusCode,
+		Headers:    httpResp.Headers,
+		Body:       body,
+		Metadata:   make(map[string]interface{}),
+	}
+
+	return response, nil
+}
+
+// dynamicResponse 生成动态响应
+func (e *MockExecutor) dynamicResponse(request *adapter.Request, rule *models.Rule, env *models.Environment) (*adapter.Response, error) {
+	if rule.Protocol != models.ProtocolHTTP {
+		return nil, fmt.Errorf("only HTTP protocol is supported in dynamic response")
+	}
+
+	// 解析 HTTP 响应配置
+	contentBytes, err := json.Marshal(rule.Response.Content)
+	if err != nil {
+		logger.Error("failed to marshal response content", zap.Error(err))
+		return nil, err
+	}
+
+	var httpResp models.HTTPResponse
+	if err := json.Unmarshal(contentBytes, &httpResp); err != nil {
+		logger.Error("failed to unmarshal http response", zap.Error(err))
+		return nil, err
+	}
+
+	// 构建模板上下文
+	ctx := e.templateEngine.BuildContext(request, rule, env)
+
+	// 渲染响应体
+	var body []byte
+	switch httpResp.ContentType {
+	case models.ContentTypeJSON:
+		// JSON模板渲染
+		rendered, err := e.templateEngine.RenderJSON(httpResp.Body, ctx)
+		if err != nil {
+			logger.Error("failed to render json template", zap.Error(err))
+			return nil, fmt.Errorf("failed to render json template: %w", err)
+		}
+		body, err = json.Marshal(rendered)
+		if err != nil {
+			return nil, err
+		}
+	case models.ContentTypeText, models.ContentTypeHTML, models.ContentTypeXML:
+		// 文本模板渲染
+		var templateStr string
+		if str, ok := httpResp.Body.(string); ok {
+			templateStr = str
+		} else {
+			// 如果不是字符串，先转为JSON
+			tempBytes, err := json.Marshal(httpResp.Body)
+			if err != nil {
+				return nil, err
+			}
+			templateStr = string(tempBytes)
+		}
+
+		rendered, err := e.templateEngine.Render(templateStr, ctx)
+		if err != nil {
+			logger.Error("failed to render text template", zap.Error(err))
+			return nil, fmt.Errorf("failed to render text template: %w", err)
+		}
+		body = []byte(rendered)
 	default:
-		body, err = json.Marshal(httpResp.Body)
+		// 默认JSON处理
+		rendered, err := e.templateEngine.RenderJSON(httpResp.Body, ctx)
+		if err != nil {
+			logger.Error("failed to render template", zap.Error(err))
+			return nil, fmt.Errorf("failed to render template: %w", err)
+		}
+		body, err = json.Marshal(rendered)
 		if err != nil {
 			return nil, err
 		}
@@ -143,8 +259,31 @@ func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rul
 	return response, nil
 }
 
+// proxyResponse 生成代理响应
+func (e *MockExecutor) proxyResponse(request *adapter.Request, rule *models.Rule) (*adapter.Response, error) {
+	// 解析代理配置
+	contentBytes, err := json.Marshal(rule.Response.Content)
+	if err != nil {
+		logger.Error("failed to marshal proxy config", zap.Error(err))
+		return nil, err
+	}
+
+	var proxyConfig ProxyConfig
+	if err := json.Unmarshal(contentBytes, &proxyConfig); err != nil {
+		logger.Error("failed to unmarshal proxy config", zap.Error(err))
+		return nil, err
+	}
+
+	// 执行代理请求
+	return e.proxyExecutor.Execute(request, &proxyConfig)
+}
+
 // calculateDelay 计算延迟时间（毫秒）
 func (e *MockExecutor) calculateDelay(config *models.DelayConfig) int {
+	if config == nil {
+		return 0
+	}
+
 	switch config.Type {
 	case "fixed":
 		return config.Fixed
@@ -172,16 +311,19 @@ func (e *MockExecutor) calculateDelay(config *models.DelayConfig) int {
 		return result
 	case "step":
 		// 实现阶梯延迟 - 基于请求计数的阶梯延迟算法
-		return e.calculateStepDelay(config)
+		return e.calculateStepDelay(config, "")
 	default:
 		return 0
 	}
 }
 
 // calculateStepDelay 计算阶梯延迟
-func (e *MockExecutor) calculateStepDelay(config *models.DelayConfig) int {
-	// 使用固定值作为计数器键（在实际应用中可能需要更复杂的键）
+func (e *MockExecutor) calculateStepDelay(config *models.DelayConfig, ruleID string) int {
+	// 使用规则ID作为计数器键，实现计数器隔离
 	counterKey := "default"
+	if ruleID != "" {
+		counterKey = ruleID
+	}
 
 	// 增加计数器
 	e.stepCountersMu.Lock()
@@ -208,6 +350,35 @@ func (e *MockExecutor) calculateStepDelay(config *models.DelayConfig) int {
 	}
 
 	return delay
+}
+
+// ResetStepCounter 重置阶梯延迟计数器
+func (e *MockExecutor) ResetStepCounter(ruleID string) {
+	e.stepCountersMu.Lock()
+	defer e.stepCountersMu.Unlock()
+
+	if ruleID == "" {
+		// 重置所有计数器
+		e.stepCounters = make(map[string]int64)
+	} else {
+		// 重置特定规则的计数器
+		delete(e.stepCounters, ruleID)
+	}
+
+	logger.Info("reset step delay counter", zap.String("rule_id", ruleID))
+}
+
+// GetStepCounter 获取阶梯延迟计数器值
+func (e *MockExecutor) GetStepCounter(ruleID string) int64 {
+	e.stepCountersMu.RLock()
+	defer e.stepCountersMu.RUnlock()
+
+	counterKey := "default"
+	if ruleID != "" {
+		counterKey = ruleID
+	}
+
+	return e.stepCounters[counterKey]
 }
 
 // generateNormalRand 使用Marsaglia polar method生成正态分布随机数
@@ -273,4 +444,26 @@ func (e *MockExecutor) GetDefaultResponse() *adapter.Response {
 		},
 		Body: []byte(`{"error": "No matching rule found"}`),
 	}
+}
+
+// readFileResponse 从文件读取响应内容
+func (e *MockExecutor) readFileResponse(filePath string) ([]byte, error) {
+	// 打开文件
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// 读取文件内容
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	logger.Info("read file response",
+		zap.String("file_path", filePath),
+		zap.Int("size", len(data)))
+
+	return data, nil
 }

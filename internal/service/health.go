@@ -14,7 +14,7 @@ var (
 	// ServerStartTime 服务器启动时间
 	ServerStartTime time.Time
 	// Version 应用版本号
-	Version = "0.2.0"
+	Version = "0.3.0"
 	// AppName 应用名称
 	AppName = "MockServer"
 )
@@ -95,9 +95,10 @@ func (h *HealthChecker) Check(c *gin.Context) {
 
 	// 根据整体状态返回不同的 HTTP 状态码
 	statusCode := 200
-	if response.Status == StatusUnhealthy {
+	switch response.Status {
+	case StatusUnhealthy:
 		statusCode = 503
-	} else if response.Status == StatusDegraded {
+	case StatusDegraded:
 		statusCode = 200 // 降级时仍然返回 200，但在响应中标记
 	}
 

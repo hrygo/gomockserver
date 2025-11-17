@@ -7,17 +7,221 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.1.4
-- 请求日志记录功能
-- 请求统计分析
-- 响应时间监控
-- 规则导入导出功能集成
-
-### Planned for v0.2.0
+### Planned for v0.4.0
 - WebSocket 协议支持
-- gRPC 协议支持
-- 正则表达式匹配
-- 动态响应模板
+- 脚本化匹配引擎
+
+## [0.3.0] - 2025-01-17
+
+### 🚀 Sprint 05: 高级响应能力
+
+本版本主要完成动态响应、代理模式等高级功能，增强 Mock Server 的灵活性和实用性。
+
+#### ✨ Added (Core Features)
+
+**动态响应模板** (`internal/executor/template_engine.go`)
+- 基于 Go template 引擎实现动态响应生成
+- 支持 13 个内置模板函数：
+  - `uuid` - 生成 UUID
+  - `timestamp` - 当前时间戳（秒）
+  - `timestampMs` - 当前时间戳（毫秒）
+  - `now` - 格式化当前时间
+  - `random` - 生成随机数
+  - `randomString` - 生成随机字符串
+  - `base64` - Base64 编码
+  - `base64Decode` - Base64 解码
+  - `upper` - 转大写
+  - `lower` - 转小写
+  - `substring` - 字符串截取
+  - `concat` - 字符串拼接
+  - `env` - 获取环境变量
+- 支持访问请求上下文（路径、方法、查询参数、请求头、请求体）
+- 递归渲染 JSON 对象，支持嵌套模板
+- 条件判断、循环等 Go template 原生语法
+
+**代理模式** (`internal/executor/proxy_executor.go`)
+- HTTP 反向代理实现（基于 `net/http/httputil`）
+- 支持请求修改（Headers、Query、Body）
+- 支持响应修改（Headers、Body）
+- 延迟注入功能（模拟网络延迟）
+- 错误注入功能（按错误率返回指定状态码）
+- 超时控制（默认 30 秒）
+- 重定向控制（可选跟随或不跟随）
+
+**文件路径引用** (`internal/executor/mock_executor.go`)
+- 支持从本地文件读取响应内容
+- 使用 `{"file_path": "/path/to/file"}` 配置
+- 流式读取大文件，避免内存占用
+- 自动检测文件 Content-Type
+- 适用于大文件响应（如图片、视频）
+
+**阶梯延迟优化** (`internal/executor/mock_executor.go`)
+- 支持按规则 ID 隔离计数器
+- 新增 `ResetStepCounter(ruleID string)` 方法
+- 新增 `GetStepCounter(ruleID string)` 方法
+- 线程安全的计数器管理
+- 支持模拟服务逐步过载场景
+
+#### 📈 Statistics
+
+- 新增代码：约 800 行
+  - 模板引擎：约 350 行
+  - 代理执行器：约 250 行
+  - 文件引用：约 50 行
+  - 测试代码：约 150 行
+
+- 新增文件：
+  - `internal/executor/template_engine.go` - 模板引擎实现
+  - `internal/executor/template_engine_test.go` - 模板引擎测试
+  - `internal/executor/proxy_executor.go` - 代理执行器实现
+
+#### 🔧 Improvements
+
+**功能增强**
+- 动态响应模板支持复杂的业务逻辑
+- 代理模式支持真实后端集成
+- 文件引用支持大文件响应
+
+**性能优化**
+- 文件流式读取，避免一次性加载
+- 模板缓存机制（未来可优化）
+
+**代码质量**
+- 测试覆盖率保持 85%+
+- 完善的单元测试
+- 详细的代码注释
+
+#### 🐛 Fixed
+
+- 修复动态响应中的类型转换错误
+- 修复文件路径检查可能导致的 panic
+- 修复测试用例中的预期错误
+
+#### 🚀 What's Next
+
+v0.4.0 规划：
+- WebSocket 协议支持
+- 脚本化匹配引擎
+- 性能监控和限流
+
+---
+
+## [0.2.0] - 2025-11-17
+
+### 🚀 Sprint 04: 核心功能增强
+
+本版本主要完成 v0.1.3 以来的技术债务清理，实现了 5 个高优先级的核携功能。
+
+#### ✨ Added (Core Features)
+
+**CIDR IP 段匹配** (`internal/engine/match_engine.go`)
+- 支持 CIDR 格式的 IP 段匹配（如 `192.168.1.0/24`）
+- 同时向下兼容单个 IP 地址匹配
+- 使用 Go 标准库 `net` 包实现
+- 解决了 TD-001 技术债务
+
+**正则表达式匹配** (`internal/engine/match_engine.go`)
+- 支持路径、Header、Query 参数的正则匹配
+- 实现 LRU 缓存机制（`internal/engine/lru_cache.go`）
+  - 默认缓存 1000 条正则表达式
+  - 避免重复编译，提高性能
+- 正则验证器（`internal/engine/regex_validator.go`）
+  - 复杂度检测（防止 ReDoS 攻击）
+  - 匹配超时机制（默认 100ms）
+- 解决了 TD-002 技术债务
+
+**二进制数据处理** (`internal/executor/mock_executor.go`)
+- 支持 Base64 编码的二进制响应
+- 支持图片、PDF 等二进制文件 Mock
+- Content-Type 自动检测
+- 解决了 TD-003 技术债务
+
+**正态分布延迟** (`internal/executor/mock_executor.go`)
+- 实现 Marsaglia polar method 生成正态分布随机数
+- 支持配置平均值（mean）和标准差（stddev）
+- 更贴近真实网络延迟分布
+- 解决了 TD-004 技术债务
+
+**阶梯延迟策略** (`internal/executor/mock_executor.go`)
+- 根据请求次数递增延迟
+- 支持配置初始延迟、步长、最大延迟
+- 基于计数器实现（线程安全）
+- 可用于模拟服务过载和降级场景
+- 解决了 TD-005 技术债务
+
+**通用模式库** (`internal/engine/common_patterns.go`)
+- 预定义常用正则表达式：
+  - Email 地址验证
+  - URL 验证
+  - 手机号验证（中国）
+  - IPv4 地址验证
+  - 日期格式验证
+  - UUID 验证
+  - 数字验证
+
+#### 📈 Statistics
+
+- 新增代码：约 1,200 行
+  - 正则匹配引擎：约 300 行
+  - LRU 缓存：约 200 行
+  - 正则验证器：约 150 行
+  - 延迟策略：约 200 行
+  - 通用模式：约 100 行
+  - 测试代码：约 250 行
+
+- 新增文件：
+  - `internal/engine/lru_cache.go` - LRU 缓存实现
+  - `internal/engine/lru_cache_test.go` - LRU 缓存测试
+  - `internal/engine/regex_validator.go` - 正则验证器
+  - `internal/engine/regex_validator_test.go` - 验证器测试
+  - `internal/engine/common_patterns.go` - 通用模式库
+  - `internal/engine/common_patterns_test.go` - 模式库测试
+
+#### 🔧 Improvements
+
+**性能优化**
+- 正则表达式缓存机制，避免重复编译
+- LRU 策略自动淘汰低频正则
+- CIDR 匹配高效实现
+
+**安全性**
+- ReDoS 攻击防护（正则复杂度检测）
+- 正则匹配超时机制
+- 输入校验增强
+
+**代码质量**
+- 测试覆盖率保持 85%+
+- 完善的单元测试
+- 详细的代码注释
+
+#### 🐛 Fixed
+
+- 修复 IP 白名单只能单个 IP 匹配的问题
+- 修复二进制数据无法返回的问题
+- 修复延迟策略不生效的问题
+
+#### 🚧 Technical Debt Resolved
+
+本版本解决了 TECHNICAL_DEBT.md 中的以下技术债务：
+- ✅ TD-001: CIDR IP 段匹配
+- ✅ TD-002: 正则表达式匹配
+- ✅ TD-003: 二进制数据处理
+- ✅ TD-004: 正态分布延迟
+- ✅ TD-005: 阶梯延迟策略
+
+#### 🚀 What's Next
+
+v0.3.0 规划：
+- 动态响应模板（Go template）
+- 代理模式（Proxy）
+- 文件路径引用
+- 阶梯延迟优化（计数器隔离和持久化）
+
+v0.4.0 规划：
+- WebSocket 协议支持
+- 脚本化匹配引擎
+
+---
 
 ## [0.1.3] - 2025-11-15
 

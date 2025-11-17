@@ -16,7 +16,7 @@ export const useEnvironments = (projectId: string) => {
     queryKey: environmentKeys.byProject(projectId),
     queryFn: async () => {
       const response = await environmentApi.listByProject(projectId)
-      return response.data
+      return response.data.data || []
     },
     enabled: !!projectId,
   })

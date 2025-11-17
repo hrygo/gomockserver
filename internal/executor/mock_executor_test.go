@@ -201,38 +201,28 @@ func TestGetDefaultResponse(t *testing.T) {
 	assert.Contains(t, string(response.Body), "No matching rule found")
 }
 
-// TestUnsupportedResponseType 测试不支持的响应类型
+// TestUnsupportedResponseType 测试不支持的响应类型（仅Script响应）
 func TestUnsupportedResponseType(t *testing.T) {
 	executor := NewMockExecutor()
 
-	tests := []struct {
-		name         string
-		responseType models.ResponseType
-	}{
-		{"Dynamic响应", models.ResponseTypeDynamic},
-		{"Script响应", models.ResponseTypeScript},
-		{"Proxy响应", models.ResponseTypeProxy},
-	}
+	// Script响应类型尚未实现
+	t.Run("Script响应", func(t *testing.T) {
+		rule := &models.Rule{
+			Protocol: models.ProtocolHTTP,
+			Response: models.Response{
+				Type: models.ResponseTypeScript,
+			},
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rule := &models.Rule{
-				Protocol: models.ProtocolHTTP,
-				Response: models.Response{
-					Type: tt.responseType,
-				},
-			}
+		request := &adapter.Request{
+			Protocol: models.ProtocolHTTP,
+		}
 
-			request := &adapter.Request{
-				Protocol: models.ProtocolHTTP,
-			}
+		response, err := executor.Execute(request, rule)
 
-			response, err := executor.Execute(request, rule)
-
-			assert.Error(t, err, "应该返回错误")
-			assert.Nil(t, response, "响应应该为空")
-		})
-	}
+		assert.Error(t, err, "Script响应应该返回错误")
+		assert.Nil(t, response, "响应应该为空")
+	})
 }
 
 // TestDifferentStatusCodes 测试不同状态码

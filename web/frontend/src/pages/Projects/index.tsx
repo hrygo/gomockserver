@@ -98,10 +98,16 @@ const Projects: React.FC = () => {
       title: '项目名称',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => (
+      render: (text, record) => (
         <Space>
           <FolderOutlined style={{ color: '#1890ff' }} />
-          <span>{text}</span>
+          <Button 
+            type="link" 
+            style={{ padding: 0, height: 'auto' }}
+            onClick={() => navigate(`/projects/${record.id}`)}
+          >
+            {text}
+          </Button>
         </Space>
       ),
     },
@@ -130,14 +136,6 @@ const Projects: React.FC = () => {
       width: 200,
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/projects/${record.id}`)}
-          >
-            查看
-          </Button>
           <Button
             type="link"
             size="small"
