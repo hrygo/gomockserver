@@ -82,12 +82,23 @@ jobs:
       - name: Start test environment
         run: |
           docker compose -f docker-compose.test.yml up -d mongodb-test mockserver-test
-          sleep 15
+          sleep 30
       
       - name: Check services health
         run: |
           docker compose -f docker-compose.test.yml ps
-          curl -f http://localhost:8081/api/v1/system/health || exit 1
+          echo "Waiting for service to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8081/api/v1/system/health; then
+              echo "Service is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Service not ready yet, waiting 2 seconds..."
+            sleep 2
+          done
+          echo "Service failed to start in time"
+          docker compose -f docker-compose.test.yml logs mockserver-test
+          exit 1
       
       - name: Run integration tests
         run: |
