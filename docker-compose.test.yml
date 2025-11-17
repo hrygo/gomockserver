@@ -36,6 +36,7 @@ services:
       - TZ=Asia/Shanghai
       - GO_ENV=test
       - LOG_LEVEL=debug
+      - DEBUG=true
     depends_on:
       mongodb-test:
         condition: service_healthy

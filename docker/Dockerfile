@@ -32,4 +32,4 @@ COPY --from=builder /app/config.yaml .
 EXPOSE 8080 9090
 
 # 运行应用
-CMD ["./mockserver"]
+CMD ["./mockserver", "-config", "./config.yaml"]
