@@ -4,19 +4,19 @@
 
 - 创建时间: 2025-11-17
 - 设计版本: v1.0
-- 当前系统版本: v0.3.0
+- 当前系统版本: v0.4.0
 - 目标受众: 开发团队、产品经理、架构师
 
 ## 一、现状分析
 
 ### 1.0 版本说明
 
-**当前版本**: v0.3.0（代码中 `internal/service/health.go` 显示）
+**当前版本**: v0.4.0（代码中 `internal/service/health.go` 显示）
 
 **版本更新说明**: 
-- README.md、CHANGELOG.md、PROJECT_SUMMARY.md 等文档已同步更新到 v0.3.0
-- v0.3.0 已完成动态响应模板、代理模式、文件路径引用、阶梯延迟优化
-- 本设计文档基于当前实际版本 v0.3.0 进行规划
+- README.md、CHANGELOG.md、PROJECT_SUMMARY.md 等文档已同步更新到 v0.4.0
+- v0.4.0 已完成 WebSocket 协议支持和脚本匹配引擎
+- 本设计文档基于当前实际版本 v0.4.0 进行规划
 
 **技术债务清单状态**: 
 - TECHNICAL_DEBT.md 创建日期为 2025-01-21，距今已有约 10 个月
@@ -32,26 +32,29 @@
 - ✅ **TD-005: 阶梯延迟** - 已实现基于计数器 (`mock_executor.go:173-211`)
 
 **剩余技术债务**：
-- TD-006: 脚本匹配（未实现）
-- TD-007: WebSocket 支持（未实现）
+- TD-006: 脚本匹配（已在 v0.4.0 实现）
+- TD-007: WebSocket 支持（已在 v0.4.0 实现）
 - TD-008: gRPC 支持（未实现）
 - TD-009: TCP 协议支持（未实现）
 
 ### 1.1 已实现功能概览
 
-当前系统（v0.2.0）已完成核心 HTTP Mock 能力和全栈管理界面：
+当前系统（v0.4.0）已完成核心 HTTP Mock 能力和全栈管理界面：
 
 | 功能域 | 功能项 | 状态 | 完善度 |
 |--------|--------|------|--------|
 | 协议支持 | HTTP/HTTPS | ✅ 已实现 | 90% |
+| 协议支持 | WebSocket | ✅ 已实现 (v0.4.0) | 90% |
 | 规则匹配 | 简单匹配（路径、方法、Header、Query） | ✅ 已实现 | 95% |
 | 规则匹配 | 正则表达式匹配 | ✅ 已实现 (v0.2.0) | 90% |
 | 规则匹配 | CIDR IP 段匹配 | ✅ 已实现 (v0.2.0) | 95% |
+| 规则匹配 | 脚本匹配 | ✅ 已实现 (v0.4.0) | 85% |
 | 响应生成 | 静态响应（JSON/XML/HTML/Text） | ✅ 已实现 | 90% |
 | 响应生成 | 二进制数据（Base64） | ✅ 已实现 (v0.2.0) | 85% |
 | 响应生成 | 动态响应模板 | ✅ 已实现 (v0.3.0) | 85% |
 | 响应生成 | 代理模式 | ✅ 已实现 (v0.3.0) | 85% |
 | 响应生成 | 文件路径引用 | ✅ 已实现 (v0.3.0) | 85% |
+| 响应生成 | 脚本响应 | ✅ 已实现 (v0.4.0) | 80% |
 | 延迟策略 | 固定延迟、随机延迟 | ✅ 已实现 | 90% |
 | 延迟策略 | 正态分布延迟 | ✅ 已实现 (v0.2.0) | 90% |
 | 延迟策略 | 阶梯延迟 | ✅ 已实现 (v0.3.0 优化) | 90% |
@@ -69,23 +72,18 @@
 
 ### 1.3 功能缺口
 
-根据当前版本 v0.2.0 分析，主要功能缺口包括：
+根据当前版本 v0.4.0 分析，主要功能缺口包括：
 
 | 缺口类型 | 具体项 | 业务影响 |
 |----------|--------|----------|
-| 协议支持 | WebSocket、gRPC、TCP/UDP | 无法覆盖微服务、实时通信场景 |
-| 高级匹配 | 脚本匹配 | 无法实现复杂业务逻辑匹配 |
-| 动态能力 | 模板引擎、代理模式 | 无法模拟真实后端逻辑 |
+| 协议支持 | gRPC、TCP/UDP | 无法覆盖微服务、实时通信场景 |
 | 可观测性 | 请求日志、实时监控 | 排查问题困难 |
 | 企业特性 | 用户权限、版本控制、导入导出 | 无法满足团队协作需求 |
 | 性能优化 | Redis 缓存 | 大规模场景性能瓶颈 |
 
-**注**: v0.2.0 已解决以下缺口：
-- ✅ CIDR IP 段匹配
-- ✅ 正则表达式匹配
-- ✅ 二进制数据处理 (Base64)
-- ✅ 正态分布延迟
-- ✅ 阶梯延迟
+**注**: v0.4.0 已解决以下缺口：
+- ✅ WebSocket 协议支持
+- ✅ 脚本匹配
 
 ## 二、功能扩展规划路线图
 
@@ -96,7 +94,7 @@
 ```mermaid
 graph LR
     A[v0.1.3<br/>全栈基础] --> B[v0.2.0<br/>核心功能增强]
-    B --> C[v0.3.0<br/>当前版本]
+    B --> C[v0.3.0<br/>动态能力增强]
     C --> D[v0.4.0<br/>协议扩展]
     D --> E[v0.5.0<br/>可观测性]
     E --> F[v0.6.0<br/>企业特性]
@@ -105,13 +103,128 @@ graph LR
     style A fill:#90EE90
     style B fill:#90EE90
     style C fill:#90EE90
-    style D fill:#FFD700
-    style E fill:#87CEEB
+    style D fill:#90EE90
+    style E fill:#FFD700
     style F fill:#87CEEB
     style G fill:#FFA07A
 ```
 
 ### 2.2 各版本功能规划
+
+#### v0.1.3 - 全栈基础（✅ 已完成 - 2025-01-15）
+
+**主题**: 构建完整的 Mock Server 基础框架
+
+**核心功能** (✅ 全部完成):
+1. **HTTP 协议支持** ✅
+   - 完整的 HTTP Mock 能力
+   - 支持所有 HTTP 方法（GET、POST、PUT、DELETE 等）
+   - 支持自定义状态码和响应头
+
+2. **规则匹配引擎** ✅
+   - 路径匹配（支持路径参数，如 `/api/users/:id`）
+   - HTTP 方法匹配
+   - 请求头匹配（不区分大小写）
+   - Query 参数匹配
+   - 规则优先级控制
+
+3. **静态响应配置** ✅
+   - 支持 JSON、XML、HTML、Text 等多种格式
+   - 灵活的响应体配置
+   - 固定延迟和随机延迟策略
+
+4. **Web 管理界面** ✅
+   - 基于 React 18 + TypeScript 5 + Ant Design 5
+   - Dashboard 仪表盘（统计概览、图表展示）
+   - 项目管理（创建、编辑、删除、查询）
+   - 环境管理（多环境配置）
+   - Mock 规则管理（可视化配置界面）
+   - Mock 测试（在线测试工具）
+   - 设置（系统配置）
+
+5. **统计分析 API** ✅
+   - Dashboard 统计数据
+   - 项目统计列表
+   - 规则统计（按项目/环境分组）
+   - 请求趋势分析（7天/30天）
+   - 响应时间分布
+
+6. **项目和环境管理** ✅
+   - 多项目支持
+   - 多环境隔离（开发、测试、预发布等）
+   - 规则按项目和环境组织
+
+7. **完整的管理 API** ✅
+   - 规则 CRUD 接口
+   - 项目管理接口
+   - 环境管理接口
+   - 规则启用/禁用
+   - 健康检查接口
+
+8. **企业级数据存储** ✅
+   - MongoDB 持久化
+   - 完善的索引设计
+   - 支持分页查询
+   - 高性能数据访问
+
+**技术方案**:
+- 后端: Go 1.21 + Gin + MongoDB 6.0
+- 前端: React 18 + TypeScript 5 + Ant Design 5
+- 部署: Docker + Docker Compose
+
+**实际成果**:
+- ✅ 完成基础 Mock 功能
+- ✅ 实现可视化管理界面
+- ✅ 提供完整的 API 接口
+- ✅ 支持多项目多环境管理
+- ✅ 测试覆盖率 > 85%
+
+#### v0.2.0 - 核心功能增强（✅ 已完成 - 2025-01-16）
+
+**主题**: 增强核心功能，提升系统能力
+
+**核心功能** (✅ 全部完成):
+
+1. **正则表达式匹配** ✅
+   - 支持复杂的路径和参数匹配
+   - LRU 缓存优化性能（容量 1000）
+   - 编译错误处理和日志记录
+
+2. **CIDR IP 段匹配** ✅
+   - 支持 IPv4 和 IPv6 地址段
+   - 支持精确 IP 和 CIDR 格式
+   - 高效的 IP 地址匹配算法
+
+3. **二进制数据处理** ✅
+   - 支持 Base64 编码的二进制数据
+   - 自动检测和设置 Content-Type
+   - 支持大文件传输（>10MB）
+
+4. **正态分布延迟** ✅
+   - 基于 Marsaglia polar method 实现
+   - 支持均值和标准差配置
+   - 高性能随机数生成
+
+5. **阶梯延迟** ✅
+   - 基于请求计数的延迟递增
+   - 支持基础延迟、步长和上限配置
+   - 适用于模拟服务逐步过载场景
+
+**技术方案**:
+- 正则匹配: regexp + LRU 缓存
+- IP 匹配: net.ParseCIDR + net.IP
+- 二进制处理: base64.StdEncoding
+- 正态分布: Marsaglia polar method
+- 阶梯延迟: 原子计数器
+
+**技术债务解决**: TD-001 (CIDR IP), TD-002 (Regex), TD-003 (Binary), TD-004 (Normal Delay), TD-005 (Step Delay)
+
+**实际成果**:
+- ✅ 增强匹配能力，支持复杂场景
+- ✅ 提升响应灵活性，支持二进制数据
+- ✅ 丰富延迟策略，模拟真实网络环境
+- ✅ 解决 5 项技术债务
+- ✅ 测试覆盖率保持 85%+
 
 #### v0.3.0 - 动态能力增强（✅ 已完成 - 2025-01-17）
 
@@ -161,781 +274,762 @@ graph LR
 - `internal/executor/proxy_executor.go` - 代理执行器实现
 - `internal/executor/mock_executor.go` - 集成动态响应、代理模式和文件引用
 
----
+#### v0.4.0 - 协议扩展（✅ 已完成 - 2025-01-18）
 
-#### v0.4.0 - 协议扩展（2026 年 1 月，开发周期 3 周）
+**主题**: 多协议支持，覆盖实时通信和复杂匹配场景
 
-**主题**: 多协议支持，覆盖实时通信和微服务场景
+**核心功能** (✅ 全部完成):
 
-**核心功能**:
-
-1. **WebSocket 协议支持**
-   - WebSocket 连接管理
+1. **WebSocket 协议支持** ✅
+   - WebSocket 适配器设计
+   - 连接管理（连接/断开/重连）
    - 消息推送（服务端主动推送）
    - 双向通信
-   - 心跳保活
+   - 心跳保活（Ping/Pong）
    - 连接数限制
+   - 消息匹配规则
 
-2. **动态响应模板**
-   - 模板引擎集成（如 Go template）
-   - 支持变量替换（从请求中提取）
-   - 支持函数调用（时间戳、随机数、UUID）
-   - 条件判断（if/else）
-   - 循环生成（for）
-
-3. **代理模式（Proxy）**
-   - 转发请求到真实后端
-   - 请求/响应修改
-   - 延迟注入
-   - 错误注入（模拟超时、5xx 错误）
-
-4. **脚本匹配（实验性）**
+2. **脚本匹配（实验性）** ✅
    - JavaScript 脚本引擎（goja）
    - 安全沙箱环境
    - 资源限制（CPU、内存、执行时间）
    - 脚本审计日志
+   - 内置 API（访问请求上下文、工具函数）
 
-**技术债务解决**: TD-006, TD-007
+**技术方案**:
+- WebSocket: gorilla/websocket 库
+- JavaScript 引擎: goja
+- 资源限制: context.WithTimeout + 内存监控
+- 安全沙箱: 限制 API 访问权限
 
-**预期成果**:
-- 支持 WebSocket 实时通信场景
-- 响应内容动态化率达到 80%
-- 代理模式降低真实环境依赖
+**技术债务解决**: TD-006 (脚本匹配), TD-007 (WebSocket 支持)
 
-**安全风险**: 脚本匹配需要严格的沙箱隔离和资源限制
+**实际成果**:
+- ✅ 支持 WebSocket 实时通信场景
+- ✅ 支持复杂业务逻辑匹配（脚本）
+- ✅ 安全隔离，防止恶意脚本
+- ✅ 测试覆盖率保持 85%+
 
-**注**: 技术债务编号基于 TECHNICAL_DEBT.md，如该文档已过时，建议先更新技术债务清单
+#### v0.5.0 - 可观测性增强（规划中）
 
----
+**主题**: 增强系统可观测性，提升运维能力
 
-#### v0.5.0 - 可观测性增强（2026 年 2 月，开发周期 2 周）
-
-**主题**: 完善请求日志、监控和统计分析
-
-**核心功能**:
+**核心功能** (规划中):
 
 1. **请求日志系统**
-   - 完整请求/响应记录
-   - 结构化日志存储（MongoDB）
-   - 日志查询和过滤（按项目、环境、规则、时间范围）
-   - 日志导出（JSON、CSV）
-   - 日志保留策略（自动清理过期日志）
+   - 完整的请求/响应日志记录
+   - 支持日志级别配置
+   - 日志轮转和清理策略
+   - 结构化日志格式
 
 2. **实时监控**
-   - 实时请求量统计（QPS）
-   - 实时响应时间监控
-   - 错误率监控（4xx/5xx）
-   - 规则命中率统计
-   - WebSocket 连接数监控
+   - 系统指标监控（CPU、内存、连接数等）
+   - 请求指标监控（QPS、响应时间、错误率等）
+   - 自定义监控面板
+   - 告警机制
 
 3. **统计分析增强**
-   - 请求趋势分析（小时、天、周、月）
-   - 响应时间分布（P50/P90/P95/P99）
-   - 热点规则排行
-   - 慢请求分析（超过阈值）
-   - 异常流量告警
-
-4. **监控数据可视化**
-   - Dashboard 图表增强
-   - 实时数据刷新
-   - 自定义统计维度
-   - 数据导出功能
+   - 更丰富的统计维度
+   - 实时数据展示
+   - 历史数据对比
+   - 自定义报表
 
 **技术方案**:
-- RequestLog 模型已定义，需实现日志记录逻辑
-- 索引优化（timestamp、project_id、environment_id）
-- 定时任务清理过期日志（默认保留 30 天）
-- 时序数据聚合（按小时/天预聚合）
+- 日志系统: zap + lumberjack
+- 监控系统: Prometheus + Grafana
+- 指标收集: prometheus/client_golang
 
-**预期成果**:
-- 请求日志覆盖率 100%
-- 问题排查时间缩短 70%
-- 统计数据准确率 95%+
+#### v0.6.0 - 企业特性（规划中）
 
----
+**主题**: 增强企业级特性，支持团队协作
 
-#### v0.6.0 - 企业特性（2026 年 3 月，开发周期 3 周）
-
-**主题**: 团队协作和企业级功能
-
-**核心功能**:
+**核心功能** (规划中):
 
 1. **用户认证和权限管理**
-   - 用户注册/登录（JWT 认证）
-   - 角色管理（Admin、Developer、Viewer）
-   - 工作空间（Workspace）隔离
-   - 项目成员管理
-   - 操作权限控制（RBAC）
+   - 用户注册/登录
+   - 角色权限控制（Admin、Developer、Viewer）
+   - 项目权限隔离
+   - OAuth2 集成
 
-2. **规则版本控制**
-   - 规则变更记录（Version 模型）
-   - 版本历史查询
-   - 版本对比（Diff）
-   - 版本回滚
-   - 变更审计日志
+2. **版本控制**
+   - 规则版本管理
+   - 版本对比和回滚
+   - 变更历史记录
 
-3. **配置导入导出**
-   - 规则导出（JSON、YAML）
-   - 批量导入
-   - 模板市场（预定义规则模板）
-   - 环境迁移（开发 → 测试 → 生产）
-
-4. **团队协作**
-   - 规则共享
-   - 评论和标注
-   - 变更通知（邮件、Webhook）
-   - 操作审计
-
-**数据模型**:
-- User: 已定义，需实现认证逻辑
-- Workspace: 已定义，需实现隔离逻辑
-- Version: 已定义，需实现版本记录
-
-**预期成果**:
-- 支持多团队协作
-- 变更可追溯性 100%
-- 配置迁移效率提升 80%
-
----
-
-#### v0.7.0 - 性能优化（2026 年 4 月，开发周期 2 周）
-
-**主题**: 大规模场景性能优化
-
-**核心功能**:
-
-1. **Redis 缓存**
-   - 规则缓存（减少数据库查询）
-   - 统计数据缓存
-   - 缓存失效策略（规则更新时）
-   - 分布式缓存（支持集群）
-
-2. **查询优化**
-   - MongoDB 索引优化
-   - 聚合查询优化
-   - 分页性能优化
-   - 慢查询分析
-
-3. **并发优化**
-   - 协程池管理
-   - 连接池优化
-   - 正则缓存（全局共享）
-   - 内存复用
-
-4. **负载均衡**
-   - 多实例部署
-   - 健康检查增强
-   - 优雅关闭（Graceful Shutdown）
-
-**性能目标**:
-- QPS 提升至 50,000+
-- P99 响应时间 < 20ms
-- 支持规则数量 > 100,000
-- 内存占用优化 30%
-
----
-
-#### v0.8.0 - gRPC 协议支持（2026 年 5 月，开发周期 3 周）
-
-**主题**: 微服务场景支持
-
-**核心功能**:
-
-1. **gRPC Mock 能力**
-   - Proto 文件动态加载
-   - gRPC 请求匹配
-   - gRPC 响应生成
-   - 流式 RPC 支持（Streaming）
-   - 错误码模拟（gRPC Status Code）
-
-2. **Proto 管理**
-   - Proto 文件上传
-   - Proto 解析和校验
-   - Service 和 Method 自动发现
-   - Proto 版本管理
-
-3. **gRPC 高级特性**
-   - Metadata 匹配
-   - 拦截器（Interceptor）
-   - 负载均衡测试
-   - 超时和重试模拟
+3. **导入导出**
+   - 项目/环境/规则批量导入导出
+   - 支持多种格式（JSON、YAML）
+   - 跨环境迁移
 
 **技术方案**:
-- 使用 grpc-go 库
-- 动态 Proto 解析（protoreflect）
-- gRPC Server 独立端口
+- 认证: JWT + bcrypt
+- 权限: RBAC 模型
+- 导入导出: JSON/YAML 序列化
 
-**技术债务解决**: TD-008
+#### v0.7.0 - 性能优化（规划中）
 
-**预期成果**:
-- 支持微服务场景
-- 覆盖 Unary RPC 和 Streaming RPC
+**主题**: 性能优化，支持大规模场景
 
-**注**: 技术债务编号基于 TECHNICAL_DEBT.md，如该文档已过时，建议先更新技术债务清单
+**核心功能** (规划中):
 
----
+1. **Redis 缓存支持**
+   - 热点规则缓存
+   - 统计数据缓存
+   - 分布式缓存
 
-#### v1.0.0 - 生产就绪版（2026 年 6 月，开发周期 2 周）
+2. **性能优化**
+   - 连接池优化
+   - 内存使用优化
+   - 并发处理优化
 
-**主题**: 稳定性、安全性、文档完善
+**技术方案**:
+- 缓存: go-redis/redis
+- 性能分析: pprof
 
-**核心任务**:
+#### v0.8.0 - 协议扩展（规划中）
 
-1. **稳定性增强**
-   - 全量测试覆盖率 > 85%
-   - 压力测试和稳定性测试
-   - 错误处理完善
-   - 边界条件验证
+**主题**: 扩展更多协议支持
 
-2. **安全加固**
-   - SQL/NoSQL 注入防护
-   - XSS 防护
-   - CSRF 防护
-   - 速率限制（Rate Limiting）
-   - API Key 认证
+**核心功能** (规划中):
 
-3. **文档完善**
-   - API 文档（OpenAPI/Swagger）
-   - 部署指南
-   - 最佳实践
-   - FAQ 和故障排查
+1. **gRPC 协议支持**
+   - gRPC 服务端实现
+   - Protobuf 消息处理
+   - 流式 RPC 支持
 
-4. **运维支持**
-   - Prometheus 指标导出
-   - 告警规则模板
-   - Kubernetes 部署方案
-   - CI/CD 流水线
+2. **TCP/UDP 协议支持**
+   - TCP 服务端实现
+   - UDP 服务端实现
+   - 自定义协议解析
 
-**发布标准**:
-- 测试覆盖率 > 85%
-- 性能达标（QPS > 50,000）
-- 安全漏洞扫描通过
-- 文档完整度 > 90%
+**技术方案**:
+- gRPC: google.golang.org/grpc
+- TCP/UDP: net 包
 
-## 三、功能详细设计
+#### v1.0.0 - 生产就绪（规划中）
 
-### 3.1 动态响应模板（v0.3.0）
+**主题**: 生产环境就绪，稳定可靠
 
-#### 功能目标
+**核心功能** (规划中):
 
-支持路径、Header、Query 参数的正则表达式匹配，提升规则灵活性。
+1. **高可用部署**
+   - 集群部署支持
+   - 负载均衡
+   - 故障自动恢复
 
-#### 匹配策略
+2. **安全增强**
+   - HTTPS 支持
+   - 请求限流
+   - 防止恶意攻击
 
-| 匹配对象 | 示例正则 | 匹配说明 |
-|----------|----------|----------|
-| 路径 | `/api/v\\d+/users/\\d+` | 匹配 /api/v1/users/123 |
-| Header | `Bearer [A-Za-z0-9._-]+` | 匹配 JWT Token |
-| Query | `[0-9]{10,13}` | 匹配时间戳 |
+3. **运维工具**
+   - 命令行工具
+   - 健康检查
+   - 性能调优指南
 
-#### 性能优化
+## 三、详细功能设计
 
-1. **正则缓存机制**
-   - 全局缓存已编译的正则表达式
-   - 使用 LRU 策略（最大 1000 条）
-   - 缓存命中率监控
+### 3.1 规则匹配引擎增强
 
-2. **安全防护**
-   - 正则复杂度检测（嵌套层数、回溯次数）
-   - 匹配超时（默认 100ms）
-   - 超时后降级为简单匹配
+#### 3.1.1 正则表达式匹配（v0.2.0）
 
-#### 配置示例
+**功能描述**: 支持使用正则表达式进行路径和参数匹配，满足复杂匹配需求。
 
+**技术实现**:
+- 使用 Go 标准库 `regexp` 包
+- 实现 LRU 缓存优化性能（容量 1000）
+- 编译错误处理和日志记录
+
+**配置示例**:
 ```json
 {
   "match_type": "Regex",
   "match_condition": {
-    "path": "/api/v\\d+/users/(\\d+)",
-    "headers": {
-      "Authorization": "Bearer [A-Za-z0-9._-]+"
-    },
-    "query": {
-      "timestamp": "[0-9]{10,13}"
-    }
+    "path": "^/api/v\\d+/users/\\d+$",
+    "method": "GET"
   }
 }
 ```
 
-#### 实现要点
+#### 3.1.2 CIDR IP 段匹配（v0.2.0）
 
-1. 在 MatchEngine 中增加 matchRegex 函数
-2. 引入 regexp 包，使用 sync.Map 存储缓存
-3. 使用 context.WithTimeout 实现超时控制
-4. 记录正则匹配性能指标
+**功能描述**: 支持基于 CIDR 格式的 IP 地址段匹配，实现 IP 白名单功能。
 
----
+**技术实现**:
+- 使用 `net.ParseCIDR` 解析 CIDR 格式
+- 使用 `net.IP` 进行地址比较
+- 支持 IPv4 和 IPv6
 
-### 3.2 代理模式（v0.3.0）
-
-#### 功能目标
-
-支持将请求转发到真实后端，并能修改请求/响应、注入延迟和错误。
-
-#### 代理类型
-
-| 代理类型 | 说明 | 适用场景 |
-|----------|------|----------|
-| 透明代理 | 直接转发，不修改 | 快速集成真实服务 |
-| 修改代理 | 修改请求/响应 | 数据脱敏、字段增强 |
-| 延迟代理 | 注入网络延迟 | 弱网测试 |
-| 错误代理 | 模拟后端错误 | 容错测试 |
-
-#### 配置示例
-
+**配置示例**:
 ```json
 {
-  "response": {
-    "type": "Proxy",
-    "content": {
-      "target_url": "http://real-backend.com",
-      "modify_request": {
-        "headers": {
-          "X-Mock-Mode": "proxy"
-        }
-      },
-      "modify_response": {
-        "headers": {
-          "X-Proxied-By": "MockServer"
-        },
-        "body_replace": {
-          "sensitive_field": "***"
-        }
-      },
-      "inject_delay": 100,
-      "error_rate": 0.1
-    }
-  }
-}
-```
-
-#### 实现要点
-
-1. 使用 `net/http/httputil.ReverseProxy`
-2. 请求/响应修改器
-3. 延迟注入逻辑
-4. 错误率控制
-5. 超时处理
-
----
-
-### 3.3 WebSocket 协议支持（v0.4.0）
-
-#### 架构设计
-
-```mermaid
-graph TD
-    A[客户端] -->|WebSocket 握手| B[WebSocket Adapter]
-    B --> C[Match Engine]
-    C --> D[WebSocket Executor]
-    D --> E[消息队列]
-    E --> F[消息推送器]
-    F --> A
-    
-    D --> G[连接管理器]
-    G -->|心跳检测| A
-```
-
-#### 核心功能
-
-1. **连接管理**
-   - 连接建立和握手
-   - 连接池管理（最大连接数限制）
-   - 连接超时检测
-   - 心跳保活（Ping/Pong）
-
-2. **消息处理**
-   - 接收客户端消息
-   - 服务端主动推送
-   - 消息序列化（JSON/Text/Binary）
-   - 消息路由（按规则匹配）
-
-3. **匹配规则**
-
-| 匹配字段 | 说明 | 示例 |
-|----------|------|------|
-| path | WebSocket 路径 | /ws/chat |
-| query | 查询参数 | ?room_id=123 |
-| header | 升级请求头 | Origin, Sec-WebSocket-Protocol |
-| message_pattern | 消息内容匹配 | {"type": "subscribe"} |
-
-4. **响应配置**
-
-| 响应类型 | 说明 | 配置示例 |
-|----------|------|----------|
-| Echo | 回显消息 | {"type": "echo"} |
-| Static | 静态消息 | {"type": "static", "content": {...}} |
-| Push | 定时推送 | {"type": "push", "interval": 5000, "content": {...}} |
-| Script | 脚本生成 | {"type": "script", "script": "..."} |
-
-#### 技术方案
-
-1. **依赖库**: gorilla/websocket
-2. **并发模型**: 每个连接一个 goroutine
-3. **消息队列**: Channel（带缓冲）
-4. **状态管理**: 连接状态机（Connecting → Connected → Closing → Closed）
-
-#### 配置示例
-
-```json
-{
-  "protocol": "WebSocket",
+  "match_type": "Simple",
   "match_condition": {
-    "path": "/ws/chat",
-    "query": {
-      "room_id": "123"
-    }
-  },
-  "response": {
-    "type": "Push",
-    "content": {
-      "interval": 5000,
-      "messages": [
-        {"type": "heartbeat", "timestamp": "{{.Timestamp}}"},
-        {"type": "notification", "content": "New message"}
-      ]
-    }
+    "path": "/api/admin",
+    "ip_whitelist": [
+      "192.168.1.0/24",
+      "10.0.0.1"
+    ]
   }
 }
 ```
 
----
+#### 3.1.3 脚本匹配（v0.4.0）
 
-### 3.4 动态响应模板详细设计（v0.3.0 已设计）
+**功能描述**: 基于 JavaScript 的脚本匹配，支持复杂业务逻辑匹配。
 
-#### 功能目标
+**技术实现**:
+- 使用 goja JavaScript 引擎
+- 安全沙箱环境，禁用危险函数
+- 资源限制（执行时间、内存）
 
-支持从请求中提取数据，动态生成响应内容。
-
-#### 模板语法
-
-基于 Go template 语法，扩展自定义函数。
-
-| 功能 | 语法 | 示例 |
-|------|------|------|
-| 变量引用 | `{{.FieldName}}` | `{{.Request.Path}}` |
-| 条件判断 | `{{if .Condition}}...{{end}}` | `{{if eq .Method "POST"}}...{{end}}` |
-| 循环 | `{{range .Items}}...{{end}}` | `{{range .Users}}{{.Name}}{{end}}` |
-| 函数调用 | `{{funcName args}}` | `{{uuid}}`, `{{timestamp}}` |
-
-#### 内置函数
-
-| 函数名 | 说明 | 返回值 | 示例 |
-|--------|------|--------|------|
-| uuid | 生成 UUID | string | `{{uuid}}` → "123e4567-e89b-12d3-a456-426614174000" |
-| timestamp | 当前时间戳 | int64 | `{{timestamp}}` → 1609459200 |
-| now | 当前时间 | string | `{{now "2006-01-02"}}` → "2025-01-21" |
-| random | 随机数 | int | `{{random 1 100}}` → 42 |
-| randomString | 随机字符串 | string | `{{randomString 10}}` → "aB3dE5fG7h" |
-| base64 | Base64 编码 | string | `{{base64 "hello"}}` → "aGVsbG8=" |
-
-#### 上下文数据
-
-模板可访问的数据上下文：
-
-```go
+**配置示例**:
+```json
 {
-  "Request": {
-    "Method": "POST",
-    "Path": "/api/users",
-    "Headers": {"Content-Type": "application/json"},
-    "Query": {"page": "1"},
-    "Body": {"name": "张三"}
-  },
-  "Rule": {
-    "ID": "rule_123",
-    "Name": "用户创建",
-    "Priority": 100
-  },
-  "Environment": {
-    "Variables": {"base_url": "http://localhost:9090"}
+  "match_type": "Script",
+  "match_condition": {
+    "script": "return request.headers['x-api-key'] === 'secret-key' && request.path.startsWith('/api/v2/');"
   }
 }
 ```
 
-#### 配置示例
+### 3.2 响应生成增强
 
+#### 3.2.1 动态响应模板（v0.3.0）
+
+**功能描述**: 基于 Go template 的动态响应生成，支持变量替换和复杂逻辑。
+
+**技术实现**:
+- 使用 Go 标准库 `text/template`
+- 实现 13 个内置函数
+- 支持递归渲染 JSON 对象
+
+**配置示例**:
 ```json
 {
   "response": {
     "type": "Dynamic",
     "content": {
       "status_code": 200,
+      "content_type": "JSON",
       "body": {
-        "request_id": "{{uuid}}",
+        "id": "{{uuid}}",
         "timestamp": "{{timestamp}}",
         "user": {
-          "name": "{{.Request.Body.name}}",
-          "created_at": "{{now \"2006-01-02 15:04:05\"}}",
-          "id": "{{random 1000 9999}}"
-        },
-        "echo_path": "{{.Request.Path}}"
+          "name": "{{.Request.Query.name}}",
+          "age": "{{random 18 65}}"
+        }
       }
     }
   }
 }
 ```
 
-响应结果：
+#### 3.2.2 代理模式（v0.3.0）
+
+**功能描述**: HTTP 反向代理，支持请求/响应修改和错误注入。
+
+**技术实现**:
+- 使用 `net/http/httputil.ReverseProxy`
+- 支持请求/响应头修改
+- 支持延迟注入和错误注入
+
+**配置示例**:
 ```json
 {
-  "request_id": "123e4567-e89b-12d3-a456-426614174000",
-  "timestamp": 1609459200,
-  "user": {
-    "name": "张三",
-    "created_at": "2025-01-21 14:30:00",
-    "id": 5678
-  },
-  "echo_path": "/api/users"
+  "response": {
+    "type": "Proxy",
+    "content": {
+      "target_url": "http://real-backend:8080",
+      "request_modifiers": {
+        "headers": {
+          "X-Forwarded-For": "{{.Request.SourceIP}}"
+        }
+      },
+      "response_modifiers": {
+        "headers": {
+          "X-Mock-Server": "gomockserver"
+        }
+      },
+      "inject_delay": {
+        "type": "fixed",
+        "value": 100
+      },
+      "inject_error": {
+        "rate": 0.1,
+        "status_code": 500
+      }
+    }
+  }
 }
 ```
 
----
+#### 3.2.3 文件路径引用（v0.3.0）
 
-### 3.4 请求日志系统（v0.5.0）
+**功能描述**: 支持从本地文件读取响应内容，适用于大文件响应。
 
-#### 数据模型
+**技术实现**:
+- 使用 `os.Open` 和 `io.Copy` 流式读取
+- 自动检测文件 Content-Type
+- 支持大文件传输
 
-RequestLog 模型已定义（models.go），包含以下字段：
+**配置示例**:
+```json
+{
+  "response": {
+    "type": "Static",
+    "content": {
+      "status_code": 200,
+      "content_type": "Binary",
+      "body": {
+        "file_path": "/path/to/large/file.zip"
+      }
+    }
+  }
+}
+```
 
-| 字段 | 类型 | 说明 | 索引 |
+#### 3.2.4 脚本响应（v0.4.0）
+
+**功能描述**: 基于 JavaScript 的动态响应生成，支持复杂业务逻辑。
+
+**技术实现**:
+- 使用 goja JavaScript 引擎
+- 安全沙箱环境
+- 资源限制
+
+**配置示例**:
+```json
+{
+  "response": {
+    "type": "Script",
+    "content": {
+      "script": "return { id: request.id, timestamp: Date.now(), message: 'Hello from script' };"
+    }
+  }
+}
+```
+
+### 3.3 协议支持扩展
+
+#### 3.3.1 WebSocket 协议支持（v0.4.0）
+
+**功能描述**: 完整的 WebSocket 协议支持，实现实时双向通信。
+
+**技术实现**:
+- 使用 gorilla/websocket 库
+- 心跳保活机制（Ping/Pong）
+- 连接管理（最大连接数限制）
+
+**配置示例**:
+```json
+{
+  "protocol": "WebSocket",
+  "match_condition": {
+    "path": "/ws/chat"
+  },
+  "response": {
+    "type": "Static",
+    "content": {
+      "welcome_message": "Welcome to WebSocket server!"
+    }
+  }
+}
+```
+
+### 3.4 延迟策略增强
+
+#### 3.4.1 正态分布延迟（v0.2.0）
+
+**功能描述**: 基于正态分布的延迟策略，模拟真实网络环境。
+
+**技术实现**:
+- 使用 Marsaglia polar method 生成正态分布随机数
+- 支持均值和标准差配置
+
+**配置示例**:
+```json
+{
+  "delay": {
+    "type": "normal",
+    "mean": 1000,
+    "std_dev": 200
+  }
+}
+```
+
+#### 3.4.2 阶梯延迟优化（v0.3.0）
+
+**功能描述**: 基于请求计数的延迟递增，模拟服务逐步过载。
+
+**技术实现**:
+- 按规则 ID 隔离计数器
+- 线程安全的计数器管理
+
+**配置示例**:
+```json
+{
+  "delay": {
+    "type": "step",
+    "fixed": 100,
+    "step": 50,
+    "limit": 2000
+  }
+}
+```
+
+## 四、技术架构设计
+
+### 4.1 系统架构图
+
+```mermaid
+graph TB
+    A[客户端] --> B[负载均衡器]
+    B --> C[Mock Server 集群]
+    C --> D[MongoDB]
+    C --> E[Redis]
+    
+    subgraph Mock Server 集群
+        F[HTTP 适配器]
+        G[WebSocket 适配器]
+        H[规则匹配引擎]
+        I[Mock 执行器]
+        J[模板引擎]
+        K[脚本引擎]
+        L[代理执行器]
+    end
+    
+    F --> H
+    G --> H
+    H --> I
+    I --> J
+    I --> K
+    I --> L
+    
+    C --> D
+    C --> E
+```
+
+### 4.2 核心组件设计
+
+#### 4.2.1 协议适配器层
+
+**职责**: 处理不同协议的请求，统一转换为内部标准格式。
+
+**组件**:
+- HTTP 适配器 (`internal/adapter/http_adapter.go`)
+- WebSocket 适配器 (`internal/adapter/websocket_adapter.go`)
+
+#### 4.2.2 规则匹配引擎层
+
+**职责**: 根据请求特征匹配对应的 Mock 规则。
+
+**组件**:
+- 匹配引擎 (`internal/engine/match_engine.go`)
+- 脚本引擎 (`internal/engine/script_engine.go`)
+- LRU 缓存 (`internal/engine/lru_cache.go`)
+
+#### 4.2.3 Mock 执行器层
+
+**职责**: 执行匹配到的规则，生成响应。
+
+**组件**:
+- Mock 执行器 (`internal/executor/mock_executor.go`)
+- 模板引擎 (`internal/executor/template_engine.go`)
+- 代理执行器 (`internal/executor/proxy_executor.go`)
+
+### 4.3 数据模型设计
+
+#### 4.3.1 规则模型
+
+```go
+type Rule struct {
+    ID             string                 `bson:"_id,omitempty" json:"id"`
+    Name           string                 `bson:"name" json:"name"`
+    ProjectID      string                 `bson:"project_id" json:"project_id"`
+    EnvironmentID  string                 `bson:"environment_id" json:"environment_id"`
+    Protocol       ProtocolType           `bson:"protocol" json:"protocol"`
+    MatchType      MatchType              `bson:"match_type" json:"match_type"`
+    Priority       int                    `bson:"priority" json:"priority"`
+    Enabled        bool                   `bson:"enabled" json:"enabled"`
+    MatchCondition map[string]interface{} `bson:"match_condition" json:"match_condition"`
+    Response       Response               `bson:"response" json:"response"`
+    Tags           []string               `bson:"tags,omitempty" json:"tags,omitempty"`
+    Creator        string                 `bson:"creator,omitempty" json:"creator,omitempty"`
+    CreatedAt      time.Time              `bson:"created_at" json:"created_at"`
+    UpdatedAt      time.Time              `bson:"updated_at" json:"updated_at"`
+}
+```
+
+#### 4.3.2 项目模型
+
+```go
+type Project struct {
+    ID          string    `bson:"_id,omitempty" json:"id"`
+    Name        string    `bson:"name" json:"name"`
+    WorkspaceID string    `bson:"workspace_id" json:"workspace_id"`
+    Description string    `bson:"description,omitempty" json:"description,omitempty"`
+    CreatedAt   time.Time `bson:"created_at" json:"created_at"`
+    UpdatedAt   time.Time `bson:"updated_at" json:"updated_at"`
+}
+```
+
+#### 4.3.3 环境模型
+
+```go
+type Environment struct {
+    ID        string                 `bson:"_id,omitempty" json:"id"`
+    Name      string                 `bson:"name" json:"name"`
+    ProjectID string                 `bson:"project_id" json:"project_id"`
+    BaseURL   string                 `bson:"base_url,omitempty" json:"base_url,omitempty"`
+    Variables map[string]interface{} `bson:"variables,omitempty" json:"variables,omitempty"`
+    CreatedAt time.Time              `bson:"created_at" json:"created_at"`
+    UpdatedAt time.Time              `bson:"updated_at" json:"updated_at"`
+}
+```
+
+#### 4.3.4 请求日志模型
+
+```go
+type RequestLog struct {
+    ID            string                 `bson:"_id,omitempty" json:"id"`
+    RequestID     string                 `bson:"request_id" json:"request_id"`
+    ProjectID     string                 `bson:"project_id" json:"project_id"`
+    EnvironmentID string                 `bson:"environment_id" json:"environment_id"`
+    RuleID        string                 `bson:"rule_id,omitempty" json:"rule_id,omitempty"`
+    Protocol      ProtocolType           `bson:"protocol" json:"protocol"`
+    Method        string                 `bson:"method,omitempty" json:"method,omitempty"`
+    Path          string                 `bson:"path,omitempty" json:"path,omitempty"`
+    Request       map[string]interface{} `bson:"request" json:"request"`
+    Response      map[string]interface{} `bson:"response" json:"response"`
+    StatusCode    int                    `bson:"status_code,omitempty" json:"status_code,omitempty"`
+    Duration      int64                  `bson:"duration" json:"duration"` // 毫秒
+    SourceIP      string                 `bson:"source_ip" json:"source_ip"`
+    Timestamp     time.Time              `bson:"timestamp" json:"timestamp"`
+}
+```
+
+### 4.4 API 接口设计
+
+#### 4.4.1 规则管理接口
+
+| 接口 | 方法 | 路径 | 描述 |
 |------|------|------|------|
-| request_id | string | 请求唯一标识 | 是 |
-| project_id | string | 项目 ID | 是（复合） |
-| environment_id | string | 环境 ID | 是（复合） |
-| rule_id | string | 匹配的规则 ID | 是 |
-| protocol | string | 协议类型 | 是 |
-| method | string | HTTP 方法 | 否 |
-| path | string | 请求路径 | 否 |
-| request | object | 请求详情 | 否 |
-| response | object | 响应详情 | 否 |
-| status_code | int | 响应状态码 | 是 |
-| duration | int64 | 处理时长（ms） | 是 |
-| source_ip | string | 客户端 IP | 是 |
-| timestamp | time | 请求时间 | 是（TTL） |
+| 创建规则 | POST | `/api/v1/rules` | 创建新的 Mock 规则 |
+| 查询规则列表 | GET | `/api/v1/rules` | 查询规则列表 |
+| 查询规则详情 | GET | `/api/v1/rules/{id}` | 查询规则详情 |
+| 更新规则 | PUT | `/api/v1/rules/{id}` | 更新规则 |
+| 删除规则 | DELETE | `/api/v1/rules/{id}` | 删除规则 |
+| 启用/禁用规则 | PATCH | `/api/v1/rules/{id}/toggle` | 启用或禁用规则 |
 
-#### 索引设计
+#### 4.4.2 项目管理接口
 
+| 接口 | 方法 | 路径 | 描述 |
+|------|------|------|------|
+| 创建项目 | POST | `/api/v1/projects` | 创建新的项目 |
+| 查询项目列表 | GET | `/api/v1/projects` | 查询项目列表 |
+| 查询项目详情 | GET | `/api/v1/projects/{id}` | 查询项目详情 |
+| 更新项目 | PUT | `/api/v1/projects/{id}` | 更新项目 |
+| 删除项目 | DELETE | `/api/v1/projects/{id}` | 删除项目 |
+
+#### 4.4.3 环境管理接口
+
+| 接口 | 方法 | 路径 | 描述 |
+|------|------|------|------|
+| 创建环境 | POST | `/api/v1/environments` | 创建新的环境 |
+| 查询环境列表 | GET | `/api/v1/environments` | 查询环境列表 |
+| 查询环境详情 | GET | `/api/v1/environments/{id}` | 查询环境详情 |
+| 更新环境 | PUT | `/api/v1/environments/{id}` | 更新环境 |
+| 删除环境 | DELETE | `/api/v1/environments/{id}` | 删除环境 |
+
+#### 4.4.4 统计分析接口
+
+| 接口 | 方法 | 路径 | 描述 |
+|------|------|------|------|
+| Dashboard 统计 | GET | `/api/v1/statistics/dashboard` | 获取 Dashboard 统计数据 |
+| 项目统计列表 | GET | `/api/v1/statistics/projects` | 获取项目统计列表 |
+| 规则统计 | GET | `/api/v1/statistics/rules` | 获取规则统计 |
+| 请求趋势 | GET | `/api/v1/statistics/trends` | 获取请求趋势数据 |
+| 响应时间分布 | GET | `/api/v1/statistics/distribution` | 获取响应时间分布 |
+
+### 4.5 数据库设计
+
+#### 4.5.1 集合设计
+
+**rules 集合**:
+```javascript
+[
+  {"project_id": 1, "environment_id": 1, "priority": -1},  // 规则匹配索引
+  {"protocol": 1, "enabled": 1},                           // 协议和启用状态索引
+  {"created_at": -1}                                       // 创建时间索引
+]
+```
+
+**projects 集合**:
+```javascript
+[
+  {"workspace_id": 1},     // 工作空间索引
+  {"created_at": -1}       // 创建时间索引
+]
+```
+
+**environments 集合**:
+```javascript
+[
+  {"project_id": 1},       // 项目索引
+  {"created_at": -1}       // 创建时间索引
+]
+```
+
+**request_logs 集合**:
 ```javascript
 [
   {"timestamp": -1, "project_id": 1, "environment_id": 1},  // 时间范围查询
   {"request_id": 1},                                        // 请求追踪
-  {"rule_id": 1, "timestamp": -1},                          // 规则命中统计
-  {"status_code": 1, "timestamp": -1},                      // 错误率统计
-  {"timestamp": 1}, {expireAfterSeconds: 2592000}           // TTL 索引（30天）
+  {"rule_id": 1},                                           // 规则统计
+  {"status_code": 1}                                        // 错误统计
 ]
 ```
 
-#### 日志记录策略
+### 4.6 部署架构
 
-1. **异步记录**
-   - 使用 Channel 缓冲（容量 10,000）
-   - 独立 goroutine 批量写入（每 100 条或 1 秒）
-   - 避免阻塞主请求链路
+#### 4.6.1 单机部署
 
-2. **采样策略**（可选）
-   - 正常请求采样率 10%
-   - 错误请求全量记录
-   - 慢请求全量记录（> 1s）
+```yaml
+version: "3.8"
+services:
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
 
-3. **数据脱敏**
-   - 敏感 Header 脱敏（Authorization、Cookie）
-   - 请求体大小限制（最大 10KB）
-   - 二进制数据不记录
+  mockserver:
+    build: .
+    ports:
+      - "8080:8080"  # 管理 API
+      - "9090:9090"  # Mock 服务
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mockserver
+    depends_on:
+      - mongodb
 
-#### 查询功能
-
-支持的查询维度：
-
-| 查询类型 | 参数 | 示例 |
-|----------|------|------|
-| 时间范围 | start_time, end_time | 2025-01-21 00:00:00 ~ 2025-01-21 23:59:59 |
-| 项目环境 | project_id, environment_id | project_123, env_456 |
-| 规则 | rule_id | rule_789 |
-| 状态码 | status_code, status_range | 200, 4xx, 5xx |
-| 慢请求 | min_duration | 1000 (>1s) |
-| IP | source_ip | 192.168.1.100 |
-
-#### 日志保留策略
-
-1. **默认保留期**: 30 天（MongoDB TTL 索引）
-2. **可配置保留期**: 7 天 / 30 天 / 90 天
-3. **手动清理**: 提供 API 清理指定时间范围日志
-4. **归档**: 导出历史日志到对象存储（可选）
-
----
-
-### 3.5 用户认证和权限管理（v0.6.0）
-
-#### 认证方案
-
-采用 JWT（JSON Web Token）无状态认证。
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Auth Service
-    participant Database
-    
-    Client->>API: POST /api/v1/auth/login
-    API->>Auth Service: 验证用户名密码
-    Auth Service->>Database: 查询用户
-    Database-->>Auth Service: 返回用户信息
-    Auth Service-->>API: 生成 JWT Token
-    API-->>Client: 返回 Token
-    
-    Client->>API: GET /api/v1/projects (Header: Authorization: Bearer {token})
-    API->>Auth Service: 验证 Token
-    Auth Service-->>API: 返回用户身份
-    API->>API: 检查权限
-    API-->>Client: 返回数据
+volumes:
+  mongodb_data:
 ```
 
-#### 角色和权限
+#### 4.6.2 集群部署
 
-| 角色 | 权限范围 | 操作权限 |
-|------|----------|----------|
-| Admin | 全局 | 创建/编辑/删除项目、环境、规则；管理用户；查看日志 |
-| Developer | 指定项目 | 创建/编辑/删除规则；查看日志 |
-| Viewer | 指定项目 | 仅查看规则、统计、日志 |
+```yaml
+version: "3.8"
+services:
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    command: --replSet rs0
 
-#### 权限矩阵
+  redis:
+    image: redis:7.0
+    ports:
+      - "6379:6379"
 
-| 资源 | Admin | Developer | Viewer |
-|------|-------|-----------|--------|
-| 创建项目 | ✅ | ❌ | ❌ |
-| 编辑项目 | ✅ | ❌ | ❌ |
-| 删除项目 | ✅ | ❌ | ❌ |
-| 创建规则 | ✅ | ✅ | ❌ |
-| 编辑规则 | ✅ | ✅ | ❌ |
-| 删除规则 | ✅ | ✅ | ❌ |
-| 查看规则 | ✅ | ✅ | ✅ |
-| 查看日志 | ✅ | ✅ | ✅ |
-| 管理用户 | ✅ | ❌ | ❌ |
+  mockserver1:
+    build: .
+    ports:
+      - "8081:8080"
+      - "9091:9090"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mockserver
+      - REDIS_ADDR=redis:6379
+      - SERVER_ID=mockserver1
+    depends_on:
+      - mongodb
+      - redis
 
-#### 工作空间隔离
+  mockserver2:
+    build: .
+    ports:
+      - "8082:8080"
+      - "9092:9090"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mockserver
+      - REDIS_ADDR=redis:6379
+      - SERVER_ID=mockserver2
+    depends_on:
+      - mongodb
+      - redis
 
-1. **Workspace 模型**
-   - 每个 Workspace 包含多个项目
-   - 用户属于一个或多个 Workspace
-   - Workspace 内成员共享项目
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - mockserver1
+      - mockserver2
 
-2. **数据隔离**
-   - 项目绑定 workspace_id
-   - 查询时自动过滤 workspace
-   - 跨 Workspace 访问拒绝
-
-#### API 鉴权
-
-1. **公开接口**（无需认证）
-   - POST /api/v1/auth/login
-   - POST /api/v1/auth/register
-   - GET /api/v1/system/health
-
-2. **受保护接口**（需要 JWT Token）
-   - 所有项目、环境、规则、日志接口
-   - 中间件验证 Token 有效性
-   - 提取用户身份和权限
-
-3. **权限检查**
-   - 在 Handler 层检查操作权限
-   - 返回 403 Forbidden（权限不足）
-   - 记录权限拒绝日志
-
----
-
-### 3.6 规则版本控制（v0.6.0）
-
-#### 版本记录
-
-Version 模型已定义，记录每次规则变更。
-
-| 字段 | 说明 | 示例 |
-|------|------|------|
-| rule_id | 规则 ID | rule_123 |
-| version | 版本号 | v1, v2, v3 |
-| change_type | 变更类型 | Create, Update, Delete |
-| changes | 变更内容 | {"priority": {"old": 100, "new": 200}} |
-| operator | 操作人 | user_456 |
-| description | 变更说明 | "提高优先级" |
-| created_at | 变更时间 | 2025-01-21 14:30:00 |
-
-#### 版本策略
-
-1. **自动版本**: 每次更新/删除规则自动记录
-2. **版本号**: 递增整数（v1, v2, v3...）
-3. **Diff 计算**: 对比新旧数据，记录差异
-4. **保留期**: 默认保留所有版本（可配置最大版本数）
-
-#### 版本对比
-
-提供 API 对比两个版本的差异：
-
-```
-GET /api/v1/rules/{rule_id}/versions/compare?from=v1&to=v3
+volumes:
+  mongodb_data:
 ```
 
-响应示例：
-```json
-{
-  "rule_id": "rule_123",
-  "from_version": "v1",
-  "to_version": "v3",
-  "changes": [
-    {
-      "field": "priority",
-      "old_value": 100,
-      "new_value": 200
-    },
-    {
-      "field": "match_condition.path",
-      "old_value": "/api/users",
-      "new_value": "/api/v1/users"
-    }
-  ]
-}
-```
+## 五、导入导出设计
 
-#### 版本回滚
+### 5.1 导出格式
 
-支持一键回滚到历史版本：
-
-```
-POST /api/v1/rules/{rule_id}/rollback
-{
-  "version": "v2",
-  "reason": "回滚到稳定版本"
-}
-```
-
-回滚逻辑：
-1. 读取目标版本的完整规则配置
-2. 更新当前规则
-3. 记录新的版本（change_type: Rollback）
-
----
-
-### 3.7 配置导入导出（v0.6.0）
-
-#### 导出格式
-
-支持 JSON 和 YAML 两种格式：
-
-**JSON 格式**:
 ```json
 {
   "version": "1.0",
   "export_time": "2025-01-21T14:30:00Z",
   "projects": [
     {
+      "id": "project1",
       "name": "测试项目",
-      "workspace_id": "default",
+      "description": "这是一个测试项目",
       "environments": [
         {
+          "id": "env1",
           "name": "开发环境",
           "base_url": "http://localhost:9090",
-          "rules": [...]
+          "rules": [
+            {
+              "id": "rule1",
+              "name": "用户列表接口",
+              "protocol": "HTTP",
+              "match_type": "Simple",
+              "priority": 100,
+              "enabled": true,
+              "match_condition": {
+                "method": "GET",
+                "path": "/api/users"
+              },
+              "response": {
+                "type": "Static",
+                "content": {
+                  "status_code": 200,
+                  "content_type": "JSON",
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "body": {
+                    "code": 0,
+                    "message": "success",
+                    "data": [
+                      {
+                        "id": 1,
+                        "name": "张三",
+                        "email": "zhangsan@example.com"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
         }
       ]
     }
@@ -948,345 +1042,134 @@ POST /api/v1/rules/{rule_id}/rollback
 version: "1.0"
 export_time: "2025-01-21T14:30:00Z"
 projects:
-  - name: "测试项目"
-    workspace_id: "default"
+  - id: project1
+    name: 测试项目
+    description: 这是一个测试项目
     environments:
-      - name: "开发环境"
-        base_url: "http://localhost:9090"
-        rules: [...]
+      - id: env1
+        name: 开发环境
+        base_url: http://localhost:9090
+        rules:
+          - id: rule1
+            name: 用户列表接口
+            protocol: HTTP
+            match_type: Simple
+            priority: 100
+            enabled: true
+            match_condition:
+              method: GET
+              path: /api/users
+            response:
+              type: Static
+              content:
+                status_code: 200
+                content_type: JSON
+                headers:
+                  Content-Type: application/json
+                body:
+                  code: 0
+                  message: success
+                  data:
+                    - id: 1
+                      name: 张三
+                      email: zhangsan@example.com
 ```
 
-#### 导出范围
-
-| 导出类型 | API | 说明 |
-|----------|-----|------|
-| 单个规则 | GET /api/v1/rules/{id}/export | 导出单条规则 |
-| 环境规则 | GET /api/v1/environments/{id}/export | 导出环境下所有规则 |
-| 项目配置 | GET /api/v1/projects/{id}/export | 导出项目所有配置 |
-| 全局配置 | GET /api/v1/export | 导出所有项目和规则 |
+### 5.2 导入处理
 
-#### 导入策略
+导入时需要处理以下情况：
+1. ID 冲突：生成新的唯一 ID
+2. 依赖关系：确保项目、环境、规则的依赖关系正确
+3. 数据验证：验证数据格式和完整性
+4. 批量导入：支持大量数据的高效导入
 
-1. **冲突处理**
-   - Skip: 跳过已存在的规则
-   - Overwrite: 覆盖已存在的规则
-   - Merge: 合并（保留 ID，更新字段）
+## 六、测试策略
 
-2. **ID 映射**
-   - 自动生成新 ID
-   - 或保留原 ID（需检查唯一性）
+### 6.1 单元测试
 
-3. **依赖检查**
-   - 检查 project_id 和 environment_id 存在性
-   - 不存在则自动创建
+每个模块都需要编写单元测试，确保功能正确性：
+- 覆盖率目标：> 85%
+- 测试框架：testing + testify
+- 并发测试：确保线程安全性
 
-#### 模板市场（预留）
-
-提供常用规则模板：
+### 6.2 集成测试
 
-| 模板名称 | 说明 | 适用场景 |
-|----------|------|----------|
-| REST API CRUD | 标准 REST 接口 | 用户、商品管理 |
-| 分页查询 | 带分页参数的列表接口 | 列表页 |
-| 文件上传 | 模拟文件上传响应 | 图片上传 |
-| OAuth 2.0 | 模拟 OAuth 认证流程 | 第三方登录 |
-| WebSocket Chat | 聊天室消息推送 | 实时通信 |
+验证各模块间的集成：
+- API 接口测试
+- 数据库操作测试
+- 协议适配器测试
 
----
-
-### 3.8 Redis 缓存（v0.7.0）
-
-#### 缓存策略
-
-| 缓存类型 | 缓存键 | TTL | 失效时机 |
-|----------|--------|-----|----------|
-| 规则列表 | `rules:{project_id}:{env_id}` | 5 分钟 | 规则更新/删除 |
-| 单个规则 | `rule:{rule_id}` | 10 分钟 | 规则更新/删除 |
-| 统计数据 | `stats:dashboard` | 1 分钟 | 定时刷新 |
-| 用户信息 | `user:{user_id}` | 30 分钟 | 用户更新 |
+### 6.3 性能测试
 
-#### 缓存流程
+验证系统性能指标：
+- QPS 测试：> 10,000
+- 响应时间测试：< 10ms
+- 并发测试：支持 1000+ 并发连接
 
-```mermaid
-graph TD
-    A[请求到达] --> B{Redis 缓存?}
-    B -->|命中| C[返回缓存数据]
-    B -->|未命中| D[查询 MongoDB]
-    D --> E[写入 Redis]
-    E --> F[返回数据]
-    
-    G[规则更新] --> H[删除缓存]
-    H --> I[下次请求重建]
-```
-
-#### 缓存失效
-
-1. **主动失效**
-   - 规则创建/更新/删除时删除相关缓存
-   - 项目/环境删除时删除所有关联缓存
-
-2. **被动失效**
-   - TTL 过期自动失效
-   - LRU 内存淘汰
-
-3. **缓存预热**
-   - 系统启动时加载热点规则
-   - 定时任务刷新统计数据缓存
-
-#### 分布式缓存
-
-1. **Redis 集群**: 支持 Redis Cluster 模式
-2. **缓存一致性**: 使用 Pub/Sub 通知缓存更新
-3. **降级策略**: Redis 不可用时直接查询 MongoDB
-
-## 四、非功能性需求
-
-### 4.1 性能目标
-
-| 指标 | v0.2.0 (当前) | v0.7.0 (目标) | 提升幅度 |
-|------|---------------|---------------|----------|
-| QPS | 10,000 | 50,000 | 5x |
-| P99 响应时间 | 50ms | 20ms | 60% ↓ |
-| 支持规则数 | 10,000 | 100,000 | 10x |
-| 并发连接数 | 1,000 | 10,000 | 10x |
-
-### 4.2 可用性目标
-
-| 指标 | 目标值 | 保障措施 |
-|------|--------|----------|
-| 服务可用性 | 99.9% | 健康检查、自动重启、熔断降级 |
-| 数据可靠性 | 99.99% | MongoDB 副本集、定期备份 |
-| 故障恢复时间 | < 5 分钟 | 自动故障转移 |
-
-### 4.3 扩展性目标
-
-1. **水平扩展**: 支持多实例部署，通过负载均衡分发请求
-2. **存储扩展**: MongoDB 分片支持（当数据量 > 1TB）
-3. **协议扩展**: 协议适配器模式，新增协议无需改动核心逻辑
-
-### 4.4 安全性要求
-
-| 安全类别 | 措施 |
-|----------|------|
-| 认证 | JWT Token 认证 |
-| 授权 | RBAC 权限控制 |
-| 传输 | HTTPS/TLS 加密 |
-| 数据 | 敏感字段加密存储 |
-| 审计 | 操作日志记录 |
-| 防护 | 速率限制、IP 黑名单、SQL 注入防护 |
-
-### 4.5 可维护性要求
-
-1. **代码质量**: 测试覆盖率 > 85%，代码评审通过率 100%
-2. **文档完整性**: API 文档、架构文档、部署文档完整
-3. **监控可观测**: Prometheus 指标、日志聚合、链路追踪
-4. **快速定位**: 完整的请求日志、错误栈追踪
-
-## 五、技术方案选型
-
-### 5.1 新增技术栈
-
-| 组件 | 技术选型 | 用途 | 引入版本 |
-|------|----------|------|----------|
-| WebSocket | gorilla/websocket | WebSocket 协议支持 | v0.4.0 |
-| 模板引擎 | Go template | 动态响应生成 | v0.4.0 |
-| 脚本引擎 | goja | JavaScript 脚本执行 | v0.4.0 |
-| 缓存 | Redis | 规则缓存、统计缓存 | v0.7.0 |
-| 认证 | jwt-go | JWT 认证 | v0.6.0 |
-| 密码加密 | bcrypt | 密码哈希 | v0.6.0 |
-| gRPC | grpc-go | gRPC 协议支持 | v0.8.0 |
-| Proto 解析 | protoreflect | 动态 Proto 解析 | v0.8.0 |
-| 监控 | Prometheus | 指标采集 | v1.0.0 |
-
-### 5.2 架构演进
-
-#### 当前架构（v0.2.0）
-
-```
-Client → HTTP Adapter → Match Engine → Mock Executor → MongoDB
-```
-
-#### 目标架构（v1.0.0）
-
-```mermaid
-graph TD
-    A[客户端] --> B{协议分发}
-    B -->|HTTP| C[HTTP Adapter]
-    B -->|WebSocket| D[WebSocket Adapter]
-    B -->|gRPC| E[gRPC Adapter]
-    
-    C --> F[Match Engine]
-    D --> F
-    E --> F
-    
-    F --> G{缓存层}
-    G -->|命中| H[Mock Executor]
-    G -->|未命中| I[MongoDB]
-    I --> J[写入缓存]
-    J --> H
-    
-    H --> K[响应生成]
-    K -->|静态| L[Static Response]
-    K -->|动态| M[Template Engine]
-    K -->|代理| N[Proxy]
-    K -->|脚本| O[Script Engine]
-    
-    L --> P[返回客户端]
-    M --> P
-    N --> P
-    O --> P
-    
-    Q[请求日志] -.异步.-> R[日志服务]
-    R --> I
-    
-    S[用户认证] --> T[JWT 验证]
-    T --> F
-```
-
-## 六、风险评估与应对
-
-### 6.1 技术风险
-
-| 风险项 | 风险等级 | 影响 | 应对措施 |
-|--------|----------|------|----------|
-| 脚本引擎安全 | 高 | 恶意脚本攻击 | 严格沙箱、资源限制、审计日志 |
-| 正则 ReDoS | 中 | 性能下降 | 超时机制、复杂度检测 |
-| WebSocket 连接耗尽 | 中 | 服务不可用 | 连接数限制、超时断开 |
-| Redis 不可用 | 中 | 性能下降 | 降级方案（直接查 DB） |
-| gRPC Proto 解析 | 低 | 解析失败 | 校验和错误处理 |
-
-### 6.2 性能风险
-
-| 风险项 | 风险等级 | 应对措施 |
-|--------|----------|----------|
-| 大规模规则查询 | 中 | Redis 缓存、索引优化 |
-| 日志写入瓶颈 | 中 | 异步批量写入、采样策略 |
-| 模板渲染性能 | 低 | 模板缓存、简化模板 |
-
-### 6.3 兼容性风险
-
-| 风险项 | 应对措施 |
-|--------|----------|
-| API 变更 | 版本化 API（/api/v1, /api/v2） |
-| 数据模型变更 | 数据迁移脚本、向后兼容 |
-| 配置文件变更 | 配置版本检查、自动升级 |
-
-### 6.4 运维风险
-
-| 风险项 | 应对措施 |
-|--------|----------|
-| 数据丢失 | 定期备份、副本集 |
-| 服务宕机 | 健康检查、自动重启、多实例部署 |
-| 监控盲区 | 完善监控指标、告警规则 |
-
-## 七、实施建议
-
-### 7.0 前置任务
-
-在开始 v0.3.0 及后续版本开发前，建议完成以下前置任务：
-
-**1. 文档同步更新**（高优先级）
-- [ ] 更新 README.md 中的版本号为 v0.2.0
-- [ ] 更新 PROJECT_SUMMARY.md 中的版本信息和功能列表
-- [ ] 在 CHANGELOG.md 中添加 v0.2.0 的变更记录
-- [ ] 更新所有文档中的日期为 2025-11-17 （北京时间）
-
-**2. 技术债务清单重新评估**（高优先级）
-- [ ] 检查 TECHNICAL_DEBT.md 中的 TD-001 ~ TD-009 是否已解决
-- [ ] 更新已完成的技术债务状态
-- [ ] 添加 v0.2.0 已实现的功能列表
-- [ ] 重新评估剩余技术债务的优先级
-
-**3. 当前版本功能梳理**（中优先级）
-- [ ] 检查 v0.2.0 相比 v0.1.3 的新增功能
-- [ ] 验证当前版本的测试覆盖率
-- [ ] 识别已知问题和限制
-- [ ] 确认性能基准数据（QPS、响应时间等）
-
-**4. 开发环境准备**（中优先级）
-- [ ] 确认 Go 1.24.0 环境
-- [ ] 确认 Node.js 18+ 环境
-- [ ] 确认 MongoDB 6.0+ 可用
-- [ ] 确认 Docker 环境可用
-
-### 7.1 优先级建议
-
-**高优先级（必须实现）**:
-- v0.3.0: 动态模板、代理模式
-- v0.5.0: 请求日志系统、实时监控
-- v0.6.0: 用户认证、权限管理
-
-**中优先级（建议实现）**:
-- v0.4.0: WebSocket 支持
-- v0.6.0: 规则版本控制、配置导入导出
-- v0.7.0: Redis 缓存
-
-**低优先级（可选实现）**:
-- v0.4.0: 脚本匹配（需充分评估安全风险）
-- v0.8.0: gRPC 支持（根据用户需求决定）
-
-**✅ 已完成（v0.2.0）**:
-- ✅ CIDR IP 段匹配
-- ✅ 正则表达式匹配（含 LRU 缓存）
-- ✅ 二进制数据处理（Base64）
-- ✅ 正态分布延迟
-- ✅ 阶梯延迟
-
-### 7.2 迭代建议
-
-1. **保持节奏**: 每个版本 2-3 周，避免功能堆积
-2. **质量优先**: 每个版本测试覆盖率 > 80%
-3. **用户反馈**: 发布后收集用户反馈，快速迭代
-4. **文档同步**: 功能开发和文档同步进行
-
-### 7.3 资源评估
-
-| 版本 | 开发工作量 | 测试工作量 | 文档工作量 | 总计 |
-|------|------------|------------|------------|------|
-| v0.3.0 | 8 人日 | 4 人日 | 2 人日 | 14 人日 |
-| v0.4.0 | 15 人日 | 6 人日 | 3 人日 | 24 人日 |
-| v0.5.0 | 10 人日 | 4 人日 | 2 人日 | 16 人日 |
-| v0.6.0 | 18 人日 | 6 人日 | 4 人日 | 28 人日 |
-| v0.7.0 | 10 人日 | 4 人日 | 2 人日 | 16 人日 |
-| v0.8.0 | 20 人日 | 6 人日 | 4 人日 | 30 人日 |
-| v1.0.0 | 12 人日 | 8 人日 | 6 人日 | 26 人日 |
-| **总计** | **93 人日** | **38 人日** | **23 人日** | **154 人日** |
-
-### 7.4 成功标准
-
-| 版本 | 成功标准 |
-|------|----------|
-| v0.2.0 | ✅ 已完成：正则匹配、CIDR IP、二进制数据、正态/阶梯延迟 |
-| v0.3.0 | 模板渲染正确率 > 99%，代理模式可用，支持大文件 |
-| v0.4.0 | WebSocket 连接稳定，脚本匹配安全性验证通过 |
-| v0.5.0 | 日志记录率 > 99%，统计数据准确率 > 95%，查询响应 < 500ms |
-| v0.6.0 | 用户认证成功率 100%，权限控制准确率 100%，版本回滚成功率 100% |
-| v0.7.0 | 缓存命中率 > 80%，QPS 提升至 50,000 |
-| v0.8.0 | gRPC Mock 成功率 > 95%，支持 Streaming RPC |
-| v1.0.0 | 测试覆盖率 > 85%，文档完整度 > 90%，无 P0/P1 级别 Bug |
-
-## 八、附录
-
-### 8.1 参考资料
-
-- [当前系统架构](PROJECT_SUMMARY.md)
-- [技术债务清单](TECHNICAL_DEBT.md)
-- [变更日志](CHANGELOG.md)
-
-### 8.2 术语表
-
-| 术语 | 说明 |
-|------|------|
-| QPS | 每秒查询数（Queries Per Second） |
-| P99 | 99% 的请求响应时间 |
-| TTL | 生存时间（Time To Live） |
-| RBAC | 基于角色的访问控制（Role-Based Access Control） |
-| JWT | JSON Web Token |
-| ReDoS | 正则表达式拒绝服务攻击 |
-| CIDR | 无类别域间路由（Classless Inter-Domain Routing） |
-
-### 8.3 变更记录
-
-| 日期 | 版本 | 变更内容 | 作者 |
-|------|------|----------|------|
-| 2025-11-17 | v1.0 | 初始版本，规划 v0.3.0 ~ v1.0.0 | AI Assistant |
+### 6.4 压力测试
+
+验证系统在极限情况下的表现：
+- 长时间运行稳定性
+- 内存泄漏检测
+- CPU 使用率监控
+
+## 七、安全设计
+
+### 7.1 认证授权
+
+- API 访问控制
+- 规则操作权限控制
+- 数据隔离（项目/环境）
+
+### 7.2 数据安全
+
+- 敏感信息加密存储
+- 传输加密（HTTPS）
+- 数据备份和恢复
+
+### 7.3 脚本安全
+
+- JavaScript 沙箱隔离
+- 执行时间限制
+- 内存使用限制
+- 危险函数禁用
+
+## 八、监控和运维
+
+### 8.1 系统监控
+
+- 系统指标（CPU、内存、磁盘）
+- 应用指标（QPS、响应时间、错误率）
+- 业务指标（规则匹配次数、响应类型分布）
+
+### 8.2 日志管理
+
+- 结构化日志记录
+- 日志级别控制
+- 日志轮转和清理
+
+### 8.3 告警机制
+
+- 系统异常告警
+- 性能阈值告警
+- 业务异常告警
+
+## 九、未来规划
+
+### 9.1 短期规划（v0.5.0 - v0.7.0）
+
+1. 增强可观测性（日志、监控、告警）
+2. 完善企业特性（认证、权限、版本控制）
+3. 性能优化（缓存、并发优化）
+
+### 9.2 中期规划（v0.8.0 - v1.0.0）
+
+1. 扩展协议支持（gRPC、TCP/UDP）
+2. 高可用部署方案
+3. 生产环境就绪
+
+### 9.3 长期规划（v1.0.0+）
+
+1. 生态建设（插件系统、扩展市场）
+2. 多语言支持
+3. 云原生部署

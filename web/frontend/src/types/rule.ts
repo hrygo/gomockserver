@@ -1,8 +1,8 @@
 // 规则类型定义
-export type Protocol = 'HTTP' | 'HTTPS'
+export type Protocol = 'HTTP' | 'HTTPS' | 'WebSocket'
 export type MatchType = 'Simple' | 'Regex' | 'Script'
-export type ContentType = 'JSON' | 'XML' | 'HTML' | 'Text'
-export type ResponseType = 'Static' | 'Dynamic' | 'Proxy'
+export type ContentType = 'JSON' | 'XML' | 'HTML' | 'Text' | 'Binary'
+export type ResponseType = 'Static' | 'Dynamic' | 'Proxy' | 'Script'
 
 export interface MatchCondition {
   method?: string | string[]

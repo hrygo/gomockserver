@@ -15,6 +15,7 @@ type AdminService struct {
 	ruleHandler       *api.RuleHandler
 	projectHandler    *api.ProjectHandler
 	statisticsHandler *api.StatisticsHandler
+	mockHandler       *api.MockHandler
 }
 
 // NewAdminService 创建管理服务
@@ -23,6 +24,7 @@ func NewAdminService(ruleHandler *api.RuleHandler, projectHandler *api.ProjectHa
 		ruleHandler:       ruleHandler,
 		projectHandler:    projectHandler,
 		statisticsHandler: statisticsHandler,
+		mockHandler:       api.NewMockHandler(),
 	}
 }
 
@@ -84,6 +86,15 @@ func StartAdminServer(addr string, service *AdminService) error {
 			statistics.GET("/rules", service.statisticsHandler.GetRuleStatistics)
 			statistics.GET("/request-trend", service.statisticsHandler.GetRequestTrend)
 			statistics.GET("/response-time-distribution", service.statisticsHandler.GetResponseTimeDistribution)
+		}
+
+		// Mock API
+		mock := v1.Group("/mock")
+		{
+			mock.POST("/test", service.mockHandler.SendMockRequest)
+			mock.GET("/history", service.mockHandler.GetMockHistory)
+			mock.DELETE("/history", service.mockHandler.ClearMockHistory)
+			mock.DELETE("/history/:id", service.mockHandler.DeleteMockHistoryItem)
 		}
 	}
 

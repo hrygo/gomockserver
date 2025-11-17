@@ -184,9 +184,14 @@ const Rules: React.FC = () => {
       dataIndex: 'protocol',
       key: 'protocol',
       width: '8%',
-      render: (protocol: Protocol) => (
-        <Tag color={protocol === 'HTTPS' ? 'green' : 'blue'}>{protocol}</Tag>
-      ),
+      render: (protocol: Protocol) => {
+        const colorMap: Record<string, string> = {
+          HTTP: 'blue',
+          HTTPS: 'green',
+          WebSocket: 'purple',
+        }
+        return <Tag color={colorMap[protocol] || 'default'}>{protocol}</Tag>
+      },
     },
     {
       title: '匹配类型',
@@ -357,6 +362,7 @@ const Rules: React.FC = () => {
           >
             <Option value="HTTP">HTTP</Option>
             <Option value="HTTPS">HTTPS</Option>
+            <Option value="WebSocket">WebSocket</Option>
           </Select>
 
           <Select

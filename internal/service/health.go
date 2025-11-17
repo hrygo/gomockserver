@@ -14,7 +14,7 @@ var (
 	// ServerStartTime 服务器启动时间
 	ServerStartTime time.Time
 	// Version 应用版本号
-	Version = "0.3.0"
+	Version = "0.4.0"
 	// AppName 应用名称
 	AppName = "MockServer"
 )
