@@ -7,7 +7,6 @@ services:
   # MongoDB 测试数据库
   mongodb-test:
     image: mongo:6.0
-    container_name: mockserver-test-mongodb
     ports:
       - "27018:27017"  # 使用不同端口避免与生产环境冲突
     environment:
@@ -30,7 +29,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    container_name: mockserver-test-app
     ports:
       - "8081:8080"  # Admin API (测试端口)
       - "9091:9090"  # Mock Server (测试端口)
@@ -57,7 +55,6 @@ services:
   # Redis (可选 - 用于缓存测试)
   redis-test:
     image: redis:7-alpine
-    container_name: mockserver-test-redis
     ports:
       - "6380:6379"  # 使用不同端口
     networks:
@@ -73,7 +70,6 @@ services:
   # 性能测试工具 - wrk
   wrk-test:
     image: williamyeh/wrk
-    container_name: mockserver-wrk
     networks:
       - test-network
     volumes:
@@ -89,7 +85,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.test-runner
-    container_name: mockserver-test-runner
     depends_on:
       mockserver-test:
         condition: service_healthy
