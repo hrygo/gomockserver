@@ -240,22 +240,26 @@ func (a *WebSocketAdapter) Build(response *Response) interface{} {
 }
 ```
 
+**已支持协议**：
+- HTTP/HTTPS
+- WebSocket
+
 ### 匹配策略扩展
 
 支持添加新的匹配类型：
 
 - Simple：简单匹配（已实现）
-- Regex：正则表达式匹配（计划中）
-- Script：脚本化匹配（计划中）
+- Regex：正则表达式匹配（已实现）
+- Script：JavaScript 脚本匹配（已实现）
 
 ### 响应类型扩展
 
 支持添加新的响应类型：
 
 - Static：静态响应（已实现）
-- Dynamic：动态模板（计划中）
-- Proxy：代理转发（计划中）
-- Script：脚本生成（计划中）
+- Dynamic：动态模板（已实现）
+- Proxy：代理转发（已实现）
+- Script：脚本生成（已实现）
 
 ## 配置管理
 
@@ -376,11 +380,13 @@ GET /api/v1/system/version
 
 ## 技术栈
 
-- **语言**: Go 1.21+
+- **语言**: Go 1.24+
 - **Web 框架**: Gin
 - **数据库**: MongoDB 6.0+
 - **配置**: Viper
 - **日志**: Zap
+- **WebSocket**: gorilla/websocket v1.5.3
+- **JavaScript 引擎**: goja
 - **测试**: testify, gomock
 - **容器**: Docker, Docker Compose
 

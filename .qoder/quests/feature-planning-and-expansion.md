@@ -168,8 +168,8 @@ graph LR
    - 高性能数据访问
 
 **技术方案**:
-- 后端: Go 1.21 + Gin + MongoDB 6.0
-- 前端: React 18 + TypeScript 5 + Ant Design 5
+- 后端: Go 1.24 + Gin + MongoDB 6.0
+- 前端: React 18.3.1 + TypeScript 5.3.3 + Ant Design 5.14.0 + Vite 5.1.0
 - 部署: Docker + Docker Compose
 
 **实际成果**:
@@ -281,34 +281,58 @@ graph LR
 **核心功能** (✅ 全部完成):
 
 1. **WebSocket 协议支持** ✅
-   - WebSocket 适配器设计
-   - 连接管理（连接/断开/重连）
+   - WebSocket 适配器设计 (gorilla/websocket v1.5.3)
+   - 连接管理（最大1000个并发连接）
    - 消息推送（服务端主动推送）
-   - 双向通信
-   - 心跳保活（Ping/Pong）
-   - 连接数限制
+   - 双向通信（读/写/心跳协程分离）
+   - 心跳保活（Ping/Pong 机制）
+   - 消息大小限制（512KB）
+   - 写超时控制（10秒）
    - 消息匹配规则
 
-2. **脚本匹配（实验性）** ✅
+2. **脚本匹配** ✅
    - JavaScript 脚本引擎（goja）
    - 安全沙箱环境
-   - 资源限制（CPU、内存、执行时间）
+   - 资源限制（5秒执行超时，10MB 内存限制）
+   - 中断机制防止无限循环
    - 脚本审计日志
-   - 内置 API（访问请求上下文、工具函数）
+   - 内置 API（request、rule 对象，工具函数）
+   - 危险功能禁用（require、eval、Function）
+
+3. **前端功能增强** ✅
+   - WebSocket 协议类型配置
+   - 脚本匹配和脚本响应类型支持
+   - 所有四种延迟类型配置界面
+   - Binary 内容类型支持
+   - Monaco Editor 集成（代码编辑器）
 
 **技术方案**:
-- WebSocket: gorilla/websocket 库
-- JavaScript 引擎: goja
+- WebSocket: gorilla/websocket v1.5.3
+- JavaScript 引擎: goja（带沙箱隔离）
 - 资源限制: context.WithTimeout + 内存监控
-- 安全沙箱: 限制 API 访问权限
+- 安全沙箱: 禁用危险 API（require、eval、Function）
+- 前端: Monaco Editor 0.46.0（代码编辑器）
 
 **技术债务解决**: TD-006 (脚本匹配), TD-007 (WebSocket 支持)
 
 **实际成果**:
-- ✅ 支持 WebSocket 实时通信场景
-- ✅ 支持复杂业务逻辑匹配（脚本）
-- ✅ 安全隔离，防止恶意脚本
+- ✅ 支持 WebSocket 实时通信场景（最大1000并发连接）
+- ✅ 支持复杂业务逻辑匹配（JavaScript 脚本）
+- ✅ 安全隔离，防止恶意脚本（5秒超时、10MB内存限制）
+- ✅ 前端完整支持所有 v0.4.0 功能
 - ✅ 测试覆盖率保持 85%+
+
+**实现文件**:
+- `internal/adapter/websocket_adapter.go` - WebSocket 适配器实现
+- `internal/adapter/websocket_adapter_test.go` - WebSocket 适配器测试
+- `internal/engine/script_engine.go` - 脚本引擎实现
+- `internal/engine/script_engine_test.go` - 脚本引擎测试
+- `web/frontend/src/components/RuleForm/index.tsx` - 前端规则表单增强
+- `web/frontend/src/types/rule.ts` - 前端类型定义更新
+
+**新增依赖**:
+- `github.com/gorilla/websocket` v1.5.3
+- `github.com/dop251/goja` v0.0.0-20251103141225-af2ceb9156d7
 
 #### v0.5.0 - 可观测性增强（规划中）
 
@@ -852,9 +876,39 @@ type RequestLog struct {
 | 请求趋势 | GET | `/api/v1/statistics/trends` | 获取请求趋势数据 |
 | 响应时间分布 | GET | `/api/v1/statistics/distribution` | 获取响应时间分布 |
 
-### 4.5 数据库设计
+### 4.5 技术栈总结
 
-#### 4.5.1 集合设计
+#### 4.5.1 后端技术栈
+
+| 组件 | 技术选型 | 版本 | 说明 |
+|------|---------|------|------|
+| 语言 | Go | 1.24+ | 高性能、并发友好 |
+| Web 框架 | Gin | - | 轻量级、高性能 |
+| 数据库 | MongoDB | 6.0+ | 灵活的文档存储 |
+| 配置管理 | Viper | - | 多格式配置支持 |
+| 日志系统 | Zap | - | 高性能结构化日志 |
+| WebSocket | gorilla/websocket | v1.5.3 | WebSocket 协议支持 |
+| JavaScript 引擎 | goja | latest | 脚本匹配引擎 |
+| 容器化 | Docker | - | 标准化部署 |
+
+#### 4.5.2 前端技术栈
+
+| 组件 | 技术选型 | 版本 | 说明 |
+|------|---------|------|------|
+| 框架 | React | 18.3.1 | 声明式 UI 框架 |
+| 语言 | TypeScript | 5.3.3 | 类型安全 |
+| 构建工具 | Vite | 5.1.0 | 快速开发和构建 |
+| UI 组件库 | Ant Design | 5.14.0 | 企业级 UI 组件 |
+| 路由 | React Router | 6.22.0 | 单页应用路由 |
+| 状态管理 | Zustand | 4.5.0 | 轻量级状态管理 |
+| 数据请求 | TanStack Query | 5.20.0 | 服务端状态管理 |
+| HTTP 客户端 | Axios | 1.6.7 | HTTP 请求库 |
+| 图表 | ECharts | 5.6.0 | 数据可视化 |
+| 代码编辑器 | Monaco Editor | 0.46.0 | 在线代码编辑 |
+
+### 4.6 数据库设计
+
+#### 4.6.1 集合设计
 
 **rules 集合**:
 ```javascript
@@ -891,9 +945,9 @@ type RequestLog struct {
 ]
 ```
 
-### 4.6 部署架构
+### 4.7 部署架构
 
-#### 4.6.1 单机部署
+#### 4.7.1 单机部署
 
 ```yaml
 version: "3.8"
@@ -919,7 +973,7 @@ volumes:
   mongodb_data:
 ```
 
-#### 4.6.2 集群部署
+#### 4.7.2 集群部署
 
 ```yaml
 version: "3.8"

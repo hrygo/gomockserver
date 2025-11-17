@@ -1282,15 +1282,15 @@ graph LR
 
 | 层次 | 推荐技术 | 理由 |
 |-----|---------|------|
-| 语言 | Go 1.21+ | 高性能、并发友好、部署简单 |
+| 语言 | Go 1.24+ | 高性能、并发友好、部署简单 |
 | Web框架 | Gin/Fiber | 轻量、高性能 |
 | gRPC | grpc-go | 官方库 |
-| WebSocket | gorilla/websocket | 成熟稳定 |
+| WebSocket | gorilla/websocket v1.5.3 | 成熟稳定，v0.4.0已集成 |
 | MongoDB驱动 | mongo-go-driver | 官方驱动 |
 | Redis客户端 | go-redis | 功能完善 |
 | 配置管理 | Viper | 多格式支持 |
 | 日志 | Zap | 高性能结构化日志 |
-| 脚本引擎 | goja | JavaScript引擎 |
+| 脚本引擎 | goja | JavaScript引擎，v0.4.0已集成 |
 | 验证 | validator | 数据验证 |
 | 测试 | testify | 断言和Mock |
 
@@ -1298,15 +1298,16 @@ graph LR
 
 | 层次 | 推荐技术 | 理由 |
 |-----|---------|------|
-| 框架 | React 18 | 生态丰富 |
-| 语言 | TypeScript | 类型安全 |
-| 构建 | Vite | 快速开发 |
-| 状态管理 | Zustand | 轻量简洁 |
-| UI组件 | Ant Design | 企业级组件库 |
-| 请求 | Axios | HTTP客户端 |
-| 路由 | React Router | 官方路由 |
-| 代码编辑器 | Monaco Editor | 强大编辑能力 |
-| 图表 | ECharts | 功能丰富 |
+| 框架 | React 18.3.1 | 生态丰富，v0.4.0已采用 |
+| 语言 | TypeScript 5.3.3 | 类型安全 |
+| 构建 | Vite 5.1.0 | 快速开发 |
+| 状态管理 | Zustand 4.5.0 | 轻量简洁 |
+| UI组件 | Ant Design 5.14.0 | 企业级组件库 |
+| 请求 | Axios 1.6.7 | HTTP客户端 |
+| 路由 | React Router 6.22.0 | 官方路由 |
+| 数据请求 | TanStack Query 5.20.0 | 服务端状态管理 |
+| 代码编辑器 | Monaco Editor 0.46.0 | 强大编辑能力，v0.4.0已集成 |
+| 图表 | ECharts 5.6.0 | 功能丰富 |
 | 表单 | React Hook Form | 性能优秀 |
 
 ### 基础设施
