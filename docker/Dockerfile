@@ -17,9 +17,10 @@ RUN go mod download
 COPY . .
 
 # 调试：验证源代码是否正确复制
-RUN ls -la ./cmd/
-RUN ls -la ./cmd/mockserver/
-RUN cat ./cmd/mockserver/main.go | head -20
+RUN echo "当前目录内容:" && ls -la .
+RUN echo "检查是否存在cmd目录:" && if [ -d "./cmd" ]; then echo "cmd目录存在"; ls -la ./cmd/; else echo "cmd目录不存在"; fi
+RUN echo "检查是否存在cmd/mockserver目录:" && if [ -d "./cmd/mockserver" ]; then echo "cmd/mockserver目录存在"; ls -la ./cmd/mockserver/; else echo "cmd/mockserver目录不存在"; fi
+RUN echo "检查main.go文件:" && if [ -f "./cmd/mockserver/main.go" ]; then echo "main.go文件存在"; cat ./cmd/mockserver/main.go | head -20; else echo "main.go文件不存在"; fi
 
 # 构建应用
 # 调试：显示详细的构建信息
