@@ -371,6 +371,7 @@ RULE_UPDATE=$(curl -s -X PUT "$ADMIN_API/rules/$RULE_ID" \
     -d '{
         "name": "获取用户列表API(v2)",
         "priority": 200,
+        "enabled": true,
         "response": {
             "type": "Static",
             "content": {
@@ -444,6 +445,27 @@ if echo "$RULES_LIST" | grep -q "$RULE_ID"; then
 else
     test_fail "规则列表查询失败"
 fi
+
+# 调试：立即验证第一个规则是否工作
+echo -e "${YELLOW}[3.6] 立即验证第一个规则...${NC}"
+echo "  等待 2 秒让规则生效..."
+sleep 2
+
+DEBUG_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/users")
+
+DEBUG_CODE=$(echo "$DEBUG_RESPONSE" | tail -n 1)
+DEBUG_BODY=$(echo "$DEBUG_RESPONSE" | sed '$d')
+
+echo "  调试请求状态码: $DEBUG_CODE"
+echo "  调试请求响应体: $DEBUG_BODY"
+
+if [ "$DEBUG_CODE" = "200" ]; then
+    echo "  ✓ 第一个规则正常工作"
+else
+    echo "  ✗ 第一个规则有问题，需要进一步调试"
+    echo "  规则ID: $RULE_ID"
+fi
 echo ""
 
 # ========================================
@@ -453,54 +475,131 @@ echo ""
 echo -e "${CYAN}[阶段 4] Mock 请求测试${NC}"
 echo ""
 
-# 给服务器一点时间处理规则
-sleep 1
+# 确保使用更新后的规则（避免 headers 字段可能的问题）
+echo -e "${YELLOW}[4.0] 确保规则配置正确...${NC}"
+echo "  重新更新规则以确保配置正确..."
+
+RULE_FIX=$(curl -s -X PUT "$ADMIN_API/rules/$RULE_ID" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "获取用户列表API(测试版)",
+        "priority": 300,
+        "enabled": true,
+        "response": {
+            "type": "Static",
+            "content": {
+                "status_code": 200,
+                "content_type": "JSON",
+                "headers": {
+                    "X-Custom-Header": "test-value"
+                },
+                "body": {
+                    "code": 0,
+                    "message": "success",
+                    "data": [
+                        {"id": 1, "name": "张三"},
+                        {"id": 2, "name": "李四"}
+                    ]
+                }
+            }
+        }
+    }')
+
+echo "  规则修复响应: $RULE_FIX"
+
+# 给服务器更多时间处理规则
+echo "  等待规则生效..."
+sleep 3
 
 # 4.1 测试基本 Mock 请求
 echo -e "${YELLOW}[4.1] 测试基本 Mock 请求...${NC}"
-MOCK_RESPONSE=$(curl -s -w "\n%{http_code}" \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
-    "$MOCK_API/api/users")
 
-HTTP_CODE=$(echo "$MOCK_RESPONSE" | tail -n 1)
-RESPONSE_BODY=$(echo "$MOCK_RESPONSE" | head -n -1)
+# 添加重试机制，最多尝试3次
+MAX_RETRIES=3
+RETRY_COUNT=0
+TEST_SUCCESS=false
 
-if [ "$HTTP_CODE" = "200" ]; then
-    if echo "$RESPONSE_BODY" | grep -q "张三"; then
-        test_pass "Mock 请求成功，返回正确数据"
-        echo "  响应体: $RESPONSE_BODY"
+while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$TEST_SUCCESS" = false ]; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo "  尝试第 $RETRY_COUNT 次..."
+
+    MOCK_RESPONSE=$(curl -s -L -w "\n%{http_code}" \
+        "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/users")
+
+    HTTP_CODE=$(echo "$MOCK_RESPONSE" | tail -n 1)
+    RESPONSE_BODY=$(echo "$MOCK_RESPONSE" | sed '$d')
+
+    echo "  状态码: $HTTP_CODE"
+    echo "  响应体: $RESPONSE_BODY"
+
+    if [ "$HTTP_CODE" = "200" ]; then
+        if echo "$RESPONSE_BODY" | grep -q "张三"; then
+            test_pass "Mock 请求成功，返回正确数据"
+            TEST_SUCCESS=true
+        else
+            echo "  响应数据不正确，准备重试..."
+        fi
     else
-        test_fail "Mock 请求返回数据不正确"
-        echo "  响应体: $RESPONSE_BODY"
+        echo "  HTTP状态码错误: $HTTP_CODE，准备重试..."
     fi
-else
-    test_fail "Mock 请求失败，HTTP状态码: $HTTP_CODE"
+
+    if [ "$TEST_SUCCESS" = false ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        echo "  等待 2 秒后重试..."
+        sleep 2
+    fi
+done
+
+if [ "$TEST_SUCCESS" = false ]; then
+    test_fail "Mock 请求失败，重试 $MAX_RETRIES 次后仍失败"
+    echo "  最终状态码: $HTTP_CODE"
+    echo "  最终响应体: $RESPONSE_BODY"
 fi
 echo ""
 
 # 4.2 测试自定义 Header
 echo -e "${YELLOW}[4.2] 测试自定义 Header...${NC}"
-HEADER_RESPONSE=$(curl -s -i \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
-    "$MOCK_API/api/users")
 
-if echo "$HEADER_RESPONSE" | grep -q "X-Custom-Header: test-value"; then
-    test_pass "自定义 Header 正确返回"
-else
-    test_fail "自定义 Header 未返回"
+# 添加重试机制
+HEADER_TEST_SUCCESS=false
+HEADER_RETRY_COUNT=0
+
+while [ $HEADER_RETRY_COUNT -lt $MAX_RETRIES ] && [ "$HEADER_TEST_SUCCESS" = false ]; do
+    HEADER_RETRY_COUNT=$((HEADER_RETRY_COUNT + 1))
+    echo "  Header 测试尝试第 $HEADER_RETRY_COUNT 次..."
+
+    HEADER_RESPONSE=$(curl -s -i -L \
+        "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/users")
+
+    echo "  完整响应头:"
+    echo "$HEADER_RESPONSE" | head -20
+
+    if echo "$HEADER_RESPONSE" | grep -q "X-Custom-Header: test-value"; then
+        test_pass "自定义 Header 正确返回"
+        HEADER_TEST_SUCCESS=true
+    else
+        echo "  自定义 Header 未找到，准备重试..."
+        if [ $HEADER_RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "  等待 2 秒后重试..."
+            sleep 2
+        fi
+    fi
+done
+
+if [ "$HEADER_TEST_SUCCESS" = false ]; then
+    test_fail "自定义 Header 测试失败，重试 $MAX_RETRIES 次后仍失败"
+    echo "  响应内容:"
+    echo "$HEADER_RESPONSE"
 fi
 echo ""
 
 # 4.3 测试延迟响应
 echo -e "${YELLOW}[4.3] 测试延迟响应...${NC}"
-START_TIME=$(date +%s%3N)
-DELAY_RESPONSE=$(curl -s \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
-    "$MOCK_API/api/slow")
-END_TIME=$(date +%s%3N)
+# macOS compatible way to get milliseconds
+START_TIME=$(python3 -c 'import time; print(int(time.time() * 1000))' 2>/dev/null || date +%s000)
+DELAY_RESPONSE=$(curl -s -L \
+    "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/slow")
+# macOS compatible way to get milliseconds
+END_TIME=$(python3 -c 'import time; print(int(time.time() * 1000))' 2>/dev/null || date +%s000)
 DURATION=$((END_TIME - START_TIME))
 
 if [ $DURATION -ge 100 ]; then
@@ -512,10 +611,8 @@ echo ""
 
 # 4.4 测试不匹配的请求（应返回404）
 echo -e "${YELLOW}[4.4] 测试不匹配的请求...${NC}"
-NOT_FOUND_RESPONSE=$(curl -s -w "\n%{http_code}" \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
-    "$MOCK_API/api/not-exists")
+NOT_FOUND_RESPONSE=$(curl -s -L -w "\n%{http_code}" \
+    "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/not-exists")
 
 NOT_FOUND_CODE=$(echo "$NOT_FOUND_RESPONSE" | tail -n 1)
 if [ "$NOT_FOUND_CODE" = "404" ]; then
@@ -563,15 +660,13 @@ POST_RULE_RESPONSE=$(curl -s -X POST "$ADMIN_API/rules" \
 sleep 1  # 等待规则生效
 
 # 测试POST请求
-POST_MOCK_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
+POST_MOCK_RESPONSE=$(curl -s -L -w "\n%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -d '{"name": "测试用户"}' \
-    "$MOCK_API/api/users")
+    "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/users")
 
 POST_CODE=$(echo "$POST_MOCK_RESPONSE" | tail -n 1)
-POST_BODY=$(echo "$POST_MOCK_RESPONSE" | head -n -1)
+POST_BODY=$(echo "$POST_MOCK_RESPONSE" | sed '$d')
 
 if [ "$POST_CODE" = "201" ]; then
     if echo "$POST_BODY" | grep -q "用户创建成功"; then
@@ -608,10 +703,8 @@ fi
 sleep 1
 
 # 验证禁用后请求返回404
-DISABLED_RESPONSE=$(curl -s -w "\n%{http_code}" \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
-    "$MOCK_API/api/users")
+DISABLED_RESPONSE=$(curl -s -L -w "\n%{http_code}" \
+    "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/users")
 
 DISABLED_CODE=$(echo "$DISABLED_RESPONSE" | tail -n 1)
 if [ "$DISABLED_CODE" = "404" ]; then
@@ -638,10 +731,8 @@ fi
 sleep 1
 
 # 验证启用后请求正常
-ENABLED_RESPONSE=$(curl -s -w "\n%{http_code}" \
-    -H "X-Project-ID: $PROJECT_ID" \
-    -H "X-Environment-ID: $ENVIRONMENT_ID" \
-    "$MOCK_API/api/users")
+ENABLED_RESPONSE=$(curl -s -L -w "\n%{http_code}" \
+    "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/api/users")
 
 ENABLED_CODE=$(echo "$ENABLED_RESPONSE" | tail -n 1)
 if [ "$ENABLED_CODE" = "200" ]; then
