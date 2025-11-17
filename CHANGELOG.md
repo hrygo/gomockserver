@@ -1,3 +1,30 @@
+## [0.6.1] - 2025-11-17
+
+### 修复
+
+- ✅ **GitHub Actions CI/CD 修复**
+  - 升级 `actions/upload-artifact` 从 v3 到 v4，解决 GitHub 弃用警告
+  - 修复 Docker 构建错误：显式复制关键目录（cmd/, internal/, pkg/）确保构建可靠性
+  - 更新 `.github/workflows/docker.yml` 和 `.github/workflows/ci.yml`
+
+- ✅ **Docker 构建优化**
+  - 修改 Dockerfile 使用显式目录复制，提高构建稳定性
+  - 优化 `.dockerignore` 配置，确保关键文件不被排除
+
+### 文档更新
+
+- ✅ **新增文档**
+  - `docs/summaries/docker-build-fix-summary.md` - Docker 构建错误修复总结
+  - `docs/summaries/github-actions-artifact-upgrade.md` - GitHub Actions 升级修复总结
+
+### 技术细节
+
+- ✅ **依赖管理**
+  - 保持所有依赖版本稳定，无破坏性变更
+  - 确保向后兼容性
+
+---
+
 ## [0.6.0] - 2025-11-17
 
 ### 新增功能
