@@ -114,6 +114,20 @@ func (h *ProjectHandler) CreateEnvironment(c *gin.Context) {
 		return
 	}
 
+	// 从URL参数中获取项目ID并设置到环境对象中
+	projectID := c.Param("id")
+	if projectID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
+		return
+	}
+	environment.ProjectID = projectID
+
+	// 添加调试日志
+	logger.Info("Creating environment", 
+		zap.String("project_id", projectID),
+		zap.String("environment_name", environment.Name),
+		zap.String("environment_project_id", environment.ProjectID))
+
 	if err := h.environmentRepo.Create(c.Request.Context(), &environment); err != nil {
 		logger.Error("failed to create environment", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create environment"})
@@ -125,7 +139,7 @@ func (h *ProjectHandler) CreateEnvironment(c *gin.Context) {
 
 // GetEnvironment 获取环境详情
 func (h *ProjectHandler) GetEnvironment(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Param("env_id")
 
 	environment, err := h.environmentRepo.FindByID(c.Request.Context(), id)
 	if err != nil {
@@ -144,7 +158,7 @@ func (h *ProjectHandler) GetEnvironment(c *gin.Context) {
 
 // ListEnvironments 列出项目下的环境
 func (h *ProjectHandler) ListEnvironments(c *gin.Context) {
-	projectID := c.Query("project_id")
+	projectID := c.Param("id")
 	if projectID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
 		return

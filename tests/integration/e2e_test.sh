@@ -15,11 +15,23 @@ NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BINARY="$PROJECT_ROOT/mockserver"
-CONFIG_FILE="$PROJECT_ROOT/config.yaml"
 
-# 使用环境变量或默认值
-ADMIN_API="${ADMIN_API:-http://localhost:8080/api/v1}"
-MOCK_API="${MOCK_API:-http://localhost:9090}"
+# 检测运行环境
+if [ -n "$GITHUB_ACTIONS" ]; then
+    # GitHub Actions 环境
+    echo -e "${CYAN}检测到 GitHub Actions 环境${NC}"
+    CONFIG_FILE="$PROJECT_ROOT/config.test.yaml"
+    ADMIN_API="${ADMIN_API:-http://localhost:8080/api/v1}"
+    MOCK_API="${MOCK_API:-http://localhost:9090}"
+    SKIP_SERVER_START="true"  # 在 GitHub Actions 中使用已运行的服务
+else
+    # 本地开发环境
+    echo -e "${CYAN}检测到本地开发环境${NC}"
+    CONFIG_FILE="$PROJECT_ROOT/config.dev.yaml"
+    ADMIN_API="${ADMIN_API:-http://localhost:8080/api/v1}"
+    MOCK_API="${MOCK_API:-http://localhost:9090}"
+    SKIP_SERVER_START="${SKIP_SERVER_START:-false}"
+fi
 
 # 测试数据变量
 PROJECT_ID=""
@@ -33,9 +45,16 @@ echo -e "${BLUE}   Mock Server 端到端集成测试${NC}"
 echo -e "${BLUE}=========================================${NC}"
 echo ""
 
+echo -e "${CYAN}使用配置:${NC}"
+echo -e "  配置文件: ${YELLOW}$CONFIG_FILE${NC}"
+echo -e "  管理API: ${YELLOW}$ADMIN_API${NC}"
+echo -e "  MockAPI: ${YELLOW}$MOCK_API${NC}"
+echo -e "  跳过服务器启动: ${YELLOW}$SKIP_SERVER_START${NC}"
+echo ""
+
 # 清理函数
 cleanup() {
-    if [ ! -z "$SERVER_PID" ]; then
+    if [ ! -z "$SERVER_PID" ] && [ "$SKIP_SERVER_START" != "true" ]; then
         echo -e "${YELLOW}正在停止服务器...${NC}"
         kill $SERVER_PID 2>/dev/null || true
         wait $SERVER_PID 2>/dev/null || true
@@ -85,8 +104,8 @@ extract_json_field() {
 echo -e "${CYAN}[阶段 0] 准备工作${NC}"
 echo ""
 
-# 检查是否在 Docker 环境中运行
-if [ -z "$SKIP_SERVER_START" ]; then
+# 检查是否需要启动服务器
+if [ "$SKIP_SERVER_START" != "true" ]; then
     # 0.1 检查并编译二进制文件
     echo -e "${YELLOW}[0.1] 检查二进制文件...${NC}"
     if [ ! -f "$BINARY" ]; then
@@ -106,11 +125,17 @@ if [ -z "$SKIP_SERVER_START" ]; then
     # 0.2 启动服务器
     echo -e "${YELLOW}[0.2] 启动服务器...${NC}"
     cd "$PROJECT_ROOT"
+    echo "使用配置文件: $CONFIG_FILE"
     $BINARY -config="$CONFIG_FILE" > /tmp/mockserver_e2e_test.log 2>&1 &
     SERVER_PID=$!
 
     if [ -z "$SERVER_PID" ]; then
         test_fail "服务器启动失败"
+        # 显示启动日志
+        if [ -f "/tmp/mockserver_e2e_test.log" ]; then
+            echo "服务器启动日志:"
+            tail -20 /tmp/mockserver_e2e_test.log
+        fi
         exit 1
     fi
     test_pass "服务器已启动 (PID: $SERVER_PID)"

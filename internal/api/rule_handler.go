@@ -82,10 +82,53 @@ func (h *RuleHandler) UpdateRule(c *gin.Context) {
 		return
 	}
 
+	// 先获取现有的规则
+	existingRule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+	if err != nil {
+		logger.Error("failed to get existing rule", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get existing rule"})
+		return
+	}
+	if existingRule == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+		return
+	}
+
 	var rule models.Rule
 	if err := c.ShouldBindJSON(&rule); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// 保留关键字段，除非在请求中明确指定要更新
+	if rule.Name == "" {
+		rule.Name = existingRule.Name
+	}
+	if rule.ProjectID == "" {
+		rule.ProjectID = existingRule.ProjectID
+	}
+	if rule.EnvironmentID == "" {
+		rule.EnvironmentID = existingRule.EnvironmentID
+	}
+	if rule.Protocol == "" {
+		rule.Protocol = existingRule.Protocol
+	}
+	if rule.MatchType == "" {
+		rule.MatchType = existingRule.MatchType
+	}
+	// 如果请求中没有指定priority，则保留原有值
+	// 如果请求中没有指定enabled，则保留原有值
+	if rule.MatchCondition == nil {
+		rule.MatchCondition = existingRule.MatchCondition
+	}
+	if rule.Response.Type == "" && rule.Response.Content == nil {
+		rule.Response = existingRule.Response
+	}
+	if rule.Tags == nil {
+		rule.Tags = existingRule.Tags
+	}
+	if rule.Creator == "" {
+		rule.Creator = existingRule.Creator
 	}
 
 	rule.ID = id

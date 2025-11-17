@@ -1,16 +1,16 @@
-# Mock Server 本地开发配置文件
+# Mock Server 开发环境配置文件
 
 server:
   # 管理 API 服务配置
   admin:
-    host: "0.0.0.0"
+    host: "localhost"
     port: 8080
   # Mock 服务配置
   mock:
-    host: "0.0.0.0"
+    host: "localhost"
     port: 9090
 
-# 数据库配置（本地开发）
+# 数据库配置
 database:
   mongodb:
     uri: "mongodb://localhost:27017"
@@ -48,7 +48,7 @@ security:
 # 日志配置
 logging:
   level: "debug" # debug, info, warn, error
-  format: "json" # json, text
+  format: "console" # json, console
   output: "stdout" # stdout, file
   file:
     path: "./logs/mockserver.log"
@@ -66,7 +66,7 @@ performance:
     config_ttl: 1800 # 配置缓存时间，单位：秒
   # 限流配置
   rate_limit:
-    enabled: true
+    enabled: false # 开发环境禁用限流
     ip_limit: 1000 # 每分钟请求数
     global_limit: 10000 # 每秒全局请求数
   # Context 超时配置
