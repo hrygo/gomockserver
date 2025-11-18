@@ -1,19 +1,22 @@
 # MockServer 测试文档
 
-本目录包含 MockServer 项目的核心测试报告和总结文档。
+本目录包含 MockServer 项目的测试相关文档和报告，包括原有的测试资源和新添加的集成测试报告。
 
 ## 📁 目录结构
 
 ```
 docs/testing/
 ├── README.md                           # 本文件
-├── E2E_TEST_REPORT.md                   # 完整 E2E 测试报告
-└── TEST_EXECUTION_SUMMARY.md           # 测试执行总结
+├── coverage/                           # 原有覆盖率报告
+├── reports/                            # 原有测试报告
+├── scripts/                            # 原有测试脚本
+├── E2E_TEST_REPORT.md                   # 🆕 完整 E2E 集成测试报告
+└── TEST_EXECUTION_SUMMARY.md           # 🆕 E2E 测试执行总结
 ```
 
-## 📊 最新测试结果
+## 🆕 E2E 集成测试报告
 
-### 最近一次测试 (2025-11-18)
+### 最新测试结果 (2025-11-18)
 - **测试版本**: v0.6.2
 - **执行时间**: 220秒
 - **总体通过率**: 94% (48/51 测试通过)
@@ -23,7 +26,7 @@ docs/testing/
 **📋 完整报告**: [E2E_TEST_REPORT.md](./E2E_TEST_REPORT.md)
 **⚡ 执行总结**: [TEST_EXECUTION_SUMMARY.md](./TEST_EXECUTION_SUMMARY.md)
 
-## 🧪 测试类型
+## 🧪 E2E 集成测试类型
 
 ### 1. 基础功能测试 ✅
 - **目标**: 验证核心 CRUD 功能
@@ -50,7 +53,7 @@ docs/testing/
 - **覆盖**: 多级负载、并发连接
 - **状态**: 89% 通过 (17/19)
 
-## 🚀 性能基准
+## 🚀 E2E 性能基准
 
 ### 吞吐量表现
 | 负载级别 | 并发数 | 平均 QPS | 评级 |
@@ -66,11 +69,11 @@ docs/testing/
 - **总处理请求**: 388,839+
 - **测试稳定性**: 所有负载级别均稳定运行
 
-## 🛠️ 如何运行测试
+## 🛠️ 如何运行 E2E 集成测试
 
 ### 快速开始
 ```bash
-# 运行完整测试套件
+# 运行完整 E2E 测试套件
 ./tests/integration/run_all_e2e_tests.sh
 
 # 运行单个测试
@@ -88,9 +91,14 @@ docs/testing/
 
 # 检查工具状态
 ./tests/integration/install_tools.sh --check
+
+# 安装特定工具
+./tests/integration/install_tools.sh --basic    # 基础工具
+./tests/integration/install_tools.sh --stress   # 压力测试工具
+./tests/integration/install_tools.sh --websocket # WebSocket工具
 ```
 
-## 🔍 问题跟踪
+## 🔍 E2E 问题跟踪
 
 ### 已知问题
 1. **高级功能 400 错误** - 请求格式验证需要完善
@@ -102,7 +110,7 @@ docs/testing/
 - 🟡 **中优先级**: 高级功能请求验证
 - 🟢 **低优先级**: 边界条件增强
 
-## 📈 测试覆盖
+## 📈 E2E 测试覆盖
 
 ### 功能覆盖
 - [x] 项目管理 (CRUD)
@@ -119,7 +127,7 @@ docs/testing/
 - [x] Linux (Ubuntu/CentOS)
 - [ ] Windows (计划中)
 
-## 💡 部署建议
+## 💡 E2E 部署建议
 
 ### ✅ 推荐部署场景
 - HTTP API Mock 服务
@@ -131,6 +139,19 @@ docs/testing/
 - **预期 QPS**: 2,000 - 3,500
 - **并发连接**: 100 - 200
 - **响应时间**: P95 < 100ms
+
+## 📞 支持和反馈
+
+### 问题报告
+- GitHub Issues: 项目仓库
+- 技术文档: `tests/integration/README.md`
+- E2E 测试指南: 查看 E2E_TEST_REPORT.md
+
+### 贡献指南
+1. 运行完整 E2E 测试套件确保通过
+2. 遵循现有测试框架规范
+3. 添加适当的测试覆盖
+4. 更新相关文档
 
 ---
 

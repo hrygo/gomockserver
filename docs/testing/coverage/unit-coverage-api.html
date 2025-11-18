@@ -1,0 +1,510 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/gomockserver/mockserver/internal/api/project_handler.go (100.0%)</option>
+				
+				<option value="file1">github.com/gomockserver/mockserver/internal/api/rule_handler.go (81.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package api
+
+import (
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// ProjectHandler 项目处理器
+type ProjectHandler struct {
+        projectRepo     repository.ProjectRepository
+        environmentRepo repository.EnvironmentRepository
+}
+
+// NewProjectHandler 创建项目处理器
+func NewProjectHandler(projectRepo repository.ProjectRepository, environmentRepo repository.EnvironmentRepository) *ProjectHandler <span class="cov8" title="1">{
+        return &amp;ProjectHandler{
+                projectRepo:     projectRepo,
+                environmentRepo: environmentRepo,
+        }
+}</span>
+
+// CreateProject 创建项目
+func (h *ProjectHandler) CreateProject(c *gin.Context) <span class="cov8" title="1">{
+        var project models.Project
+        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if err := h.projectRepo.Create(c.Request.Context(), &amp;project); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to create project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create project"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, project)</span>
+}
+
+// GetProject 获取项目详情
+func (h *ProjectHandler) GetProject(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+
+        project, err := h.projectRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to get project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get project"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if project == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, project)</span>
+}
+
+// UpdateProject 更新项目
+func (h *ProjectHandler) UpdateProject(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+
+        var project models.Project
+        if err := c.ShouldBindJSON(&amp;project); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">project.ID = id
+
+        if err := h.projectRepo.Update(c.Request.Context(), &amp;project); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to update project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, project)</span>
+}
+
+// DeleteProject 删除项目
+func (h *ProjectHandler) DeleteProject(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+
+        if err := h.projectRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to delete project", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete project"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Project deleted successfully"})</span>
+}
+
+// CreateEnvironment 创建环境
+func (h *ProjectHandler) CreateEnvironment(c *gin.Context) <span class="cov8" title="1">{
+        var environment models.Environment
+        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if err := h.environmentRepo.Create(c.Request.Context(), &amp;environment); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to create environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create environment"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, environment)</span>
+}
+
+// GetEnvironment 获取环境详情
+func (h *ProjectHandler) GetEnvironment(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+
+        environment, err := h.environmentRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to get environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get environment"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if environment == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Environment not found"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, environment)</span>
+}
+
+// ListEnvironments 列出项目下的环境
+func (h *ProjectHandler) ListEnvironments(c *gin.Context) <span class="cov8" title="1">{
+        projectID := c.Query("project_id")
+        if projectID == "" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">environments, err := h.environmentRepo.FindByProject(c.Request.Context(), projectID)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to list environments", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list environments"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
+                "data": environments,
+        })</span>
+}
+
+// UpdateEnvironment 更新环境
+func (h *ProjectHandler) UpdateEnvironment(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+
+        var environment models.Environment
+        if err := c.ShouldBindJSON(&amp;environment); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">environment.ID = id
+
+        if err := h.environmentRepo.Update(c.Request.Context(), &amp;environment); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to update environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update environment"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, environment)</span>
+}
+
+// DeleteEnvironment 删除环境
+func (h *ProjectHandler) DeleteEnvironment(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+
+        if err := h.environmentRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to delete environment", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete environment"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Environment deleted successfully"})</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package api
+
+import (
+        "net/http"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+        "github.com/gomockserver/mockserver/internal/models"
+        "github.com/gomockserver/mockserver/internal/repository"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// RuleHandler 规则处理器
+type RuleHandler struct {
+        ruleRepo repository.RuleRepository
+}
+
+// NewRuleHandler 创建规则处理器
+func NewRuleHandler(ruleRepo repository.RuleRepository) *RuleHandler <span class="cov8" title="1">{
+        return &amp;RuleHandler{
+                ruleRepo: ruleRepo,
+        }
+}</span>
+
+// CreateRule 创建规则
+func (h *RuleHandler) CreateRule(c *gin.Context) <span class="cov8" title="1">{
+        var rule models.Rule
+        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        // 验证必填字段
+        <span class="cov8" title="1">if rule.Name == "" || rule.ProjectID == "" || rule.EnvironmentID == "" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "name, project_id and environment_id are required"})
+                return
+        }</span>
+
+        // 创建规则
+        <span class="cov8" title="1">if err := h.ruleRepo.Create(c.Request.Context(), &amp;rule); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to create rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, rule)</span>
+}
+
+// GetRule 获取规则详情
+func (h *RuleHandler) GetRule(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to get rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if rule == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, rule)</span>
+}
+
+// UpdateRule 更新规则
+func (h *RuleHandler) UpdateRule(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">var rule models.Rule
+        if err := c.ShouldBindJSON(&amp;rule); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">rule.ID = id
+
+        if err := h.ruleRepo.Update(c.Request.Context(), &amp;rule); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to update rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, rule)</span>
+}
+
+// DeleteRule 删除规则
+func (h *RuleHandler) DeleteRule(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if err := h.ruleRepo.Delete(c.Request.Context(), id); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to delete rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule deleted successfully"})</span>
+}
+
+// ListRules 列出规则
+func (h *RuleHandler) ListRules(c *gin.Context) <span class="cov8" title="1">{
+        // 分页参数
+        page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
+        pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "20"), 10, 64)
+
+        if page &lt; 1 </span><span class="cov0" title="0">{
+                page = 1
+        }</span>
+        <span class="cov8" title="1">if pageSize &lt; 1 || pageSize &gt; 100 </span><span class="cov0" title="0">{
+                pageSize = 20
+        }</span>
+
+        <span class="cov8" title="1">skip := (page - 1) * pageSize
+
+        // 过滤条件
+        filter := make(map[string]interface{})
+        if projectID := c.Query("project_id"); projectID != "" </span><span class="cov8" title="1">{
+                filter["project_id"] = projectID
+        }</span>
+        <span class="cov8" title="1">if environmentID := c.Query("environment_id"); environmentID != "" </span><span class="cov0" title="0">{
+                filter["environment_id"] = environmentID
+        }</span>
+        <span class="cov8" title="1">if protocol := c.Query("protocol"); protocol != "" </span><span class="cov0" title="0">{
+                filter["protocol"] = protocol
+        }</span>
+        <span class="cov8" title="1">if enabled := c.Query("enabled"); enabled != "" </span><span class="cov8" title="1">{
+                filter["enabled"] = enabled == "true"
+        }</span>
+
+        <span class="cov8" title="1">rules, total, err := h.ruleRepo.List(c.Request.Context(), filter, skip, pageSize)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to list rules", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list rules"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
+                "data":      rules,
+                "total":     total,
+                "page":      page,
+                "page_size": pageSize,
+        })</span>
+}
+
+// EnableRule 启用规则
+func (h *RuleHandler) EnableRule(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to get rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if rule == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">rule.Enabled = true
+        if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov8" title="1">{
+                logger.Error("failed to enable rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to enable rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule enabled successfully"})</span>
+}
+
+// DisableRule 禁用规则
+func (h *RuleHandler) DisableRule(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        if id == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "id is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">rule, err := h.ruleRepo.FindByID(c.Request.Context(), id)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to get rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if rule == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"error": "Rule not found"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">rule.Enabled = false
+        if err := h.ruleRepo.Update(c.Request.Context(), rule); err != nil </span><span class="cov0" title="0">{
+                logger.Error("failed to disable rule", zap.Error(err))
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disable rule"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Rule disabled successfully"})</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
