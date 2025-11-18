@@ -212,18 +212,23 @@ func (e *MatchEngine) regexMatch(request *adapter.Request, rule *models.Rule) (b
 	}
 
 	// 匹配 Path (支持正则表达式)
-	if condition.Path != "" {
+	if condition.PathRegex != "" {
 		// 编译正则表达式
-		re, err := e.compileRegex(condition.Path)
+		re, err := e.compileRegex(condition.PathRegex)
 		if err != nil {
 			logger.Warn("failed to compile regex pattern for path",
-				zap.String("pattern", condition.Path),
+				zap.String("pattern", condition.PathRegex),
 				zap.Error(err))
 			return false, nil
 		}
 
 		// 执行正则匹配
 		if !re.MatchString(request.Path) {
+			return false, nil
+		}
+	} else if condition.Path != "" {
+		// 精确路径匹配
+		if !matchPath(request.Path, condition.Path) {
 			return false, nil
 		}
 	}
@@ -326,14 +331,25 @@ func matchMethod(requestMethod string, conditionMethod interface{}) bool {
 
 // matchPath 匹配路径（支持简单通配符）
 func matchPath(requestPath, conditionPath string) bool {
-	// 精确匹配
-	if requestPath == conditionPath {
+	// 标准化路径：处理尾部斜杠
+	normalizePath := func(path string) string {
+		if path == "/" {
+			return path
+		}
+		return strings.TrimSuffix(path, "/")
+	}
+
+	// 标准化路径后进行精确匹配
+	normalizedRequestPath := normalizePath(requestPath)
+	normalizedConditionPath := normalizePath(conditionPath)
+
+	if normalizedRequestPath == normalizedConditionPath {
 		return true
 	}
 
 	// 支持简单的路径参数匹配，如 /api/users/:id
-	conditionParts := strings.Split(conditionPath, "/")
-	requestParts := strings.Split(requestPath, "/")
+	conditionParts := strings.Split(normalizedConditionPath, "/")
+	requestParts := strings.Split(normalizedRequestPath, "/")
 
 	if len(conditionParts) != len(requestParts) {
 		return false

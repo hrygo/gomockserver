@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -161,8 +162,13 @@ func (e *MockExecutor) staticResponse(request *adapter.Request, rule *models.Rul
 	}
 
 	// 构建统一响应模型
+	statusCode := httpResp.StatusCode
+	if statusCode == 0 {
+		statusCode = 200 // 默认状态码
+	}
+
 	response := &adapter.Response{
-		StatusCode: httpResp.StatusCode,
+		StatusCode: statusCode,
 		Headers:    httpResp.Headers,
 		Body:       body,
 		Metadata:   make(map[string]interface{}),
@@ -249,8 +255,13 @@ func (e *MockExecutor) dynamicResponse(request *adapter.Request, rule *models.Ru
 	}
 
 	// 构建统一响应模型
+	statusCode := httpResp.StatusCode
+	if statusCode == 0 {
+		statusCode = 200 // 默认状态码
+	}
+
 	response := &adapter.Response{
-		StatusCode: httpResp.StatusCode,
+		StatusCode: statusCode,
 		Headers:    httpResp.Headers,
 		Body:       body,
 		Metadata:   make(map[string]interface{}),
@@ -284,7 +295,8 @@ func (e *MockExecutor) calculateDelay(config *models.DelayConfig) int {
 		return 0
 	}
 
-	switch config.Type {
+	// 处理类型值的大小写不敏感
+	switch strings.ToLower(config.Type) {
 	case "fixed":
 		return config.Fixed
 	case "random":

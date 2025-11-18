@@ -17,6 +17,7 @@ import (
 // TemplateEngine 模板引擎
 type TemplateEngine struct {
 	funcMap template.FuncMap
+	counter int64 // 用于计数器功能
 }
 
 // NewTemplateEngine 创建模板引擎
@@ -43,6 +44,12 @@ func (e *TemplateEngine) buildFuncMap() template.FuncMap {
 			return time.Now().Format(format)
 		},
 		"date": func(format string) string {
+			if format == "" {
+				format = "2006-01-02"
+			}
+			return time.Now().Format(format)
+		},
+		"date_format": func(format string) string {
 			if format == "" {
 				format = "2006-01-02"
 			}
@@ -82,6 +89,12 @@ func (e *TemplateEngine) buildFuncMap() template.FuncMap {
 		},
 		"randomFloat": func() float64 {
 			return rand.Float64()
+		},
+
+		// 计数器相关函数
+		"counter": func() int64 {
+			e.counter++
+			return e.counter
 		},
 
 		// 编码相关函数

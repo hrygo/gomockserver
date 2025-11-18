@@ -263,6 +263,11 @@ func TestRuleHandler_UpdateRule(t *testing.T) {
 				Protocol: models.ProtocolHTTP,
 			},
 			mockSetup: func(m *MockRuleRepository) {
+				m.On("FindByID", mock.Anything, "rule-001").Return(&models.Rule{
+					ID:       "rule-001",
+					Name:     "原始规则",
+					Protocol: models.ProtocolHTTP,
+				}, nil)
 				m.On("Update", mock.Anything, mock.AnythingOfType("*models.Rule")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -271,7 +276,13 @@ func TestRuleHandler_UpdateRule(t *testing.T) {
 			name:           "无效的JSON",
 			ruleID:         "rule-001",
 			requestBody:    "invalid json",
-			mockSetup:      func(m *MockRuleRepository) {},
+			mockSetup: func(m *MockRuleRepository) {
+				m.On("FindByID", mock.Anything, "rule-001").Return(&models.Rule{
+					ID:       "rule-001",
+					Name:     "原始规则",
+					Protocol: models.ProtocolHTTP,
+				}, nil)
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
@@ -281,6 +292,11 @@ func TestRuleHandler_UpdateRule(t *testing.T) {
 				Name: "更新后的规则",
 			},
 			mockSetup: func(m *MockRuleRepository) {
+				m.On("FindByID", mock.Anything, "rule-001").Return(&models.Rule{
+					ID:       "rule-001",
+					Name:     "原始规则",
+					Protocol: models.ProtocolHTTP,
+				}, nil)
 				m.On("Update", mock.Anything, mock.AnythingOfType("*models.Rule")).Return(errors.New("database error"))
 			},
 			expectedStatus: http.StatusInternalServerError,

@@ -40,6 +40,7 @@ EDGE_ENV_RESPONSE=$(http_post "$ADMIN_API/projects/$EDGE_PROJECT_ID/environments
 
 if echo "$EDGE_ENV_RESPONSE" | grep -q '"id"'; then
     EDGE_ENVIRONMENT_ID=$(extract_json_field "$EDGE_ENV_RESPONSE" "id")
+    ENVIRONMENT_ID="$EDGE_ENVIRONMENT_ID"  # 设置给框架使用
     test_pass "边界测试环境创建成功"
 else
     test_fail "边界测试环境创建失败"

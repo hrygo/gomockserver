@@ -113,7 +113,7 @@ func TestGetVersion(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "version")
-	assert.Contains(t, w.Body.String(), "0.1.1")
+	assert.Contains(t, w.Body.String(), "0.6.0")
 	assert.Contains(t, w.Body.String(), "MockServer")
 }
 
@@ -129,7 +129,7 @@ func TestGetSystemInfo(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "version")
-	assert.Contains(t, w.Body.String(), "0.2.0")
+	assert.Contains(t, w.Body.String(), "0.6.0")
 	assert.Contains(t, w.Body.String(), "build_time")
 	assert.Contains(t, w.Body.String(), "go_version")
 	assert.Contains(t, w.Body.String(), "admin_api_url")
@@ -223,4 +223,24 @@ func TestCORSMiddleware_Headers(t *testing.T) {
 	assert.Equal(t, "http://localhost:5173", w.Header().Get("Access-Control-Allow-Origin"))
 	assert.Equal(t, "true", w.Header().Get("Access-Control-Allow-Credentials"))
 	// 非 OPTIONS 请求可能不返回所有 CORS 头，这是正常的
+}
+
+// TestStartAdminServer 测试启动管理服务器
+func TestStartAdminServer(t *testing.T) {
+	// 创建一个AdminService实例
+	service := NewAdminService(nil, nil, nil, nil)
+
+	// 测试无效地址
+	err := StartAdminServer("invalid-address", service)
+	assert.Error(t, err)
+}
+
+// TestStartMockServer 测试启动Mock服务器
+func TestStartMockServer(t *testing.T) {
+	// 创建必要的依赖
+	mockService := NewMockService(nil, nil)
+
+	// 测试无效地址
+	err := StartMockServer("invalid-address", mockService)
+	assert.Error(t, err)
 }

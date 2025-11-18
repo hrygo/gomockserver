@@ -67,6 +67,7 @@ type Rule struct {
 type HTTPMatchCondition struct {
 	Method      interface{}            `json:"method"` // string 或 []string
 	Path        string                 `json:"path"`
+	PathRegex   string                 `json:"path_regex,omitempty"`
 	Query       map[string]string      `json:"query,omitempty"`
 	Headers     map[string]string      `json:"headers,omitempty"`
 	Body        map[string]interface{} `json:"body,omitempty"`

@@ -32,7 +32,7 @@ ADVANCED_PROJECT_RESPONSE=$(http_post "$ADMIN_API/projects" "$(generate_project_
 
 if echo "$ADVANCED_PROJECT_RESPONSE" | grep -q '"id"'; then
     ADVANCED_PROJECT_ID=$(extract_json_field "$ADVANCED_PROJECT_RESPONSE" "id")
-    PROJECT_ID="$ADVANCED_PROJECT_ID"  # 设置给框架使用
+    export PROJECT_ID="$ADVANCED_PROJECT_ID"  # 设置给框架使用
     test_pass "高级测试项目创建成功"
 else
     test_fail "高级测试项目创建失败"
@@ -43,6 +43,7 @@ ADVANCED_ENV_RESPONSE=$(http_post "$ADMIN_API/projects/$ADVANCED_PROJECT_ID/envi
 
 if echo "$ADVANCED_ENV_RESPONSE" | grep -q '"id"'; then
     ADVANCED_ENVIRONMENT_ID=$(extract_json_field "$ADVANCED_ENV_RESPONSE" "id")
+    export ENVIRONMENT_ID="$ADVANCED_ENVIRONMENT_ID"  # 设置给框架使用
     test_pass "高级测试环境创建成功"
 else
     test_fail "高级测试环境创建失败"
@@ -111,7 +112,7 @@ TEMPLATE_RULE_RESPONSE=$(http_post "$ADMIN_API/rules" "{
         \"path\": \"/api/template\"
     },
     \"response\": {
-        \"type\": \"Template\",
+        \"type\": \"Dynamic\",
         \"content\": {
             \"status_code\": 200,
             \"content_type\": \"JSON\",
@@ -228,9 +229,9 @@ DELAY_RULE_RESPONSE=$(http_post "$ADMIN_API/rules" "{
                 \"delayed\": true
             }
         },
-        \"delay_strategy\": {
-            \"type\": \"Fixed\",
-            \"duration_ms\": 50
+        \"delay\": {
+            \"type\": \"fixed\",
+            \"fixed\": 50
         }
     }
 }")

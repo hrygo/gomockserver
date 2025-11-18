@@ -379,7 +379,7 @@ func TestProjectHandler_CreateEnvironment(t *testing.T) {
 
 			handler := NewProjectHandler(mockProjectRepo, mockEnvRepo)
 			router := setupTestRouter()
-			router.POST("/environments", handler.CreateEnvironment)
+			router.POST("/projects/:id/environments", handler.CreateEnvironment)
 
 			var body []byte
 			if str, ok := tt.requestBody.(string); ok {
@@ -388,7 +388,7 @@ func TestProjectHandler_CreateEnvironment(t *testing.T) {
 				body, _ = json.Marshal(tt.requestBody)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/environments", bytes.NewBuffer(body))
+			req := httptest.NewRequest(http.MethodPost, "/projects/project-001/environments", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
@@ -445,9 +445,9 @@ func TestProjectHandler_GetEnvironment(t *testing.T) {
 
 			handler := NewProjectHandler(mockProjectRepo, mockEnvRepo)
 			router := setupTestRouter()
-			router.GET("/environments/:id", handler.GetEnvironment)
+			router.GET("/projects/:id/environments/:env_id", handler.GetEnvironment)
 
-			req := httptest.NewRequest(http.MethodGet, "/environments/"+tt.envID, nil)
+			req := httptest.NewRequest(http.MethodGet, "/projects/project-001/environments/"+tt.envID, nil)
 			w := httptest.NewRecorder()
 
 			router.ServeHTTP(w, req)
@@ -462,13 +462,13 @@ func TestProjectHandler_GetEnvironment(t *testing.T) {
 func TestProjectHandler_ListEnvironments(t *testing.T) {
 	tests := []struct {
 		name           string
-		queryParams    string
+		projectID      string
 		mockSetup      func(*MockEnvironmentRepository)
 		expectedStatus int
 	}{
 		{
-			name:        "成功列出环境",
-			queryParams: "?project_id=project-001",
+			name:      "成功列出环境",
+			projectID: "project-001",
 			mockSetup: func(m *MockEnvironmentRepository) {
 				envs := []*models.Environment{
 					{ID: "env-001", Name: "开发环境"},
@@ -480,13 +480,13 @@ func TestProjectHandler_ListEnvironments(t *testing.T) {
 		},
 		{
 			name:           "缺少project_id参数",
-			queryParams:    "",
+			projectID:      "",
 			mockSetup:      func(m *MockEnvironmentRepository) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:        "数据库错误",
-			queryParams: "?project_id=project-001",
+			name:      "数据库错误",
+			projectID: "project-001",
 			mockSetup: func(m *MockEnvironmentRepository) {
 				m.On("FindByProject", mock.Anything, "project-001").Return(nil, errors.New("database error"))
 			},
@@ -502,9 +502,13 @@ func TestProjectHandler_ListEnvironments(t *testing.T) {
 
 			handler := NewProjectHandler(mockProjectRepo, mockEnvRepo)
 			router := setupTestRouter()
-			router.GET("/environments", handler.ListEnvironments)
+			router.GET("/projects/:id/environments", handler.ListEnvironments)
 
-			req := httptest.NewRequest(http.MethodGet, "/environments"+tt.queryParams, nil)
+			url := "/projects/" + tt.projectID + "/environments"
+			if tt.projectID == "" {
+				url = "/projects//environments"
+			}
+			req := httptest.NewRequest(http.MethodGet, url, nil)
 			w := httptest.NewRecorder()
 
 			router.ServeHTTP(w, req)

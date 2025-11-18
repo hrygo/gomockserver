@@ -79,6 +79,7 @@ WS_ENV_RESPONSE=$(http_post "$ADMIN_API/projects/$WS_PROJECT_ID/environments" "$
 
 if echo "$WS_ENV_RESPONSE" | grep -q '"id"'; then
     WS_ENVIRONMENT_ID=$(extract_json_field "$WS_ENV_RESPONSE" "id")
+    ENVIRONMENT_ID="$WS_ENVIRONMENT_ID"  # 设置给框架使用
     test_pass "WebSocket环境创建成功 (ID: $WS_ENVIRONMENT_ID)"
 else
     test_fail "WebSocket环境创建失败"
