@@ -104,19 +104,18 @@ docs/
 
 ### .qoder/ 目录规范
 
-**.qoder/quests/ 用途定位**（v0.6.0+明确）：
+**.qoder/planning/ 用途定位**（v0.6.2+优化）：
 - ✅ **允许存放**：工作计划、任务规划、设计规划、测试计划
 - ❌ **禁止存放**：总结报告、测试报告、实施报告、发布报告
 
 **目录结构**：
 ```
 .qoder/
-├── quests/                      # 工作计划和任务规划
-│   ├── architecture/            # 架构规划
-│   ├── improvement/             # 改进计划
-│   ├── testing/                 # 测试计划（计划，非报告）
-│   └── (各种 planning 文档)
-└── archive/                     # 历史规划归档
+└── planning/                    # 项目规划和计划文档
+    ├── architecture/            # 架构规划
+    ├── improvement/             # 改进计划
+    ├── testing/                 # 测试计划（计划，非报告）
+    └── (各种 planning 文档)
 ```
 
 ---
@@ -126,7 +125,7 @@ docs/
 ### 总结报告生成和存放规则
 
 #### 存放位置规范
-- ❌ **禁止**：不要将执行过程的总结报告放到 `.qoder/quests` 目录
+- ❌ **禁止**：不要将执行过程的总结报告放到 `.qoder/planning` 目录
 - ✅ **正确位置**：`docs/summaries/` 目录
 - ✅ **发布报告**：`docs/releases/` 目录（仅限版本发布）
 
@@ -254,7 +253,7 @@ make build
 - 实施总结 → `docs/summaries/{version}-{module}-implementation-summary.md`
 - 测试总结 → `docs/summaries/{version}-test-report.md`
 - 功能总结 → `docs/summaries/{feature}-summary.md`
-- ❌ **禁止位置**：`.qoder/quests/`（仅存放计划文档）
+- ❌ **禁止位置**：`.qoder/planning/`（仅存放计划文档）
 
 ### 2. 发布文档管理规则
 版本发布相关文档统一管理：
@@ -282,21 +281,21 @@ make build
 - 旧版本设计文档 → `docs/archive/`
 - 不再维护的指南 → `docs/archive/`
 
-### 6. .qoder/quests/ 目录规则（v0.6.0+明确）
+### 6. .qoder/planning/ 目录规则（v0.6.2+优化）
 仅存放工作计划和任务规划文档：
 - ✅ **允许**：工作计划、任务规划、设计规划、测试计划
 - ❌ **禁止**：总结报告、测试报告、实施报告、发布报告
 
 ---
 
-## 6️⃣ 持续维护建议
+## 7️⃣ 持续维护建议
 
 ### 每次开发周期结束后
-1. 整理总结报告到 `docs/summaries/`（从 `.qoder/quests/` 移除）
+1. 整理总结报告到 `docs/summaries/`（从 `.qoder/planning/` 移除）
 2. 整理测试产出物到 `docs/testing/`
 3. 归档旧版本文档到 `docs/archive/`
 4. 清理根目录临时文件
-5. 清理 `.qoder/quests/` 中的非计划文档
+5. 清理 `.qoder/planning/` 中的非计划文档
 6. 更新相关文档（如有结构变更）
 
 ### 每次版本发布前
@@ -329,6 +328,10 @@ make build
 - ✅ 更新所有文件路径引用和配置
 - ✅ 完成E2E测试框架集成，测试通过率达到94%
 - ✅ 更新项目文档以反映新的目录结构
+- ✅ 精简重组 docs/ 和 .qoder/ 目录结构
+- ✅ 移动 .qoder/quests/ 到 .qoder/planning/
+- ✅ 清理过时的 bugfix 和技术细节文档
+- ✅ 更新所有相关引用和路径
 
 ### v0.6.0 (2025-11-17)
 - ✅ 创建 `docs/summaries/` 目录（存放任务总结报告）
@@ -346,11 +349,11 @@ make build
 
 | 文件类型 | 正确位置 | 错误位置 |
 |---------|---------|---------|
-| 工作计划 | `.qoder/quests/` | `docs/summaries/` |
-| 任务规划 | `.qoder/quests/` | `docs/summaries/` |
-| 设计规划 | `.qoder/quests/architecture/` | `docs/archive/` |
-| 实施总结 | `docs/summaries/` | `.qoder/quests/` |
-| 测试报告 | `docs/summaries/` | `.qoder/quests/` |
+| 工作计划 | `.qoder/planning/` | `docs/summaries/` |
+| 任务规划 | `.qoder/planning/` | `docs/summaries/` |
+| 设计规划 | `.qoder/planning/architecture/` | `docs/archive/` |
+| 实施总结 | `docs/summaries/` | `.qoder/planning/` |
+| 测试报告 | `docs/summaries/` | `.qoder/planning/` |
 | 发布说明 | `docs/releases/RELEASE_NOTES_v*.md` | 项目根目录 |
 | 工具脚本 | `tests/scripts/` | `scripts/` (已废弃) |
 | 集成测试 | `tests/integration/` | `tests/functional/` (已废弃) |
@@ -370,8 +373,8 @@ tree -L 2 .qoder/
 ls -1 CHANGELOG.md README.md docs/ARCHITECTURE.md docs/PROJECT_STRUCTURE.md
 
 # 清理临时文件（移至正确位置）
-mv .qoder/quests/*-summary.md docs/summaries/
-mv .qoder/quests/*-report.md docs/summaries/
+mv .qoder/planning/*-summary.md docs/summaries/
+mv .qoder/planning/*-report.md docs/summaries/
 
 # 构建和测试
 make build

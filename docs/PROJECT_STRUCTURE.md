@@ -121,7 +121,7 @@ tests/
 - 实施总结 → `docs/summaries/{version}-{module}-implementation-summary.md`
 - 测试总结 → `docs/summaries/{version}-test-report.md`
 - 功能总结 → `docs/summaries/{feature}-summary.md`
-- ❌ 禁止位置：`.qoder/quests/`（仅存放计划文档）
+- ❌ 禁止位置：`.qoder/planning/`（仅存放计划文档）
 
 ### 2. 发布文档管理规则
 版本发布相关文档统一管理：
@@ -148,7 +148,7 @@ tests/
 - 旧版本设计文档 → `docs/archive/`
 - 不再维护的指南 → `docs/archive/`
 
-### 6. .qoder/quests/ 目录规则（v0.6.0+明确）
+### 6. .qoder/planning/ 目录规则（v0.6.2+优化）
 仅存放工作计划和任务规划文档：
 - ✅ 允许：工作计划、任务规划、设计规划、测试计划
 - ❌ 禁止：总结报告、测试报告、实施报告、发布报告
@@ -166,7 +166,7 @@ docs/releases/
 docs/testing/{reports,coverage,scripts,plans}/
 docs/archive/
 scripts/
-.qoder/quests/               # 仅存放计划文档
+.qoder/planning/              # 仅存放计划文档
 ```
 
 ### 2. 文档完整性检查
