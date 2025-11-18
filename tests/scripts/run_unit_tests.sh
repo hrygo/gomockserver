@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 配置
-PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 COVERAGE_DIR="$PROJECT_ROOT/docs/testing/coverage"
 REPORTS_DIR="$PROJECT_ROOT/docs/testing/reports"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")

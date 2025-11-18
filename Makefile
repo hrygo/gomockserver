@@ -197,8 +197,8 @@ test-coverage:
 # 性能测试
 test-perf:
 	@echo "⚡ Running performance tests..."
-	@chmod +x ./tests/performance/run_perf_tests.sh
-	@./tests/performance/run_perf_tests.sh
+	@chmod +x ./tests/integration/stress_e2e_test.sh
+	@./tests/integration/stress_e2e_test.sh
 
 # Benchmark测试
 bench:
@@ -223,33 +223,33 @@ test-api:
 # Repository层测试覆盖率
 test-repository-coverage:
 	@echo "📊 Running Repository layer tests with coverage..."
-	@mkdir -p scripts/coverage
-	@go test -v -race -tags=integration -coverprofile=scripts/coverage/repository-coverage.out ./internal/repository/...
-	@go tool cover -html=scripts/coverage/repository-coverage.out -o scripts/coverage/repository-coverage.html
-	@go tool cover -func=scripts/coverage/repository-coverage.out | tail -1
-	@echo "📈 Coverage report: scripts/coverage/repository-coverage.html"
+	@mkdir -p tests/coverage
+	@go test -v -race -tags=integration -coverprofile=tests/coverage/repository-coverage.out ./internal/repository/...
+	@go tool cover -html=tests/coverage/repository-coverage.out -o tests/coverage/repository-coverage.html
+	@go tool cover -func=tests/coverage/repository-coverage.out | tail -1
+	@echo "📈 Coverage report: tests/coverage/repository-coverage.html"
 
 # Service层测试覆盖率
 test-service-coverage:
 	@echo "📊 Running Service layer tests with coverage..."
-	@mkdir -p scripts/coverage
-	@go test -v -race -coverprofile=scripts/coverage/service-coverage.out ./internal/service/...
-	@go tool cover -html=scripts/coverage/service-coverage.out -o scripts/coverage/service-coverage.html
-	@COVERAGE=$$(go tool cover -func=scripts/coverage/service-coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+	@mkdir -p tests/coverage
+	@go test -v -race -coverprofile=tests/coverage/service-coverage.out ./internal/service/...
+	@go tool cover -html=tests/coverage/service-coverage.out -o tests/coverage/service-coverage.html
+	@COVERAGE=$$(go tool cover -func=tests/coverage/service-coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
 	echo "📈 Service layer coverage: $$COVERAGE%"; \
 	if [ $$(echo "$$COVERAGE < 75" | bc -l) -eq 1 ]; then \
 		echo "⚠️  Warning: Service layer coverage $$COVERAGE% is below 75% requirement"; \
 	fi
-	@echo "📈 Coverage report: scripts/coverage/service-coverage.html"
+	@echo "📈 Coverage report: tests/coverage/service-coverage.html"
 
 # API层测试覆盖率
 test-api-coverage:
 	@echo "📊 Running API layer tests with coverage..."
-	@mkdir -p scripts/coverage
-	@go test -v -race -coverprofile=scripts/coverage/api-coverage.out ./internal/api/...
-	@go tool cover -html=scripts/coverage/api-coverage.out -o scripts/coverage/api-coverage.html
-	@go tool cover -func=scripts/coverage/api-coverage.out | tail -1
-	@echo "📈 Coverage report: scripts/coverage/api-coverage.html"
+	@mkdir -p tests/coverage
+	@go test -v -race -coverprofile=tests/coverage/api-coverage.out ./internal/api/...
+	@go tool cover -html=tests/coverage/api-coverage.out -o tests/coverage/api-coverage.html
+	@go tool cover -func=tests/coverage/api-coverage.out | tail -1
+	@echo "📈 Coverage report: tests/coverage/api-coverage.html"
 
 # ════════════════════════════════════════════════════════
 # 代码质量

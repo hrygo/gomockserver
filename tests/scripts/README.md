@@ -1,16 +1,19 @@
 # Scripts 目录说明
 
-本目录包含 Mock Server 项目的各类脚本工具。
+本目录包含 Mock Server 项目的各类脚本工具，现已整合到 `tests/` 目录下。
 
 ## 📁 目录结构
 
 ```
-scripts/
-├── coverage/                    # 测试覆盖率报告（HTML）
-├── run_unit_tests.sh            # 单元测试执行脚本
-├── test-env.sh                  # Docker 测试环境管理
-├── test.sh                      # 快速功能测试脚本
-└── README.md                    # 本说明文档
+tests/
+├── scripts/                     # 脚本工具目录
+│   ├── coverage/               # 测试覆盖率报告（HTML）
+│   ├── run_unit_tests.sh       # 单元测试执行脚本
+│   ├── test-env.sh             # Docker 测试环境管理
+│   └── README.md               # 本说明文档
+├── integration/                # 集成测试目录
+├── coverage/                   # 覆盖率数据文件
+└── data/                       # 测试数据
 ```
 
 > **🗑️ 归档说明**: `mvp-test.sh` 已归档至 `docs/archive/scripts/`。该脚本用于 MVP 版本验证，现已被 Makefile 命令替代，建议使用 `make verify` 或 `make qa`。
@@ -30,11 +33,11 @@ scripts/
 
 **使用**：
 ```bash
-./scripts/run_unit_tests.sh
+./tests/scripts/run_unit_tests.sh
 ```
 
 **输出**：
-- `scripts/coverage/unit-coverage-*.html` - 各模块覆盖率报告
+- `tests/coverage/unit-coverage-*.html` - 各模块覆盖率报告
 - 终端输出测试统计信息
 
 ---
@@ -51,16 +54,16 @@ scripts/
 **使用**：
 ```bash
 # 启动测试环境
-./scripts/test-env.sh start
+./tests/scripts/test-env.sh start
 
 # 停止测试环境
-./scripts/test-env.sh stop
+./tests/scripts/test-env.sh stop
 
 # 查看状态
-./scripts/test-env.sh status
+./tests/scripts/test-env.sh status
 
 # 运行冒烟测试
-./scripts/test-env.sh test
+./tests/scripts/test-env.sh test
 ```
 
 ---
@@ -80,7 +83,7 @@ scripts/
 docker-compose up -d
 
 # 运行测试
-./scripts/test.sh
+./tests/scripts/test.sh
 ```
 
 **注意**：需要服务在 8080（管理API）和 9090（Mock服务）端口运行
@@ -109,8 +112,8 @@ docker-compose up -d
 **查看方式**：
 ```bash
 # 在浏览器中打开
-open scripts/coverage/unit-coverage-all.html  # macOS
-xdg-open scripts/coverage/unit-coverage-all.html  # Linux
+open tests/coverage/unit-coverage-all.html  # macOS
+xdg-open tests/coverage/unit-coverage-all.html  # Linux
 ```
 
 ---
@@ -120,22 +123,22 @@ xdg-open scripts/coverage/unit-coverage-all.html  # Linux
 ### 开发时运行测试
 ```bash
 # 1. 运行单元测试
-./scripts/run_unit_tests.sh
+./tests/scripts/run_unit_tests.sh
 
 # 2. 查看覆盖率报告
-open scripts/coverage/unit-coverage-all.html
+open tests/coverage/unit-coverage-all.html
 ```
 
 ### 启动测试环境验证
 ```bash
 # 1. 启动测试环境
-./scripts/test-env.sh start
+./tests/scripts/test-env.sh start
 
 # 2. 运行快速测试
-./scripts/test.sh
+./tests/scripts/test.sh
 
 # 3. 停止环境
-./scripts/test-env.sh stop
+./tests/scripts/test-env.sh stop
 ```
 
 ### 发布前完整测试
@@ -166,9 +169,9 @@ make c              # 别名: make test-coverage
 ## 📝 脚本维护指南
 
 ### 添加新脚本
-1. 脚本应放在 `scripts/` 目录下
+1. 脚本应放在 `tests/scripts/` 目录下
 2. 文件名使用小写字母和连字符（如 `my-script.sh`）
-3. 添加可执行权限：`chmod +x scripts/my-script.sh`
+3. 添加可执行权限：`chmod +x tests/scripts/my-script.sh`
 4. 在文件开头添加清晰的注释说明用途
 5. 更新本 README.md 文件
 

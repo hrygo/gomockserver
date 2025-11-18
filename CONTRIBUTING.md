@@ -159,7 +159,7 @@ gomockserver/
 │   ├── performance/      # 性能测试
 │   └── smoke/            # 冒烟测试
 ├── docs/                  # 文档
-├── scripts/               # 脚本工具
+├── tests/                 # 测试和脚本工具
 └── docker/                # Docker 相关
 ```
 

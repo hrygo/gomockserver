@@ -77,7 +77,7 @@ services:
     networks:
       - test-network
     volumes:
-      - ./tests/performance:/scripts:ro
+      - ./tests/integration:/scripts:ro
       - performance_results:/results
     profiles:
       - performance  # 仅在性能测试时启动
