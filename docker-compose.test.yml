@@ -102,7 +102,7 @@ services:
     volumes:
       - ./tests:/tests:ro
       - ./docs/testing/reports:/reports
-      - test_coverage:/coverage
+      - test_coverage:/tests/coverage
     networks:
       - test-network
     profiles:
