@@ -32,36 +32,36 @@ jobs:
       
       - name: Run unit tests
         run: |
-          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-      
+          go test -v -race -coverprofile=tests/coverage/coverage.out -covermode=atomic ./...
+
       - name: Generate coverage report
         run: |
-          go tool cover -func=coverage.out > coverage.txt
-          cat coverage.txt
-      
+          go tool cover -func=tests/coverage/coverage.out > tests/coverage/coverage.txt
+          cat tests/coverage/coverage.txt
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          files: ./coverage.out
+          files: ./tests/coverage/coverage.out
           flags: unittests
           name: codecov-umbrella
-      
+
       - name: Check coverage threshold
         run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          COVERAGE=$(go tool cover -func=tests/coverage/coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: $COVERAGE%"
           if (( $(echo "$COVERAGE < 50.0" | bc -l) )); then
             echo "Coverage is below 50%"
             exit 1
           fi
-      
+
       - name: Archive coverage results
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: |
-            coverage.out
-            coverage.txt
+            tests/coverage/coverage.out
+            tests/coverage/coverage.txt
 
   # 集成测试任务
   integration-tests:
