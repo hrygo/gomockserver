@@ -90,10 +90,10 @@ type GraphQLQuery struct {
 
 // GraphQLResult GraphQL查询结果
 type GraphQLResult struct {
-	ID       string      `json:"id"`
-	Data     interface{} `json:"data"`
-	Errors   []*GraphQLError `json:"errors,omitempty"`
-	Extended interface{} `json:"extensions,omitempty"`
+	ID         string                 `json:"id"`
+	Data       interface{}            `json:"data"`
+	Errors     []*GraphQLErrorWrapper `json:"errors,omitempty"`
+	Extensions map[string]interface{} `json:"extensions,omitempty"`
 }
 
 // GraphQLError GraphQL错误

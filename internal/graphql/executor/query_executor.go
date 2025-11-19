@@ -72,7 +72,7 @@ func (e *QueryExecutor) ExecuteQuery(ctx context.Context, execCtx *types.Executi
 func (e *QueryExecutor) executeQueryInternal(ctx context.Context, execCtx *types.ExecutionContext) *types.GraphQLResult {
 	result := &types.GraphQLResult{
 		Data:   make(map[string]interface{}),
-		Errors: make([]*types.GraphQLError, 0),
+		Errors: make([]*types.GraphQLErrorWrapper, 0),
 	}
 
 	// 验证查询
@@ -347,7 +347,7 @@ func (m *TimeoutMiddleware) Handle(ctx context.Context, execCtx *types.Execution
 		return result
 	case <-ctx.Done():
 		return &types.GraphQLResult{
-			Data: nil,
+			Data:   nil,
 			Errors: []*types.GraphQLErrorWrapper{
 				{
 					Kind:    types.ErrorKindExecution,
