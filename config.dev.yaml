@@ -22,11 +22,13 @@ database:
 
 # Redis 配置
 redis:
-  enabled: false
+  enabled: true
   host: "localhost"
   port: 6379
   password: ""
   db: 0
+  max_retries: 3
+  health_check_interval: 30
   pool:
     min: 5
     max: 50

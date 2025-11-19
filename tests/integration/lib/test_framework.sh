@@ -300,48 +300,276 @@ start_docker_services() {
 
 # 智能服务协调 - 根据SKIP_SERVER_START决定启动策略
 coordinate_services() {
-    if [ "$SKIP_SERVER_START" = "true" ]; then
-        echo -e "${CYAN}SKIP_SERVER_START=true，检查现有服务状态...${NC}"
+    echo -e "${CYAN}智能服务协调启动...${NC}"
 
-        # 检查现有服务
+    # 始终先确保依赖服务可用
+    echo -e "${CYAN}第1步: 检查并启动依赖服务（MongoDB/Redis）...${NC}"
+    if ! ensure_dependency_services; then
+        echo -e "${RED}✗ 依赖服务启动失败${NC}"
+        return 1
+    fi
+
+    if [ "$SKIP_SERVER_START" = "true" ]; then
+        echo -e "${CYAN}第2步: SKIP_SERVER_START=true，检查现有业务服务...${NC}"
+
+        # 检查业务服务状态
         local admin_api_up=false
         local mock_api_up=false
 
-        # 简单的健康检查
         if command -v curl >/dev/null 2>&1; then
-            if curl -s "$ADMIN_API/health" | grep -q "healthy"; then
+            # 检查Admin API
+            if curl -s --max-time 5 "$ADMIN_API/system/health" 2>/dev/null | grep -q "healthy\|status"; then
                 admin_api_up=true
                 echo -e "${GREEN}✓ Admin API ($ADMIN_API) 已运行${NC}"
+            else
+                echo -e "${YELLOW}⚠ Admin API ($ADMIN_API) 未运行或不可达${NC}"
             fi
 
             # 检查Mock API（如果PROJECT_ID和ENVIRONMENT_ID存在）
             if [ -n "$PROJECT_ID" ] && [ -n "$ENVIRONMENT_ID" ]; then
-                if curl -s "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/health" >/dev/null; then
+                if curl -s --max-time 5 "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/health" 2>/dev/null >/dev/null; then
                     mock_api_up=true
                     echo -e "${GREEN}✓ Mock API 已运行${NC}"
+                else
+                    echo -e "${YELLOW}⚠ Mock API 未运行或不可达${NC}"
                 fi
             fi
         fi
 
-        # 如果关键服务未运行，启动Docker依赖
+        # 如果业务服务未运行，给出提示但不自动启动（尊重SKIP_SERVER_START）
         if [ "$admin_api_up" = false ]; then
-            echo -e "${YELLOW}Admin API未运行，启动依赖服务...${NC}"
-            start_docker_services
+            echo -e "${YELLOW}ℹ 业务服务未运行，但依赖服务已就绪${NC}"
+            echo -e "${YELLOW}ℹ SKIP_SERVER_START模式：请手动启动业务服务或设置SKIP_SERVER_START=false${NC}"
+
+            # 等待用户手动启动业务服务的最长时间
+            echo -e "${CYAN}等待业务服务启动（最多30秒）...${NC}"
+            local wait_count=0
+            while [ $wait_count -lt 30 ]; do
+                if curl -s --max-time 2 "$ADMIN_API/system/health" 2>/dev/null | grep -q "healthy\|status"; then
+                    echo -e "${GREEN}✓ 检测到业务服务已启动${NC}"
+                    admin_api_up=true
+                    break
+                fi
+                sleep 1
+                wait_count=$((wait_count + 1))
+                echo -n "."
+            done
+            echo ""
+
+            if [ "$admin_api_up" = false ]; then
+                echo -e "${YELLOW}⚠ 超时：业务服务仍未启动，测试可能失败${NC}"
+            fi
         fi
 
     else
-        echo -e "${CYAN}SKIP_SERVER_START=false，启动完整服务栈...${NC}"
+        echo -e "${CYAN}第2步: SKIP_SERVER_START=false，启动完整服务栈...${NC}"
         # 启动完整服务栈（包括后端服务）
         if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
-            echo -e "${CYAN}使用Makefile启动服务...${NC}"
-            make start-all
+            echo -e "${CYAN}使用Makefile启动完整服务栈...${NC}"
+            if ! make start-all; then
+                echo -e "${RED}✗ 服务栈启动失败${NC}"
+                return 1
+            fi
+
+            # 等待服务完全启动
+            echo -e "${CYAN}等待服务完全启动...${NC}"
+            if ! wait_for_services_ready; then
+                echo -e "${YELLOW}⚠ 服务启动超时，但测试将继续进行${NC}"
+            fi
         else
-            echo -e "${RED}无法启动服务 - Makefile不可用${NC}"
+            echo -e "${RED}✗ 无法启动服务 - Makefile不可用${NC}"
             return 1
         fi
     fi
 
+    # 最终服务状态检查
+    echo -e "${CYAN}第3步: 最终服务状态验证...${NC}"
+    verify_service_status
+
     return 0
+}
+
+# 确保依赖服务运行（MongoDB/Redis）
+ensure_dependency_services() {
+    echo -e "${BLUE}→ 检查依赖服务状态...${NC}"
+
+    local mongodb_ready=false
+    local redis_ready=false
+
+    # 检查MongoDB
+    if check_mongodb_connection; then
+        mongodb_ready=true
+        echo -e "${GREEN}✓ MongoDB 连接正常${NC}"
+    else
+        echo -e "${YELLOW}⚠ MongoDB 未运行，尝试启动...${NC}"
+        if start_mongodb_service; then
+            mongodb_ready=true
+            echo -e "${GREEN}✓ MongoDB 启动成功${NC}"
+        else
+            echo -e "${RED}✗ MongoDB 启动失败${NC}"
+        fi
+    fi
+
+    # 检查Redis
+    if check_redis_connection; then
+        redis_ready=true
+        echo -e "${GREEN}✓ Redis 连接正常${NC}"
+    else
+        echo -e "${YELLOW}⚠ Redis 未运行，尝试启动...${NC}"
+        if start_redis_service; then
+            redis_ready=true
+            echo -e "${GREEN}✓ Redis 启动成功${NC}"
+        else
+            echo -e "${RED}✗ Redis 启动失败${NC}"
+        fi
+    fi
+
+    if [ "$mongodb_ready" = true ] && [ "$redis_ready" = true ]; then
+        echo -e "${GREEN}✓ 所有依赖服务已就绪${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ 部分依赖服务启动失败${NC}"
+        return 1
+    fi
+}
+
+# 检查MongoDB连接
+check_mongodb_connection() {
+    if command -v mongosh >/dev/null 2>&1; then
+        mongosh --eval "db.adminCommand('ping')" --quiet >/dev/null 2>&1
+    elif command -v mongo >/dev/null 2>&1; then
+        mongo --eval "db.adminCommand('ping')" --quiet >/dev/null 2>&1
+    else
+        # 如果没有MongoDB客户端，检查Docker容器
+        docker ps --format "table" | grep -q "mongodb.*27017" 2>/dev/null
+    fi
+}
+
+# 检查Redis连接
+check_redis_connection() {
+    if command -v redis-cli >/dev/null 2>&1; then
+        redis-cli -h "${REDIS_HOST:-localhost}" -p "${REDIS_PORT:-6379}" ping >/dev/null 2>&1
+    else
+        # 如果没有Redis客户端，检查Docker容器
+        docker ps --format "table" | grep -q "redis.*6379" 2>/dev/null
+    fi
+}
+
+# 启动MongoDB服务
+start_mongodb_service() {
+    # 优先使用Makefile
+    if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+        make start-mongodb >/dev/null 2>&1 && sleep 3
+        return $?
+    fi
+
+    # 备用方案：直接启动Docker容器
+    if docker info >/dev/null 2>&1; then
+        if docker ps --format "table" | grep -q "mongodb"; then
+            echo -e "${YELLOW}MongoDB容器已存在，尝试启动...${NC}"
+            docker start mongodb-mockserver >/dev/null 2>&1
+        else
+            echo -e "${YELLOW}创建MongoDB容器...${NC}"
+            docker run -d --name mongodb-mockserver -p 27017:27017 mongo:5.0 >/dev/null 2>&1
+        fi
+        sleep 5
+        return 0
+    fi
+
+    return 1
+}
+
+# 启动Redis服务
+start_redis_service() {
+    # 优先使用Makefile
+    if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+        make start-redis >/dev/null 2>&1 && sleep 2
+        return $?
+    fi
+
+    # 备用方案：直接启动Docker容器
+    if docker info >/dev/null 2>&1; then
+        if docker ps --format "table" | grep -q "redis"; then
+            echo -e "${YELLOW}Redis容器已存在，尝试启动...${NC}"
+            docker start redis-mockserver >/dev/null 2>&1
+        else
+            echo -e "${YELLOW}创建Redis容器...${NC}"
+            docker run -d --name redis-mockserver -p 6379:6379 redis:7-alpine >/dev/null 2>&1
+        fi
+        sleep 3
+        return 0
+    fi
+
+    return 1
+}
+
+# 等待服务就绪
+wait_for_services_ready() {
+    echo -e "${BLUE}→ 等待所有服务就绪...${NC}"
+
+    local services_ready=false
+    local timeout=60
+    local count=0
+
+    while [ $count -lt $timeout ]; do
+        local admin_ready=false
+        local mock_ready=false
+
+        # 检查Admin API
+        if curl -s --max-time 2 "$ADMIN_API/system/health" 2>/dev/null | grep -q "healthy\|status"; then
+            admin_ready=true
+        fi
+
+        # 检查Mock API
+        if [ -n "$PROJECT_ID" ] && [ -n "$ENVIRONMENT_ID" ]; then
+            if curl -s --max-time 2 "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/health" 2>/dev/null >/dev/null; then
+                mock_ready=true
+            fi
+        fi
+
+        if [ "$admin_ready" = true ]; then
+            echo -e "${GREEN}✓ 所有服务已就绪${NC}"
+            return 0
+        fi
+
+        sleep 1
+        count=$((count + 1))
+        echo -n "."
+    done
+
+    echo ""
+    echo -e "${YELLOW}⚠ 服务启动超时（${timeout}秒）${NC}"
+    return 1
+}
+
+# 验证服务状态
+verify_service_status() {
+    echo -e "${BLUE}→ 验证最终服务状态...${NC}"
+
+    # 检查依赖服务
+    echo -n "依赖服务: "
+    if check_mongodb_connection && check_redis_connection; then
+        echo -e "${GREEN}✓ 正常${NC}"
+    else
+        echo -e "${RED}✗ 异常${NC}"
+    fi
+
+    # 检查业务服务
+    echo -n "Admin API: "
+    if curl -s --max-time 2 "$ADMIN_API/system/health" 2>/dev/null | grep -q "healthy\|status"; then
+        echo -e "${GREEN}✓ 正常${NC}"
+    else
+        echo -e "${YELLOW}⚠ 未运行${NC}"
+    fi
+
+    if [ -n "$PROJECT_ID" ] && [ -n "$ENVIRONMENT_ID" ]; then
+        echo -n "Mock API: "
+        if curl -s --max-time 2 "$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID/health" 2>/dev/null >/dev/null; then
+            echo -e "${GREEN}✓ 正常${NC}"
+        else
+            echo -e "${YELLOW}⚠ 未运行${NC}"
+        fi
+    fi
 }
 
 # ========================================
@@ -637,7 +865,7 @@ check_service_status() {
     echo -e "${CYAN}检查关键服务状态...${NC}"
 
     # 检查Admin API
-    if http_get "$ADMIN_API/health" >/dev/null 2>&1; then
+    if http_get "$ADMIN_API/system/health" >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Admin API 可访问${NC}"
     else
         echo -e "${YELLOW}⚠ Admin API 不可访问${NC}"
@@ -1564,6 +1792,128 @@ export -f get_timestamp_ms calculate_duration seq check_command find_process get
 export -f create_test_file cleanup_test_files
 export -f generate_random_string generate_random_email generate_random_phone generate_random_id
 export -f generate_project_data generate_environment_data generate_rule_data
+# ========================================
+# 项目和环境管理函数
+# ========================================
+
+# 创建测试项目
+create_test_project() {
+    local project_name="${1:-测试项目}"
+    local project_data="${2:-$(generate_project_data "$project_name")}"
+
+    echo -e "${CYAN}创建测试项目: $project_name${NC}"
+
+    local response=$(http_post "$ADMIN_API/projects" "$project_data")
+
+    if echo "$response" | grep -q '"id"'; then
+        local project_id=$(extract_json_field "$response" "id")
+        export PROJECT_ID="$project_id"
+        echo -e "${GREEN}✓ 项目创建成功: $project_id${NC}"
+        echo "$project_id"
+        return 0
+    else
+        echo -e "${RED}✗ 项目创建失败${NC}"
+        echo "$response" >&2
+        return 1
+    fi
+}
+
+# 创建测试环境
+create_test_environment() {
+    local project_id="$1"
+    local environment_name="${2:-测试环境}"
+    local mock_api="${3:-http://localhost:9090}"
+    local environment_data="${4:-$(generate_environment_data "$environment_name" "$mock_api")}"
+
+    if [ -z "$project_id" ]; then
+        echo -e "${RED}✗ 项目ID不能为空${NC}"
+        return 1
+    fi
+
+    echo -e "${CYAN}创建测试环境: $environment_name${NC}"
+
+    local response=$(http_post "$ADMIN_API/projects/$project_id/environments" "$environment_data")
+
+    if echo "$response" | grep -q '"id"'; then
+        local environment_id=$(extract_json_field "$response" "id")
+        export ENVIRONMENT_ID="$environment_id"
+        echo -e "${GREEN}✓ 环境创建成功: $environment_id${NC}"
+        echo "$environment_id"
+        return 0
+    else
+        echo -e "${RED}✗ 环境创建失败${NC}"
+        echo "$response" >&2
+        return 1
+    fi
+}
+
+# 创建测试规则
+create_test_rule() {
+    local project_id="$1"
+    local environment_id="$2"
+    local rule_name="${3:-测试规则}"
+    local rule_data="$4"
+
+    if [ -z "$project_id" ] || [ -z "$environment_id" ]; then
+        echo -e "${RED}✗ 项目ID和环境ID不能为空${NC}"
+        return 1
+    fi
+
+    echo -e "${CYAN}创建测试规则: $rule_name${NC}"
+
+    local response=$(http_post "$ADMIN_API/rules" "$rule_data")
+
+    if echo "$response" | grep -q '"id"'; then
+        local rule_id=$(extract_json_field "$response" "id")
+        export RULE_ID="$rule_id"
+        echo -e "${GREEN}✓ 规则创建成功: $rule_id${NC}"
+        echo "$rule_id"
+        return 0
+    else
+        echo -e "${RED}✗ 规则创建失败${NC}"
+        echo "$response" >&2
+        return 1
+    fi
+}
+
+# 删除测试项目
+delete_test_project() {
+    local project_id="$1"
+
+    if [ -z "$project_id" ]; then
+        echo -e "${RED}✗ 项目ID不能为空${NC}"
+        return 1
+    fi
+
+    echo -e "${CYAN}删除测试项目: $project_id${NC}"
+
+    local response=$(http_delete "$ADMIN_API/projects/$project_id")
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ 项目删除成功${NC}"
+        unset PROJECT_ID 2>/dev/null || true
+        return 0
+    else
+        echo -e "${YELLOW}⚠ 项目删除可能失败，但继续清理${NC}"
+        return 0
+    fi
+}
+
+# 清理测试资源
+cleanup_test_resources() {
+    local project_id="${1:-$PROJECT_ID}"
+
+    if [ -n "$project_id" ]; then
+        delete_test_project "$project_id"
+    fi
+
+    # 清理临时变量
+    unset PROJECT_ID ENVIRONMENT_ID RULE_ID 2>/dev/null || true
+    unset WS_PROJECT_ID WS_ENVIRONMENT_ID WS_RULE_ID 2>/dev/null || true
+
+    echo -e "${GREEN}✓ 测试资源清理完成${NC}"
+}
+
 export -f websocket_test_connection
 export -f performance_test
 export -f check_redis_connection start_redis_if_needed
@@ -1572,5 +1922,6 @@ export -f run_redis_integration_tests run_redis_performance_tests
 export -f generate_test_report
 export -f cleanup_test_resources print_test_summary
 export -f init_test_framework
+export -f create_test_project create_test_environment create_test_rule delete_test_project
 
 echo -e "${GREEN}测试框架已加载${NC}"
