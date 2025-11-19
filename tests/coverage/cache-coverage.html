@@ -1,0 +1,971 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cache: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">/Users/huangzhonghui/aicoding/gomockserver/internal/cache/l1_memory.go (71.5%)</option>
+				
+				<option value="file1">/Users/huangzhonghui/aicoding/gomockserver/internal/cache/l2_redis.go (0.8%)</option>
+				
+				<option value="file2">/Users/huangzhonghui/aicoding/gomockserver/internal/cache/types.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package cache
+
+import (
+        "container/list"
+        "sync"
+        "time"
+
+        "go.uber.org/zap"
+)
+
+// MemoryL1Cache L1内存缓存实现
+type MemoryL1Cache struct {
+        maxEntries int
+        capacity   int64
+        size       int64
+        mu         sync.RWMutex
+        data       map[string]*list.Element
+        lru        *list.List
+        stats      *L1Stats
+        logger     *zap.Logger
+        cleanupTTL time.Duration
+        stopCh     chan struct{}
+}
+
+// lruItem LRU缓存项
+type lruItem struct {
+        key       string
+        value     interface{}
+        entry     *CacheEntry
+        size      int64
+        expiresAt time.Time
+}
+
+// NewMemoryL1Cache 创建内存L1缓存
+func NewMemoryL1Cache(maxEntries int, maxMemoryMB int, cleanupTTL time.Duration, logger *zap.Logger) *MemoryL1Cache <span class="cov8" title="1">{
+        if maxEntries &lt;= 0 </span><span class="cov0" title="0">{
+                maxEntries = 10000
+        }</span>
+        <span class="cov8" title="1">if maxMemoryMB &lt;= 0 </span><span class="cov0" title="0">{
+                maxMemoryMB = 100 // 默认100MB
+        }</span>
+        <span class="cov8" title="1">if cleanupTTL &lt;= 0 </span><span class="cov0" title="0">{
+                cleanupTTL = 5 * time.Minute
+        }</span>
+
+        <span class="cov8" title="1">cache := &amp;MemoryL1Cache{
+                maxEntries: maxEntries,
+                capacity:   int64(maxMemoryMB) * 1024 * 1024, // 转换为字节
+                data:       make(map[string]*list.Element),
+                lru:        list.New(),
+                stats:      &amp;L1Stats{},
+                logger:     logger,
+                cleanupTTL: cleanupTTL,
+                stopCh:     make(chan struct{}),
+        }
+
+        // 启动定期清理过期条目
+        go cache.startCleanup()
+
+        logger.Info("L1 memory cache initialized",
+                zap.Int("max_entries", maxEntries),
+                zap.Int64("capacity_mb", int64(maxMemoryMB)),
+                zap.Duration("cleanup_ttl", cleanupTTL),
+        )
+
+        return cache</span>
+}
+
+// Get 获取缓存值
+func (m *MemoryL1Cache) Get(key string) (*CacheEntry, bool) <span class="cov8" title="1">{
+        m.mu.Lock()
+        defer m.mu.Unlock()
+
+        element, exists := m.data[key]
+        if !exists </span><span class="cov8" title="1">{
+                m.stats.Misses++
+                return nil, false
+        }</span>
+
+        <span class="cov8" title="1">item := element.Value.(*lruItem)
+
+        // 检查是否过期
+        if !item.expiresAt.IsZero() &amp;&amp; time.Now().After(item.expiresAt) </span><span class="cov0" title="0">{
+                m.removeElement(element)
+                m.stats.Misses++
+                return nil, false
+        }</span>
+
+        // 更新LRU位置
+        <span class="cov8" title="1">m.lru.MoveToFront(element)
+
+        // 更新访问信息
+        item.entry.AccessAt = time.Now()
+        item.entry.HitCount++
+
+        m.stats.Hits++
+        m.updateHitRate()
+
+        // 创建返回的缓存条目副本
+        entryCopy := *item.entry
+        return &amp;entryCopy, true</span>
+}
+
+// Set 设置缓存值
+func (m *MemoryL1Cache) Set(key string, value interface{}, ttl time.Duration) error <span class="cov8" title="1">{
+        m.mu.Lock()
+        defer m.mu.Unlock()
+
+        // 计算值大小（估算）
+        valueSize := m.estimateSize(value)
+
+        // 检查容量限制
+        for (m.size+valueSize &gt; m.capacity || len(m.data) &gt;= m.maxEntries) &amp;&amp; len(m.data) &gt; 0 </span><span class="cov8" title="1">{
+                m.evictLRU()
+        }</span>
+
+        // 创建缓存条目
+        <span class="cov8" title="1">now := time.Now()
+        var expiresAt time.Time
+        if ttl &gt; 0 </span><span class="cov8" title="1">{
+                expiresAt = now.Add(ttl)
+        }</span>
+
+        <span class="cov8" title="1">entry := &amp;CacheEntry{
+                Key:       key,
+                Value:     value,
+                Level:     L1_HOT,
+                TTL:       ttl,
+                CreatedAt: now,
+                AccessAt:  now,
+                HitCount:  0,
+                ExpireAt:  expiresAt,
+        }
+
+        item := &amp;lruItem{
+                key:       key,
+                value:     value,
+                entry:     entry,
+                size:      valueSize,
+                expiresAt: expiresAt,
+        }
+
+        // 如果键已存在，先删除旧的
+        if element, exists := m.data[key]; exists </span><span class="cov0" title="0">{
+                m.removeElement(element)
+        }</span>
+
+        // 添加新项到前面
+        <span class="cov8" title="1">element := m.lru.PushFront(item)
+        m.data[key] = element
+        m.size += valueSize
+
+        m.logger.Debug("L1 cache set",
+                zap.String("key", key),
+                zap.Int64("size", valueSize),
+                zap.Duration("ttl", ttl),
+                zap.Int("total_entries", len(m.data)),
+                zap.Int64("total_size_mb", m.size/(1024*1024)),
+        )
+
+        return nil</span>
+}
+
+// Delete 删除缓存
+func (m *MemoryL1Cache) Delete(key string) error <span class="cov8" title="1">{
+        m.mu.Lock()
+        defer m.mu.Unlock()
+
+        if element, exists := m.data[key]; exists </span><span class="cov8" title="1">{
+                m.removeElement(element)
+                delete(m.data, key)
+                m.logger.Debug("L1 cache deleted", zap.String("key", key))
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Clear 清空所有缓存
+func (m *MemoryL1Cache) Clear() error <span class="cov8" title="1">{
+        m.mu.Lock()
+        defer m.mu.Unlock()
+
+        m.data = make(map[string]*list.Element)
+        m.lru.Init()
+        m.size = 0
+
+        m.logger.Info("L1 cache cleared")
+        return nil
+}</span>
+
+// Stats 获取统计信息
+func (m *MemoryL1Cache) Stats() *L1Stats <span class="cov8" title="1">{
+        m.mu.RLock()
+        defer m.mu.RUnlock()
+
+        statsCopy := *m.stats
+        statsCopy.Entries = int64(len(m.data))
+        return &amp;statsCopy
+}</span>
+
+// Cleanup 清理过期条目
+func (m *MemoryL1Cache) Cleanup() error <span class="cov8" title="1">{
+        m.mu.Lock()
+        defer m.mu.Unlock()
+
+        now := time.Now()
+        var removed int
+
+        for key, element := range m.data </span><span class="cov8" title="1">{
+                item := element.Value.(*lruItem)
+                if !item.expiresAt.IsZero() &amp;&amp; now.After(item.expiresAt) </span><span class="cov8" title="1">{
+                        m.removeElement(element)
+                        delete(m.data, key)
+                        removed++
+                }</span>
+        }
+
+        <span class="cov8" title="1">if removed &gt; 0 </span><span class="cov8" title="1">{
+                m.logger.Debug("L1 cache cleanup completed",
+                        zap.Int("expired_entries", removed),
+                        zap.Int("remaining_entries", len(m.data)),
+                )
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// evictLRU 淘汰最久未使用的项
+func (m *MemoryL1Cache) evictLRU() <span class="cov8" title="1">{
+        if m.lru.Len() == 0 </span><span class="cov0" title="0">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">element := m.lru.Back()
+        if element != nil </span><span class="cov8" title="1">{
+                item := element.Value.(*lruItem)
+                m.removeElement(element)
+                delete(m.data, item.key)
+
+                m.stats.Evictions++
+                m.logger.Debug("L1 cache evicted LRU item",
+                        zap.String("key", item.key),
+                        zap.Int64("size", item.size),
+                )
+        }</span>
+}
+
+// removeElement 移除元素
+func (m *MemoryL1Cache) removeElement(element *list.Element) <span class="cov8" title="1">{
+        item := element.Value.(*lruItem)
+        m.size -= item.size
+        m.lru.Remove(element)
+}</span>
+
+// updateHitRate 更新命中率
+func (m *MemoryL1Cache) updateHitRate() <span class="cov8" title="1">{
+        total := m.stats.Hits + m.stats.Misses
+        if total &gt; 0 </span><span class="cov8" title="1">{
+                m.stats.HitRate = float64(m.stats.Hits) / float64(total)
+        }</span>
+}
+
+// estimateSize 估算值大小（简单实现）
+func (m *MemoryL1Cache) estimateSize(value interface{}) int64 <span class="cov8" title="1">{
+        const baseSize = 64 // 基础开销
+
+        switch v := value.(type) </span>{
+        case string:<span class="cov8" title="1">
+                return int64(len(v) + baseSize)</span>
+        case []byte:<span class="cov0" title="0">
+                return int64(len(v) + baseSize)</span>
+        case int, int8, int16, int32, int64:<span class="cov0" title="0">
+                return 8 + baseSize</span>
+        case float32, float64:<span class="cov0" title="0">
+                return 8 + baseSize</span>
+        case bool:<span class="cov0" title="0">
+                return 1 + baseSize</span>
+        default:<span class="cov0" title="0">
+                // 对于复杂类型，使用较大的估算值
+                return 1024 + baseSize</span>
+        }
+}
+
+// startCleanup 启动定期清理
+func (m *MemoryL1Cache) startCleanup() <span class="cov8" title="1">{
+        ticker := time.NewTicker(m.cleanupTTL)
+        defer ticker.Stop()
+
+        for </span><span class="cov8" title="1">{
+                select </span>{
+                case &lt;-ticker.C:<span class="cov8" title="1">
+                        m.Cleanup()</span>
+                case &lt;-m.stopCh:<span class="cov0" title="0">
+                        return</span>
+                }
+        }
+}
+
+// Stop 停止缓存
+func (m *MemoryL1Cache) Stop() <span class="cov0" title="0">{
+        close(m.stopCh)
+        m.Clear()
+        m.logger.Info("L1 memory cache stopped")
+}</span>
+
+// GetTopKeys 获取热点键
+func (m *MemoryL1Cache) GetTopKeys(limit int) []string <span class="cov0" title="0">{
+        m.mu.RLock()
+        defer m.mu.RUnlock()
+
+        if limit &lt;= 0 || limit &gt; len(m.data) </span><span class="cov0" title="0">{
+                limit = len(m.data)
+        }</span>
+
+        <span class="cov0" title="0">type keyHitCount struct {
+                key  string
+                hits int64
+        }
+
+        var topKeys []keyHitCount
+
+        // 收集所有键的命中次数
+        for element := m.lru.Front(); element != nil; element = element.Next() </span><span class="cov0" title="0">{
+                item := element.Value.(*lruItem)
+                topKeys = append(topKeys, keyHitCount{
+                        key:  item.key,
+                        hits: item.entry.HitCount,
+                })
+        }</span>
+
+        // 简单排序（按命中次数）
+        <span class="cov0" title="0">for i := 0; i &lt; len(topKeys)-1; i++ </span><span class="cov0" title="0">{
+                for j := i + 1; j &lt; len(topKeys); j++ </span><span class="cov0" title="0">{
+                        if topKeys[i].hits &lt; topKeys[j].hits </span><span class="cov0" title="0">{
+                                topKeys[i], topKeys[j] = topKeys[j], topKeys[i]
+                        }</span>
+                }
+        }
+
+        // 返回前N个键名
+        <span class="cov0" title="0">result := make([]string, 0, limit)
+        for i := 0; i &lt; limit &amp;&amp; i &lt; len(topKeys); i++ </span><span class="cov0" title="0">{
+                result = append(result, topKeys[i].key)
+        }</span>
+
+        <span class="cov0" title="0">return result</span>
+}
+
+// GetMemoryUsage 获取内存使用情况
+func (m *MemoryL1Cache) GetMemoryUsage() map[string]interface{} <span class="cov0" title="0">{
+        m.mu.RLock()
+        defer m.mu.RUnlock()
+
+        return map[string]interface{}{
+                "used_bytes":     m.size,
+                "capacity_bytes": m.capacity,
+                "used_mb":        m.size / (1024 * 1024),
+                "capacity_mb":    m.capacity / (1024 * 1024),
+                "usage_percent":  float64(m.size) / float64(m.capacity) * 100,
+                "entries":        len(m.data),
+                "max_entries":    m.maxEntries,
+        }
+}</pre>
+		
+		<pre class="file" id="file1" style="display: none">package cache
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "time"
+
+        "github.com/redis/go-redis/v9"
+        "go.uber.org/zap"
+)
+
+// RedisL2Cache Redis L2缓存实现
+type RedisL2Cache struct {
+        client   *redis.Client
+        prefix   string
+        logger   *zap.Logger
+        metrics  *L2Metrics
+}
+
+// L2Metrics L2缓存指标
+type L2Metrics struct {
+        Commands    int64         `json:"commands"`
+        Hits        int64         `json:"hits"`
+        Misses      int64         `json:"misses"`
+        Errors      int64         `json:"errors"`
+        AvgLatency  time.Duration `json:"avg_latency"`
+        LastLatency time.Duration `json:"last_latency"`
+}
+
+// RedisConfig Redis配置
+type RedisConfig struct {
+        Host         string        `json:"host"`
+        Port         int           `json:"port"`
+        Password     string        `json:"password"`
+        Database     int           `json:"database"`
+        PoolSize     int           `json:"pool_size"`
+        MinIdleConns int           `json:"min_idle_conns"`
+        DialTimeout  time.Duration `json:"dial_timeout"`
+        ReadTimeout  time.Duration `json:"read_timeout"`
+        WriteTimeout time.Duration `json:"write_timeout"`
+        PoolTimeout  time.Duration `json:"pool_timeout"`
+        KeyPrefix    string        `json:"key_prefix"`
+}
+
+// DefaultRedisConfig 返回默认Redis配置
+func DefaultRedisConfig() *RedisConfig <span class="cov8" title="1">{
+        return &amp;RedisConfig{
+                Host:         "localhost",
+                Port:         6379,
+                Password:     "",
+                Database:     0,
+                PoolSize:     20,
+                MinIdleConns: 5,
+                DialTimeout:  5 * time.Second,
+                ReadTimeout:  3 * time.Second,
+                WriteTimeout: 3 * time.Second,
+                PoolTimeout:  4 * time.Second,
+                KeyPrefix:    "mockserver:cache:",
+        }
+}</span>
+
+// NewRedisL2Cache 创建Redis L2缓存
+func NewRedisL2Cache(config *RedisConfig, logger *zap.Logger) (*RedisL2Cache, error) <span class="cov0" title="0">{
+        if config == nil </span><span class="cov0" title="0">{
+                config = DefaultRedisConfig()
+        }</span>
+
+        <span class="cov0" title="0">rdb := redis.NewClient(&amp;redis.Options{
+                Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
+                Password:     config.Password,
+                DB:           config.Database,
+                PoolSize:     config.PoolSize,
+                MinIdleConns: config.MinIdleConns,
+                DialTimeout:  config.DialTimeout,
+                ReadTimeout:  config.ReadTimeout,
+                WriteTimeout: config.WriteTimeout,
+                PoolTimeout:  config.PoolTimeout,
+        })
+
+        // 测试连接
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+
+        if err := rdb.Ping(ctx).Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">cache := &amp;RedisL2Cache{
+                client:  rdb,
+                prefix:  config.KeyPrefix,
+                logger:  logger,
+                metrics: &amp;L2Metrics{},
+        }
+
+        logger.Info("Redis L2 cache initialized successfully",
+                zap.String("addr", rdb.Options().Addr),
+                zap.String("prefix", config.KeyPrefix),
+        )
+
+        return cache, nil</span>
+}
+
+// Get 获取缓存值
+func (r *RedisL2Cache) Get(ctx context.Context, key string) (interface{}, error) <span class="cov0" title="0">{
+        start := time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                r.metrics.LastLatency = time.Since(start)
+                r.updateAvgLatency()
+        }</span>()
+
+        <span class="cov0" title="0">fullKey := r.prefix + key
+
+        r.metrics.Commands++
+
+        result, err := r.client.Get(ctx, fullKey).Result()
+        if err != nil </span><span class="cov0" title="0">{
+                if err == redis.Nil </span><span class="cov0" title="0">{
+                        r.metrics.Misses++
+                        return nil, nil // 未找到，不返回错误
+                }</span>
+                <span class="cov0" title="0">r.metrics.Errors++
+                r.logger.Error("Redis GET error",
+                        zap.String("key", key),
+                        zap.Error(err),
+                )
+                return nil, fmt.Errorf("redis get error: %w", err)</span>
+        }
+
+        <span class="cov0" title="0">r.metrics.Hits++
+
+        // 尝试解析JSON
+        var value interface{}
+        if err := json.Unmarshal([]byte(result), &amp;value); err != nil </span><span class="cov0" title="0">{
+                // 如果不是JSON格式，直接返回字符串
+                value = result
+        }</span>
+
+        <span class="cov0" title="0">r.logger.Debug("Redis cache hit",
+                zap.String("key", key),
+                zap.Duration("latency", r.metrics.LastLatency),
+        )
+
+        return value, nil</span>
+}
+
+// Set 设置缓存值
+func (r *RedisL2Cache) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error <span class="cov0" title="0">{
+        start := time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                r.metrics.LastLatency = time.Since(start)
+                r.updateAvgLatency()
+        }</span>()
+
+        <span class="cov0" title="0">fullKey := r.prefix + key
+
+        r.metrics.Commands++
+
+        // 序列化值
+        var data string
+        switch v := value.(type) </span>{
+        case string:<span class="cov0" title="0">
+                data = v</span>
+        case []byte:<span class="cov0" title="0">
+                data = string(v)</span>
+        default:<span class="cov0" title="0">
+                jsonBytes, err := json.Marshal(value)
+                if err != nil </span><span class="cov0" title="0">{
+                        r.metrics.Errors++
+                        return fmt.Errorf("json marshal error: %w", err)
+                }</span>
+                <span class="cov0" title="0">data = string(jsonBytes)</span>
+        }
+
+        <span class="cov0" title="0">err := r.client.Set(ctx, fullKey, data, ttl).Err()
+        if err != nil </span><span class="cov0" title="0">{
+                r.metrics.Errors++
+                r.logger.Error("Redis SET error",
+                        zap.String("key", key),
+                        zap.Duration("ttl", ttl),
+                        zap.Error(err),
+                )
+                return fmt.Errorf("redis set error: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">r.logger.Debug("Redis cache set",
+                zap.String("key", key),
+                zap.Duration("ttl", ttl),
+                zap.Duration("latency", r.metrics.LastLatency),
+        )
+
+        return nil</span>
+}
+
+// Delete 删除缓存
+func (r *RedisL2Cache) Delete(ctx context.Context, key string) error <span class="cov0" title="0">{
+        start := time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                r.metrics.LastLatency = time.Since(start)
+                r.updateAvgLatency()
+        }</span>()
+
+        <span class="cov0" title="0">fullKey := r.prefix + key
+        r.metrics.Commands++
+
+        err := r.client.Del(ctx, fullKey).Err()
+        if err != nil </span><span class="cov0" title="0">{
+                r.metrics.Errors++
+                r.logger.Error("Redis DELETE error",
+                        zap.String("key", key),
+                        zap.Error(err),
+                )
+                return fmt.Errorf("redis delete error: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">r.logger.Debug("Redis cache deleted",
+                zap.String("key", key),
+                zap.Duration("latency", r.metrics.LastLatency),
+        )
+
+        return nil</span>
+}
+
+// Exists 检查键是否存在
+func (r *RedisL2Cache) Exists(ctx context.Context, key string) (bool, error) <span class="cov0" title="0">{
+        start := time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                r.metrics.LastLatency = time.Since(start)
+                r.updateAvgLatency()
+        }</span>()
+
+        <span class="cov0" title="0">fullKey := r.prefix + key
+        r.metrics.Commands++
+
+        result, err := r.client.Exists(ctx, fullKey).Result()
+        if err != nil </span><span class="cov0" title="0">{
+                r.metrics.Errors++
+                return false, fmt.Errorf("redis exists error: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">exists := result &gt; 0
+
+        r.logger.Debug("Redis exists check",
+                zap.String("key", key),
+                zap.Bool("exists", exists),
+                zap.Duration("latency", r.metrics.LastLatency),
+        )
+
+        return exists, nil</span>
+}
+
+// Clear 清空所有缓存
+func (r *RedisL2Cache) Clear(ctx context.Context) error <span class="cov0" title="0">{
+        start := time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                r.metrics.LastLatency = time.Since(start)
+                r.updateAvgLatency()
+        }</span>()
+
+        <span class="cov0" title="0">r.metrics.Commands++
+
+        // 使用SCAN命令获取所有匹配前缀的键
+        iter := r.client.Scan(ctx, 0, r.prefix+"*", 0).Iterator()
+        var keys []string
+
+        for iter.Next(ctx) </span><span class="cov0" title="0">{
+                keys = append(keys, iter.Val())
+        }</span>
+
+        <span class="cov0" title="0">if err := iter.Err(); err != nil </span><span class="cov0" title="0">{
+                r.metrics.Errors++
+                return fmt.Errorf("redis scan error: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if len(keys) &gt; 0 </span><span class="cov0" title="0">{
+                err := r.client.Del(ctx, keys...).Err()
+                if err != nil </span><span class="cov0" title="0">{
+                        r.metrics.Errors++
+                        return fmt.Errorf("redis delete keys error: %w", err)
+                }</span>
+        }
+
+        <span class="cov0" title="0">r.logger.Info("Redis cache cleared",
+                zap.Int("keys_deleted", len(keys)),
+                zap.Duration("latency", r.metrics.LastLatency),
+        )
+
+        return nil</span>
+}
+
+// Ping 测试连接
+func (r *RedisL2Cache) Ping(ctx context.Context) error <span class="cov0" title="0">{
+        start := time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                r.metrics.LastLatency = time.Since(start)
+                r.updateAvgLatency()
+        }</span>()
+
+        <span class="cov0" title="0">r.metrics.Commands++
+
+        err := r.client.Ping(ctx).Err()
+        if err != nil </span><span class="cov0" title="0">{
+                r.metrics.Errors++
+                return fmt.Errorf("redis ping error: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">r.logger.Debug("Redis ping successful",
+                zap.Duration("latency", r.metrics.LastLatency),
+        )
+
+        return nil</span>
+}
+
+// GetMetrics 获取缓存指标
+func (r *RedisL2Cache) GetMetrics() *L2Metrics <span class="cov0" title="0">{
+        return r.metrics
+}</span>
+
+// updateAvgLatency 更新平均延迟
+func (r *RedisL2Cache) updateAvgLatency() <span class="cov0" title="0">{
+        if r.metrics.Commands == 0 </span><span class="cov0" title="0">{
+                return
+        }</span>
+
+        // 简单的移动平均
+        <span class="cov0" title="0">r.metrics.AvgLatency = time.Duration(
+                (int64(r.metrics.AvgLatency) + int64(r.metrics.LastLatency)) / 2,
+        )</span>
+}
+
+// Close 关闭连接
+func (r *RedisL2Cache) Close() error <span class="cov0" title="0">{
+        if r.client != nil </span><span class="cov0" title="0">{
+                err := r.client.Close()
+                if err != nil </span><span class="cov0" title="0">{
+                        r.logger.Error("Failed to close Redis client", zap.Error(err))
+                        return err
+                }</span>
+                <span class="cov0" title="0">r.logger.Info("Redis L2 cache closed")</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetClient 获取原始Redis客户端（用于高级操作）
+func (r *RedisL2Cache) GetClient() *redis.Client <span class="cov0" title="0">{
+        return r.client
+}</pre>
+		
+		<pre class="file" id="file2" style="display: none">package cache
+
+import (
+        "context"
+        "time"
+)
+
+// CacheLevel 缓存级别枚举
+type CacheLevel int
+
+const (
+        L1_HOT CacheLevel = iota // L1缓存：内存中的热点数据
+        L2_WARM                  // L2缓存：Redis中的温数据
+        L3_COLD                  // L3缓存：MongoDB中的冷数据
+)
+
+// CacheEntry 缓存条目
+type CacheEntry struct {
+        Key        string      `json:"key"`
+        Value      interface{} `json:"value"`
+        Level      CacheLevel  `json:"level"`
+        TTL        time.Duration `json:"ttl"`
+        CreatedAt  time.Time   `json:"created_at"`
+        AccessAt   time.Time   `json:"access_at"`
+        HitCount   int64       `json:"hit_count"`
+        ExpireAt   time.Time   `json:"expire_at"`
+}
+
+// CacheStats 缓存统计信息
+type CacheStats struct {
+        TotalRequests   int64   `json:"total_requests"`
+        L1HitCount      int64   `json:"l1_hit_count"`
+        L2HitCount      int64   `json:"l2_hit_count"`
+        L3HitCount      int64   `json:"l3_hit_count"`
+        MissCount       int64   `json:"miss_count"`
+        L1HitRate       float64 `json:"l1_hit_rate"`
+        L2HitRate       float64 `json:"l2_hit_rate"`
+        TotalHitRate    float64 `json:"total_hit_rate"`
+        AvgResponseTime time.Duration `json:"avg_response_time"`
+        TotalEntries    int64   `json:"total_entries"`
+        L1Entries       int64   `json:"l1_entries"`
+        L2Entries       int64   `json:"l2_entries"`
+}
+
+// CacheStrategy 缓存策略配置
+type CacheStrategy struct {
+        // L1缓存配置
+        L1MaxEntries    int           `json:"l1_max_entries"`
+        L1TTL           time.Duration `json:"l1_ttl"`
+        L1CleanupInterval time.Duration `json:"l1_cleanup_interval"`
+
+        // L2缓存配置
+        L2TTL           time.Duration `json:"l2_ttl"`
+        L2CleanupInterval time.Duration `json:"l2_cleanup_interval"`
+
+        // 策略配置
+        HotDataThreshold    float64 `json:"hot_data_threshold"`    // 热点数据访问频率阈值
+        WarmDataThreshold   float64 `json:"warm_data_threshold"`   // 温数据访问频率阈值
+        PreloadEnabled      bool    `json:"preload_enabled"`       // 是否启用预热
+        AccessFreqWindow    time.Duration `json:"access_freq_window"` // 访问频率统计窗口
+
+        // 预热配置
+        PreloadKeys         []string `json:"preload_keys"`          // 预热键列表
+        PreloadConcurrency  int      `json:"preload_concurrency"`   // 预热并发数
+}
+
+// DefaultCacheStrategy 返回默认缓存策略
+func DefaultCacheStrategy() *CacheStrategy <span class="cov8" title="1">{
+        return &amp;CacheStrategy{
+                L1MaxEntries:       10000,
+                L1TTL:              1 * time.Minute,
+                L1CleanupInterval:  5 * time.Minute,
+                L2TTL:              10 * time.Minute,
+                L2CleanupInterval:  30 * time.Minute,
+                HotDataThreshold:   0.8,
+                WarmDataThreshold:  0.2,
+                PreloadEnabled:     true,
+                AccessFreqWindow:   1 * time.Hour,
+                PreloadConcurrency: 10,
+        }
+}</span>
+
+// Manager 缓存管理器接口
+type Manager interface {
+        // 基础操作
+        Get(ctx context.Context, key string) (interface{}, error)
+        Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+        Delete(ctx context.Context, key string) error
+        Exists(ctx context.Context, key string) (bool, error)
+
+        // 批量操作
+        MGet(ctx context.Context, keys []string) (map[string]interface{}, error)
+        MSet(ctx context.Context, entries map[string]interface{}, ttl time.Duration) error
+        MDelete(ctx context.Context, keys []string) error
+
+        // 缓存控制
+        Clear(ctx context.Context, level CacheLevel) error
+        GetStats(ctx context.Context) (*CacheStats, error)
+        Preload(ctx context.Context, keys []string) error
+
+        // 策略管理
+        UpdateStrategy(strategy *CacheStrategy) error
+        GetStrategy() *CacheStrategy
+
+        // 生命周期
+        Start(ctx context.Context) error
+        Stop(ctx context.Context) error
+}
+
+// L1Cache L1内存缓存接口
+type L1Cache interface {
+        Get(key string) (*CacheEntry, bool)
+        Set(key string, value interface{}, ttl time.Duration) error
+        Delete(key string) error
+        Clear() error
+        Stats() *L1Stats
+        Cleanup() error
+}
+
+// L1Stats L1缓存统计
+type L1Stats struct {
+        Entries    int64 `json:"entries"`
+        Hits       int64 `json:"hits"`
+        Misses     int64 `json:"misses"`
+        Evictions  int64 `json:"evictions"`
+        HitRate    float64 `json:"hit_rate"`
+}
+
+// L2Cache L2 Redis缓存接口
+type L2Cache interface {
+        Get(ctx context.Context, key string) (interface{}, error)
+        Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+        Delete(ctx context.Context, key string) error
+        Exists(ctx context.Context, key string) (bool, error)
+        Clear(ctx context.Context) error
+        Ping(ctx context.Context) error
+}
+
+// AccessFrequency 访问频率记录
+type AccessFrequency struct {
+        Key       string    `json:"key"`
+        Count     int64     `json:"count"`
+        Window    time.Time `json:"window"`
+        Frequency float64   `json:"frequency"`
+}
+
+// FrequencyTracker 访问频率跟踪器接口
+type FrequencyTracker interface {
+        RecordAccess(key string)
+        GetFrequency(key string) float64
+        CleanupExpiredWindow()
+        GetTopKeys(limit int) []string
+}</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
