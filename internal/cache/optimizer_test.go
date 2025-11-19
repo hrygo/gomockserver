@@ -399,9 +399,9 @@ func TestAutoTuner_CalculatePerformanceTrend(t *testing.T) {
 		snapshot := PerformanceSnapshot{
 			Timestamp: now.Add(time.Duration(i) * time.Minute),
 			Metrics: &PerformanceMetrics{
-				HitRate:         0.7 + float64(i)*0.05, // 递增
+				HitRate:         0.7 + float64(i)*0.05,                                     // 递增
 				AvgResponseTime: 30*time.Millisecond - time.Duration(i)*2*time.Millisecond, // 递减
-				MemoryUsage:     int64(100*1024*1024 + i*10*1024*1024), // 递增
+				MemoryUsage:     int64(100*1024*1024 + i*10*1024*1024),                     // 递增
 				LastUpdateTime:  now.Add(time.Duration(i) * time.Minute),
 			},
 			LoadFactor:    0.5,
@@ -413,9 +413,9 @@ func TestAutoTuner_CalculatePerformanceTrend(t *testing.T) {
 	trend := tuner.calculatePerformanceTrend()
 
 	assert.NotNil(t, trend)
-	assert.Greater(t, trend.HitRateTrend, 0.0) // 递增趋势
+	assert.Greater(t, trend.HitRateTrend, 0.0)      // 递增趋势
 	assert.Greater(t, trend.ResponseTimeTrend, 0.0) // 响应时间递减，取反后为正
-	assert.Less(t, trend.MemoryTrend, 0.0) // 内存递增，取反后为负
+	assert.Less(t, trend.MemoryTrend, 0.0)          // 内存递增，取反后为负
 }
 
 func TestAutoTuner_AnalyzeHitRateTrend(t *testing.T) {

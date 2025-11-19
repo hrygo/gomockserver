@@ -38,9 +38,21 @@ func (p *SchemaParser) ParseSchema(sdl string) (*types.SchemaDocument, error) {
 		return nil, fmt.Errorf("failed to parse schema: %w", err)
 	}
 
+	// 安全地获取操作类型名称
+	var operationTypes []string
+	if schema.Query != nil {
+		operationTypes = append(operationTypes, schema.Query.Name)
+	}
+	if schema.Mutation != nil {
+		operationTypes = append(operationTypes, schema.Mutation.Name)
+	}
+	if schema.Subscription != nil {
+		operationTypes = append(operationTypes, schema.Subscription.Name)
+	}
+
 	p.logger.Info("Schema解析成功",
 		zap.Int("types_count", len(schema.Types)),
-		zap.Strings("operation_types", []string{schema.Query.Name, schema.Mutation.Name, schema.Subscription.Name}))
+		zap.Strings("operation_types", operationTypes))
 
 	// 转换为内部类型
 	doc := p.convertToInternalSchema(schema)
@@ -68,9 +80,29 @@ func (p *SchemaParser) convertToInternalSchema(schema *ast.Schema) *types.Schema
 		Definitions: make([]types.Definition, 0),
 	}
 
-	// 简化实现 - 基础转换将在Phase 2中完善
-	// 目前创建一个空的schema文档
-	p.logger.Info("Schema转换完成（简化版本）")
+	// 基础实现 - 转换主要类型
+	for _, typ := range schema.Types {
+		// 跳过内置类型
+		if typ.BuiltIn {
+			continue
+		}
+
+		switch typ.Kind {
+		case ast.Object:
+			def := p.convertObjectType(typ)
+			if def != nil {
+				doc.Definitions = append(doc.Definitions, def)
+			}
+		case ast.InputObject:
+			def := p.convertInputObjectType(typ)
+			if def != nil {
+				doc.Definitions = append(doc.Definitions, def)
+			}
+			// 其他类型将在Phase 2中实现
+		}
+	}
+
+	p.logger.Info("Schema转换完成", zap.Int("definitions_count", len(doc.Definitions)))
 
 	return doc
 }
@@ -228,6 +260,10 @@ func (p *SchemaParser) convertInputObjectType(typ *ast.Definition) *types.InputO
 
 // convertType 转换类型引用
 func (p *SchemaParser) convertType(typ *ast.Type) types.Type {
+	if typ == nil {
+		return nil
+	}
+
 	if typ.NonNull {
 		return &types.NonNullType{
 			Type: p.convertType(typ.Elem),
@@ -270,7 +306,7 @@ func (p *SchemaParser) convertDirectives(directives ast.DirectiveList) []types.D
 	result := make([]types.Directive, 0)
 	for _, dir := range directives {
 		dirDef := types.Directive{
-			Name: dir.Name,
+			Name:      dir.Name,
 			Arguments: p.convertArgumentValues(dir.Arguments),
 			Position: types.Position{
 				Line:   dir.Position.Line,

@@ -14,57 +14,57 @@ import (
 
 // CacheOptimizer 缓存策略参数优化器
 type CacheOptimizer struct {
-	mu                     sync.RWMutex
-	config                 *OptimizationConfig
-	currentStrategy        *CacheStrategy
-	optimizationHistory    []OptimizationResultRecord
-	bestStrategy           *CacheStrategy
-	bestPerformance        *PerformanceMetrics
-	isOptimizing           bool
-	stopCh                 chan struct{}
-	logger                 *zap.Logger
+	mu                  sync.RWMutex
+	config              *OptimizationConfig
+	currentStrategy     *CacheStrategy
+	optimizationHistory []OptimizationResultRecord
+	bestStrategy        *CacheStrategy
+	bestPerformance     *PerformanceMetrics
+	isOptimizing        bool
+	stopCh              chan struct{}
+	logger              *zap.Logger
 }
 
 // OptimizationConfig 优化配置
 type OptimizationConfig struct {
 	// 优化参数范围
-	HotThresholdRange      [2]float64 `json:"hot_threshold_range"`       // [min, max]
-	WarmThresholdRange     [2]float64 `json:"warm_threshold_range"`      // [min, max]
-	L1CapacityRange        [2]int      `json:"l1_capacity_range"`        // [min, max]
-	L2TTLRange             [2]time.Duration `json:"l2_ttl_range"`           // [min, max]
+	HotThresholdRange  [2]float64       `json:"hot_threshold_range"`  // [min, max]
+	WarmThresholdRange [2]float64       `json:"warm_threshold_range"` // [min, max]
+	L1CapacityRange    [2]int           `json:"l1_capacity_range"`    // [min, max]
+	L2TTLRange         [2]time.Duration `json:"l2_ttl_range"`         // [min, max]
 
 	// 优化控制参数
-	OptimizationInterval   time.Duration `json:"optimization_interval"`   // 优化间隔
-	TestDuration           time.Duration `json:"test_duration"`           // 每个策略测试时间
-	MaxIterations          int           `json:"max_iterations"`          // 最大迭代次数
-	ImprovementThreshold   float64       `json:"improvement_threshold"`   // 改善阈值
-	StagnationLimit        int           `json:"stagnation_limit"`        // 停滞限制
+	OptimizationInterval time.Duration `json:"optimization_interval"` // 优化间隔
+	TestDuration         time.Duration `json:"test_duration"`         // 每个策略测试时间
+	MaxIterations        int           `json:"max_iterations"`        // 最大迭代次数
+	ImprovementThreshold float64       `json:"improvement_threshold"` // 改善阈值
+	StagnationLimit      int           `json:"stagnation_limit"`      // 停滞限制
 
 	// 优化算法参数
-	PopulationSize         int           `json:"population_size"`         // 种群大小
-	MutationRate           float64       `json:"mutation_rate"`           // 变异率
-	CrossoverRate          float64       `json:"crossover_rate"`          // 交叉率
-	ElitismRatio           float64       `json:"elitism_ratio"`           // 精英保留比例
+	PopulationSize int     `json:"population_size"` // 种群大小
+	MutationRate   float64 `json:"mutation_rate"`   // 变异率
+	CrossoverRate  float64 `json:"crossover_rate"`  // 交叉率
+	ElitismRatio   float64 `json:"elitism_ratio"`   // 精英保留比例
 
 	// 性能权重
-	HitRateWeight          float64       `json:"hit_rate_weight"`         // 命中率权重
-	ResponseTimeWeight     float64       `json:"response_time_weight"`    // 响应时间权重
-	MemoryWeight           float64       `json:"memory_weight"`           // 内存权重
-	CPUWeight              float64       `json:"cpu_weight"`              // CPU权重
+	HitRateWeight      float64 `json:"hit_rate_weight"`      // 命中率权重
+	ResponseTimeWeight float64 `json:"response_time_weight"` // 响应时间权重
+	MemoryWeight       float64 `json:"memory_weight"`        // 内存权重
+	CPUWeight          float64 `json:"cpu_weight"`           // CPU权重
 
 	// 安全约束
-	MinHitRate             float64       `json:"min_hit_rate"`            // 最小命中率
-	MaxResponseTime        time.Duration `json:"max_response_time"`       // 最大响应时间
-	MaxMemoryUsage         int64         `json:"max_memory_usage"`        // 最大内存使用
+	MinHitRate      float64       `json:"min_hit_rate"`      // 最小命中率
+	MaxResponseTime time.Duration `json:"max_response_time"` // 最大响应时间
+	MaxMemoryUsage  int64         `json:"max_memory_usage"`  // 最大内存使用
 }
 
 // DefaultOptimizationConfig 默认优化配置
 func DefaultOptimizationConfig() *OptimizationConfig {
 	return &OptimizationConfig{
-		HotThresholdRange:    [2]float64{0.5, 0.95},
-		WarmThresholdRange:   [2]float64{0.05, 0.5},
-		L1CapacityRange:      [2]int{1000, 10000},
-		L2TTLRange:           [2]time.Duration{5 * time.Minute, 2 * time.Hour},
+		HotThresholdRange:  [2]float64{0.5, 0.95},
+		WarmThresholdRange: [2]float64{0.05, 0.5},
+		L1CapacityRange:    [2]int{1000, 10000},
+		L2TTLRange:         [2]time.Duration{5 * time.Minute, 2 * time.Hour},
 
 		OptimizationInterval: 30 * time.Minute,
 		TestDuration:         5 * time.Minute,
@@ -72,39 +72,39 @@ func DefaultOptimizationConfig() *OptimizationConfig {
 		ImprovementThreshold: 0.05,
 		StagnationLimit:      10,
 
-		PopulationSize:       20,
-		MutationRate:         0.2,
-		CrossoverRate:        0.8,
-		ElitismRatio:         0.1,
+		PopulationSize: 20,
+		MutationRate:   0.2,
+		CrossoverRate:  0.8,
+		ElitismRatio:   0.1,
 
-		HitRateWeight:        0.4,
-		ResponseTimeWeight:   0.4,
-		MemoryWeight:         0.1,
-		CPUWeight:            0.1,
+		HitRateWeight:      0.4,
+		ResponseTimeWeight: 0.4,
+		MemoryWeight:       0.1,
+		CPUWeight:          0.1,
 
-		MinHitRate:           0.6,
-		MaxResponseTime:      100 * time.Millisecond,
-		MaxMemoryUsage:       200 * 1024 * 1024, // 200MB
+		MinHitRate:      0.6,
+		MaxResponseTime: 100 * time.Millisecond,
+		MaxMemoryUsage:  200 * 1024 * 1024, // 200MB
 	}
 }
 
 // StrategyIndividual 策略个体（用于遗传算法）
 type StrategyIndividual struct {
-	Strategy    *CacheStrategy `json:"strategy"`
-	Fitness     float64        `json:"fitness"`
+	Strategy    *CacheStrategy      `json:"strategy"`
+	Fitness     float64             `json:"fitness"`
 	Performance *PerformanceMetrics `json:"performance"`
 }
 
 // OptimizationResultRecord 优化结果记录
 type OptimizationResultRecord struct {
-	Timestamp       time.Time         `json:"timestamp"`
-	Iteration       int               `json:"iteration"`
-	Strategy        *CacheStrategy    `json:"strategy"`
-	Performance     *PerformanceMetrics `json:"performance"`
-	Fitness         float64           `json:"fitness"`
-	Improvement     float64           `json:"improvement"`
-	Algorithm       string            `json:"algorithm"`
-	OptimizationTime time.Duration    `json:"optimization_time"`
+	Timestamp        time.Time           `json:"timestamp"`
+	Iteration        int                 `json:"iteration"`
+	Strategy         *CacheStrategy      `json:"strategy"`
+	Performance      *PerformanceMetrics `json:"performance"`
+	Fitness          float64             `json:"fitness"`
+	Improvement      float64             `json:"improvement"`
+	Algorithm        string              `json:"algorithm"`
+	OptimizationTime time.Duration       `json:"optimization_time"`
 }
 
 // NewCacheOptimizer 创建缓存优化器
@@ -124,11 +124,11 @@ func NewCacheOptimizer(initialStrategy *CacheStrategy, config *OptimizationConfi
 
 	// 初始化最佳性能指标
 	optimizer.bestPerformance = &PerformanceMetrics{
-		HitRate:        0.0,
+		HitRate:         0.0,
 		AvgResponseTime: time.Hour, // 初始设为很大的值
-		MemoryUsage:    0,
-		CPULoad:        0,
-		LastUpdateTime: time.Now(),
+		MemoryUsage:     0,
+		CPULoad:         0,
+		LastUpdateTime:  time.Now(),
 	}
 
 	return optimizer
@@ -318,13 +318,57 @@ func (co *CacheOptimizer) generateRandomStrategy() *CacheStrategy {
 	l1Range := co.config.L1CapacityRange
 	ttlRange := co.config.L2TTLRange
 
+	// 安全的随机数生成，确保范围有效
+	hotThreshold := hotRange[0]
+	if hotRange[1] > hotRange[0] {
+		hotThreshold = hotRange[0] + rand.Float64()*(hotRange[1]-hotRange[0])
+	}
+
+	warmThreshold := warmRange[0]
+	if warmRange[1] > warmRange[0] {
+		warmThreshold = warmRange[0] + rand.Float64()*(warmRange[1]-warmRange[0])
+	}
+
+	// 确保hot threshold > warm threshold
+	if hotThreshold <= warmThreshold {
+		// 如果生成的hot threshold不大于warm threshold，则重新生成
+		hotThreshold = warmThreshold + 0.1 // 确保至少比warm threshold大0.1
+		if hotRange[1] > hotRange[0] && hotThreshold > hotRange[1] {
+			hotThreshold = hotRange[1] // 如果超出范围，使用最大值
+		}
+	}
+
+	l1MaxEntries := l1Range[0]
+	if l1Range[1] > l1Range[0] && l1Range[0] > 0 {
+		l1MaxEntries = l1Range[0] + rand.Intn(l1Range[1]-l1Range[0])
+	} else {
+		// 如果范围无效或者不是正数，使用默认值
+		l1MaxEntries = 100 // 默认100个条目
+	}
+
+	l1TTL := ttlRange[0]
+	if ttlRange[1] > ttlRange[0] && ttlRange[0] > 0 {
+		l1TTL = ttlRange[0] + time.Duration(rand.Int63n(int64(ttlRange[1]-ttlRange[0])))
+	} else {
+		// 如果范围无效或者不是正数，使用默认值
+		l1TTL = 10 * time.Minute // 默认10分钟
+	}
+
+	l2TTL := ttlRange[0]
+	if ttlRange[1] > ttlRange[0] && ttlRange[0] > 0 {
+		l2TTL = ttlRange[0] + time.Duration(rand.Int63n(int64(ttlRange[1]-ttlRange[0])))
+	} else {
+		// 如果范围无效或者不是正数，使用默认值
+		l2TTL = 30 * time.Minute // 默认30分钟
+	}
+
 	return &CacheStrategy{
-		HotDataThreshold: hotRange[0] + rand.Float64()*(hotRange[1]-hotRange[0]),
-		WarmDataThreshold: warmRange[0] + rand.Float64()*(warmRange[1]-warmRange[0]),
-		L1MaxEntries: l1Range[0] + rand.Intn(l1Range[1]-l1Range[0]),
-		L1TTL: ttlRange[0] + time.Duration(rand.Int63n(int64(ttlRange[1]-ttlRange[0]))),
-		L2TTL: ttlRange[0] + time.Duration(rand.Int63n(int64(ttlRange[1]-ttlRange[0]))),
-		PreloadEnabled: rand.Float64() > 0.5,
+		HotDataThreshold:   hotThreshold,
+		WarmDataThreshold:  warmThreshold,
+		L1MaxEntries:       l1MaxEntries,
+		L1TTL:              l1TTL,
+		L2TTL:              l2TTL,
+		PreloadEnabled:     rand.Float64() > 0.5,
 		PreloadConcurrency: 5 + rand.Intn(10), // 5-15个并发
 	}
 }
@@ -346,11 +390,11 @@ func (co *CacheOptimizer) evaluateStrategy(strategy *CacheStrategy) *Performance
 	cpuLoad := co.predictCPULoad(hotThreshold, warmThreshold)
 
 	return &PerformanceMetrics{
-		HitRate:        hitRate,
+		HitRate:         hitRate,
 		AvgResponseTime: responseTime,
-		MemoryUsage:    memoryUsage,
-		CPULoad:        cpuLoad,
-		LastUpdateTime: time.Now(),
+		MemoryUsage:     memoryUsage,
+		CPULoad:         cpuLoad,
+		LastUpdateTime:  time.Now(),
 	}
 }
 
@@ -371,7 +415,7 @@ func (co *CacheOptimizer) predictResponseTime(hotThreshold float64, l1Capacity i
 	// 热点阈值越高，L1缓存命中率越高，响应时间越短
 	baseTime := 50 * time.Millisecond
 	hotImprovement := time.Duration(hotThreshold * 40 * float64(time.Millisecond))
-	capacityImprovement := time.Duration(float64(l1Capacity)/10000.0 * 30 * float64(time.Millisecond))
+	capacityImprovement := time.Duration(float64(l1Capacity) / 10000.0 * 30 * float64(time.Millisecond))
 
 	predicted := baseTime - hotImprovement - capacityImprovement
 	return time.Duration(math.Max(float64(5*time.Millisecond), float64(predicted)))
@@ -604,13 +648,13 @@ func (co *CacheOptimizer) GetOptimizationStats() map[string]interface{} {
 	defer co.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"optimization_count":    len(co.optimizationHistory),
-		"is_optimizing":        co.isOptimizing,
-		"best_fitness":         co.calculateFitness(co.bestPerformance),
-		"best_strategy":        co.bestStrategy,
-		"best_performance":     co.bestPerformance,
-		"last_optimization":    "none",
-		"total_improvement":    0.0,
+		"optimization_count": len(co.optimizationHistory),
+		"is_optimizing":      co.isOptimizing,
+		"best_fitness":       co.calculateFitness(co.bestPerformance),
+		"best_strategy":      co.bestStrategy,
+		"best_performance":   co.bestPerformance,
+		"last_optimization":  "none",
+		"total_improvement":  0.0,
 	}
 
 	if len(co.optimizationHistory) > 0 {
@@ -659,11 +703,11 @@ func (co *CacheOptimizer) ResetOptimization() {
 	co.optimizationHistory = make([]OptimizationResultRecord, 0)
 	co.bestStrategy = co.currentStrategy
 	co.bestPerformance = &PerformanceMetrics{
-		HitRate:        0.0,
+		HitRate:         0.0,
 		AvgResponseTime: time.Hour,
-		MemoryUsage:    0,
-		CPULoad:        0,
-		LastUpdateTime: time.Now(),
+		MemoryUsage:     0,
+		CPULoad:         0,
+		LastUpdateTime:  time.Now(),
 	}
 
 	co.logger.Info("Optimization reset")

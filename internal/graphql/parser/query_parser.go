@@ -90,7 +90,7 @@ func (p *QueryParser) ValidateQuery(query *types.GraphQLQuery, schema *types.Sch
 	if len(errors) > 0 {
 		errMsg := "查询验证失败:\n" + fmt.Sprintf("%v", errors)
 		p.logger.Error(errMsg)
-		return fmt.Errorf(errMsg)
+		return fmt.Errorf("查询验证失败: %v", errors)
 	}
 
 	p.logger.Info("查询验证通过", zap.String("query_id", query.ID))
@@ -111,8 +111,8 @@ func (p *QueryParser) convertToGqlSchema(schema *types.SchemaDocument) (*ast.Sch
 	}
 	for _, builtin := range builtins {
 		gqlSchema.Types[builtin] = &ast.Definition{
-			Kind: ast.Scalar,
-			Name: builtin,
+			Kind:    ast.Scalar,
+			Name:    builtin,
 			BuiltIn: true,
 		}
 	}

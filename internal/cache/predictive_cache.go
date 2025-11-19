@@ -12,23 +12,23 @@ import (
 
 // PredictiveCache 预测性缓存
 type PredictiveCache struct {
-	mu                sync.RWMutex
-	accessPatterns    map[string]*AccessPattern
-	predictionEngine  *PredictionEngine
-	cacheManager      Manager
-	predictionConfig  *PredictionConfig
-	logger            *zap.Logger
+	mu               sync.RWMutex
+	accessPatterns   map[string]*AccessPattern
+	predictionEngine *PredictionEngine
+	cacheManager     Manager
+	predictionConfig *PredictionConfig
+	logger           *zap.Logger
 }
 
 // AccessPattern 访问模式
 type AccessPattern struct {
-	Key               string    `json:"key"`
-	AccessTimes       []time.Time `json:"access_times"`
-	Periodicity       float64   `json:"periodicity"`       // 周期性（秒）
-	Predictability    float64   `json:"predictability"`   // 可预测性
-	LastPredicted     time.Time `json:"last_predicted"`
-	PredictionAccuracy float64   `json:"prediction_accuracy"`
-	SeasonalFactor    float64   `json:"seasonal_factor"`   // 季节性因子
+	Key                string      `json:"key"`
+	AccessTimes        []time.Time `json:"access_times"`
+	Periodicity        float64     `json:"periodicity"`    // 周期性（秒）
+	Predictability     float64     `json:"predictability"` // 可预测性
+	LastPredicted      time.Time   `json:"last_predicted"`
+	PredictionAccuracy float64     `json:"prediction_accuracy"`
+	SeasonalFactor     float64     `json:"seasonal_factor"` // 季节性因子
 }
 
 // PredictionEngine 预测引擎
@@ -36,39 +36,39 @@ type PredictionEngine struct {
 	mu                sync.RWMutex
 	models            map[string]*PredictionModel
 	predictionHistory map[string][]Prediction
-	learningRate       float64
+	learningRate      float64
 	logger            *zap.Logger
 }
 
 // PredictionModel 预测模型
 type PredictionModel struct {
-	Key               string            `json:"key"`
-	ModelType         string            `json:"model_type"`     // linear, seasonal, trending
-	Parameters        map[string]float64 `json:"parameters"`
-	LastTraining      time.Time         `json:"last_training"`
-	TrainingSamples   int               `json:"training_samples"`
-	Accuracy          float64           `json:"accuracy"`
+	Key             string             `json:"key"`
+	ModelType       string             `json:"model_type"` // linear, seasonal, trending
+	Parameters      map[string]float64 `json:"parameters"`
+	LastTraining    time.Time          `json:"last_training"`
+	TrainingSamples int                `json:"training_samples"`
+	Accuracy        float64            `json:"accuracy"`
 }
 
 // Prediction 预测结果
 type Prediction struct {
-	Key               string    `json:"key"`
-	PredictedTime     time.Time `json:"predicted_time"`
-	Confidence        float64   `json:"confidence"`
-	Reason            string    `json:"reason"`
+	Key                string    `json:"key"`
+	PredictedTime      time.Time `json:"predicted_time"`
+	Confidence         float64   `json:"confidence"`
+	Reason             string    `json:"reason"`
 	PreloadRecommended bool      `json:"preload_recommended"`
 }
 
 // PredictionConfig 预测配置
 type PredictionConfig struct {
-	EnablePreload        bool          `json:"enable_preload"`
-	PreloadWindow        time.Duration `json:"preload_window"`        // 预测窗口
-	MinAccessCount       int           `json:"min_access_count"`      // 最小访问次数
-	MinPredictability    float64       `json:"min_predictability"`    // 最小可预测性
-	TrainingInterval     time.Duration `json:"training_interval"`     // 训练间隔
-	MaxPredictionTime    time.Duration `json:"max_prediction_time"`    // 最大预测时间
-	PreloadConcurrency   int           `json:"preload_concurrency"`   // 预加载并发数
-	PatternHistoryLimit  int           `json:"pattern_history_limit"` // 模式历史限制
+	EnablePreload       bool          `json:"enable_preload"`
+	PreloadWindow       time.Duration `json:"preload_window"`        // 预测窗口
+	MinAccessCount      int           `json:"min_access_count"`      // 最小访问次数
+	MinPredictability   float64       `json:"min_predictability"`    // 最小可预测性
+	TrainingInterval    time.Duration `json:"training_interval"`     // 训练间隔
+	MaxPredictionTime   time.Duration `json:"max_prediction_time"`   // 最大预测时间
+	PreloadConcurrency  int           `json:"preload_concurrency"`   // 预加载并发数
+	PatternHistoryLimit int           `json:"pattern_history_limit"` // 模式历史限制
 }
 
 // DefaultPredictionConfig 默认预测配置
@@ -102,8 +102,8 @@ func NewPredictiveCache(cacheManager Manager, predictionConfig *PredictionConfig
 	pc.predictionEngine = &PredictionEngine{
 		models:            make(map[string]*PredictionModel),
 		predictionHistory: make(map[string][]Prediction),
-		learningRate:       0.01,
-		logger:           logger.Named("prediction_engine"),
+		learningRate:      0.01,
+		logger:            logger.Named("prediction_engine"),
 	}
 
 	// 启动后台任务

@@ -91,11 +91,11 @@ test_websocket_project() {
     local project_id=$(simple_extract_field "$project_response" "id")
 
     if [ -n "$project_id" ]; then
-        log_pass "WebSocket项目创建成功: $project_id"
+        test_pass "WebSocket项目创建成功: $project_id"
         WS_PROJECT_ID="$project_id"
         return 0
     else
-        log_fail "WebSocket项目创建失败"
+        test_fail "WebSocket项目创建失败"
         return 1
     fi
 }
@@ -106,7 +106,7 @@ test_websocket_environment() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
     if [ -z "$WS_PROJECT_ID" ]; then
-        log_fail "项目ID不存在，跳过环境创建"
+        test_fail "项目ID不存在，跳过环境创建"
         return 1
     fi
 
@@ -115,11 +115,11 @@ test_websocket_environment() {
     local env_id=$(simple_extract_field "$env_response" "id")
 
     if [ -n "$env_id" ]; then
-        log_pass "WebSocket环境创建成功: $env_id"
+        test_pass "WebSocket环境创建成功: $env_id"
         WS_ENVIRONMENT_ID="$env_id"
         return 0
     else
-        log_fail "WebSocket环境创建失败"
+        test_fail "WebSocket环境创建失败"
         return 1
     fi
 }
@@ -130,7 +130,7 @@ test_websocket_rule() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
     if [ -z "$WS_PROJECT_ID" ] || [ -z "$WS_ENVIRONMENT_ID" ]; then
-        log_fail "项目ID或环境ID不存在，跳过规则创建"
+        test_fail "项目ID或环境ID不存在，跳过规则创建"
         return 1
     fi
 
@@ -159,11 +159,11 @@ test_websocket_rule() {
     local rule_id=$(simple_extract_field "$rule_response" "id")
 
     if [ -n "$rule_id" ]; then
-        log_pass "WebSocket规则创建成功: $rule_id"
+        test_pass "WebSocket规则创建成功: $rule_id"
         WS_RULE_ID="$rule_id"
         return 0
     else
-        log_fail "WebSocket规则创建失败"
+        test_fail "WebSocket规则创建失败"
         return 1
     fi
 }
@@ -174,7 +174,7 @@ test_websocket_endpoint() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
     if [ -z "$WS_PROJECT_ID" ] || [ -z "$WS_ENVIRONMENT_ID" ]; then
-        log_fail "项目ID或环境ID不存在，跳过端点验证"
+        test_fail "项目ID或环境ID不存在，跳过端点验证"
         return 1
     fi
 
@@ -190,10 +190,10 @@ test_websocket_endpoint() {
 
     # 对于HTTP请求WebSocket端点，返回400/426是正常的
     if [ "$http_code" = "400" ] || [ "$http_code" = "426" ] || [ "$http_code" = "101" ]; then
-        log_pass "WebSocket端点HTTP响应正常: $http_code"
+        test_pass "WebSocket端点HTTP响应正常: $http_code"
         return 0
     else
-        log_fail "WebSocket端点HTTP响应异常: $http_code"
+        test_fail "WebSocket端点HTTP响应异常: $http_code"
         return 1
     fi
 }
@@ -204,7 +204,7 @@ test_websocket_availability() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
     if [ -z "$WS_PROJECT_ID" ] || [ -z "$WS_ENVIRONMENT_ID" ]; then
-        log_fail "项目ID或环境ID不存在，跳过可用性检查"
+        test_fail "项目ID或环境ID不存在，跳过可用性检查"
         return 1
     fi
 
@@ -215,10 +215,10 @@ test_websocket_availability() {
         "$MOCK_API/websocket-test" 2>/dev/null | head -1)
 
     if [ -n "$availability_check" ]; then
-        log_pass "WebSocket端点配置正确并可达"
+        test_pass "WebSocket端点配置正确并可达"
         return 0
     else
-        log_fail "WebSocket端点配置失败或不可达"
+        test_fail "WebSocket端点配置失败或不可达"
         return 1
     fi
 }
@@ -238,28 +238,25 @@ cleanup_test_data() {
 
 # 生成测试报告
 generate_report() {
+    print_test_summary
+    local exit_code=$?
+
     echo ""
     echo -e "${BLUE}========================================${NC}"
     echo -e "${BLUE}   WebSocket 基础功能测试结果${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo ""
-    echo -e "${CYAN}测试统计:${NC}"
-    echo -e "  总测试数: $TOTAL_TESTS"
-    echo -e "  通过: ${GREEN}$PASSED_TESTS${NC}"
-    echo -e "  失败: ${RED}$FAILED_TESTS${NC}"
-    echo -e "  通过率: $(( PASSED_TESTS * 100 / TOTAL_TESTS ))%"
-    echo ""
 
-    if [ $FAILED_TESTS -eq 0 ]; then
+    if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}🎉 所有 WebSocket 测试通过！${NC}"
         echo -e "${GREEN}✅ WebSocket 功能验证成功${NC}"
         echo -e "${GREEN}✅ 项目和规则管理正常${NC}"
-        return 0
     else
         echo -e "${RED}❌ 部分 WebSocket 测试失败${NC}"
         echo -e "${YELLOW}💡 请检查 MockServer WebSocket 支持${NC}"
-        return 1
     fi
+
+    return $exit_code
 }
 
 # 主测试流程

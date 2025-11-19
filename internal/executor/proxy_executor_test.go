@@ -200,7 +200,7 @@ func TestProxyExecutor_Execute_ModifyRequestBody(t *testing.T) {
 		// 读取并验证请求体
 		var body map[string]interface{}
 		json.NewDecoder(r.Body).Decode(&body)
-		
+
 		// 验证修改后的字段
 		assert.Equal(t, "modified", body["field1"])
 		assert.Equal(t, "original", body["field2"])

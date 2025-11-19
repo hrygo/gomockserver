@@ -26,7 +26,7 @@ func TestRegexMatch_PathMatching(t *testing.T) {
 		{"通配符不匹配", "/other/path", "/api/.*", false},
 		{"精确匹配", "/api/exact", "/api/exact", true},
 		{"精确不匹配", "/api/different", "/api/exact", false},
-		{"空模式", "/api/test", "", true}, // 空模式应该匹配所有路径
+		{"空模式", "/api/test", "", true},           // 空模式应该匹配所有路径
 		{"无效正则", "/api/test", "[invalid", false}, // 无效正则应该返回false而不是panic
 	}
 
@@ -228,7 +228,7 @@ func TestRegexMatch_HeaderMatching(t *testing.T) {
 				"Content-Type": "application/json",
 			},
 			patterns: map[string]string{
-				"Content-Type": "application/.*",
+				"Content-Type":  "application/.*",
 				"Authorization": "Bearer .*", // 缺少Authorization头部
 			},
 			expected: false,
@@ -279,7 +279,7 @@ func TestRegexMatch_CombinedMatching(t *testing.T) {
 		Protocol: models.ProtocolHTTP,
 		Path:     "/api/v1/users/123",
 		Headers: map[string]string{
-			"Content-Type": "application/json",
+			"Content-Type":  "application/json",
 			"Authorization": "Bearer token123",
 		},
 		Metadata: map[string]interface{}{
@@ -295,8 +295,8 @@ func TestRegexMatch_CombinedMatching(t *testing.T) {
 		Protocol:  models.ProtocolHTTP,
 		MatchType: models.MatchTypeRegex,
 		MatchCondition: map[string]interface{}{
-			"method":  "GET",
-			"path":    "/api/v[0-9]+/users/[0-9]+",
+			"method": "GET",
+			"path":   "/api/v[0-9]+/users/[0-9]+",
 			"query": map[string]string{
 				"page":  "[0-9]+",
 				"limit": "[0-9]+",
@@ -326,8 +326,8 @@ func TestRegexMatch_Performance(t *testing.T) {
 		Protocol:  models.ProtocolHTTP,
 		MatchType: models.MatchTypeRegex,
 		MatchCondition: map[string]interface{}{
-			"path":    "/api/test/[0-9]+",
-			"method":  "GET",
+			"path":   "/api/test/[0-9]+",
+			"method": "GET",
 			"headers": map[string]string{
 				"X-Test": "value.*",
 			},
@@ -353,7 +353,7 @@ func TestRegexMatch_Performance(t *testing.T) {
 
 	// 检查缓存统计
 	stats := engine.GetCacheStats()
-	assert.Greater(t, stats.Hits, int64(0)) // 应该有缓存命中
+	assert.Greater(t, stats.Hits, int64(0))   // 应该有缓存命中
 	assert.Greater(t, stats.Misses, int64(0)) // 第一次应该有缓存未命中
 }
 

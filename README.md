@@ -1,8 +1,8 @@
 # Mock Server
 
 > 🚀 功能强大、灵活可配置的 Mock Server 系统
-> 📊 支持多协议模拟、可视化配置和企业级部署
-> 🎯 当前版本：v0.7.0
+> 📊 支持多协议模拟、GraphQL API 和企业级部署
+> 🎯 **生产就绪版本：v0.8.0**
 
 ---
 
@@ -11,6 +11,7 @@
 ### 🌐 多协议支持
 - **HTTP/HTTPS** - 完整的 RESTful API Mock 能力
 - **WebSocket** - 实时双向通信，支持1000+并发连接
+- **GraphQL API** - 现代化查询语言，实时数据同步
 - **代理模式** - HTTP 反向代理，支持请求/响应修改
 
 ### 🎯 智能匹配
@@ -26,9 +27,11 @@
 
 ### 🏢️ 企业级功能
 - **项目环境管理** - 多项目、多环境隔离
-- **Web管理界面** - React + TypeScript + Ant Design
-- **统计分析** - 实时监控、趋势分析
-- **Docker部署** - 容器化，多阶段构建
+- **现代化Web界面** - React 18 + TypeScript 5 + Apollo Client
+- **实时监控仪表盘** - ECharts图表、统计分析、趋势分析
+- **GraphQL管理** - 类型安全的API查询和变更
+- **Docker容器化** - 生产就绪，健康检查，多阶段构建
+- **性能优化** - 启动时间优化20-28%，渐进式健康检查
 
 ---
 
@@ -123,8 +126,30 @@ curl -X POST http://localhost:8080/api/v1/rules \
 curl http://localhost:9090/PROJECT_ID/ENV_ID/api/users
 ```
 
+### GraphQL API 使用
+```bash
+# GraphQL 查询示例
+curl -X POST http://localhost:8080/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "query { projects { id name environments { id name } } }"
+  }'
+
+# GraphQL 变更示例
+curl -X POST http://localhost:8080/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation CreateProject($input: CreateProjectInput!) { createProject(input: $input) { id name } }",
+    "variables": {"input": {"name": "GraphQL项目", "workspaceId": "default"}}
+  }'
+```
+
 ### Web界面管理
-访问 **http://localhost:5173** 使用可视化管理界面进行项目管理、规则配置和实时监控。
+访问 **http://localhost:5173** 使用现代化Web界面进行：
+- 🎨 **可视化管理** - 项目、环境、规则配置
+- 📊 **实时监控** - ECharts图表、统计分析
+- 🔍 **GraphQL管理** - 类型安全的API查询
+- ⚡ **智能代码提示** - Monaco编辑器集成
 
 ---
 

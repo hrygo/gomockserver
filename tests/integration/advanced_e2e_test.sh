@@ -3,7 +3,11 @@
 # MockServer 高级 E2E 集成测试脚本
 # 测试复杂场景、边界条件和性能特性
 
-set -e
+# 暂时移除 set -e 以便诊断问题
+# set -e
+
+# 添加调试模式
+set -x
 
 # 加载测试框架
 source "$(dirname "$0")/lib/test_framework.sh"

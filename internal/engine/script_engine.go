@@ -37,7 +37,7 @@ type ScriptContext struct {
 // NewScriptEngine 创建脚本引擎
 func NewScriptEngine() *ScriptEngine {
 	return &ScriptEngine{
-		maxExecutionTime: 5 * time.Second, // 默认最大执行时间 5 秒
+		maxExecutionTime: 5 * time.Second,  // 默认最大执行时间 5 秒
 		maxMemory:        10 * 1024 * 1024, // 默认最大内存 10MB
 		auditLog:         true,
 	}
@@ -90,11 +90,11 @@ func (e *ScriptEngine) executeScript(script string, ctx *ScriptContext) (bool, e
 
 	// 创建 goja 运行时
 	vm := goja.New()
-	
+
 	// 设置中断处理
 	done := make(chan struct{})
 	defer close(done)
-	
+
 	go func() {
 		select {
 		case <-execCtx.Done():
@@ -109,7 +109,7 @@ func (e *ScriptEngine) executeScript(script string, ctx *ScriptContext) (bool, e
 	// 执行脚本
 	result, err := vm.RunString(script)
 	if err != nil {
-		logger.Error("script execution error", 
+		logger.Error("script execution error",
 			zap.String("script", script),
 			zap.Error(err),
 		)
@@ -190,7 +190,7 @@ func (e *ScriptEngine) injectSecureAPI(vm *goja.Runtime, ctx *ScriptContext) {
 
 // contains 检查字符串是否包含子串
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
 		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
 }
 

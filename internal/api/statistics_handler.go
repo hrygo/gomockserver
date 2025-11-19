@@ -39,33 +39,33 @@ func (h *StatisticsHandler) RegisterRoutes(r *gin.RouterGroup) {
 
 // OverviewResponse 概览统计响应
 type OverviewResponse struct {
-	TotalRequests   int64                  `json:"total_requests"`
-	TotalProjects   int64                  `json:"total_projects"`
-	TotalRules      int64                  `json:"total_rules"`
-	TotalEnvironments int64                `json:"total_environments"`
-	RequestsToday   int64                  `json:"requests_today"`
-	SuccessRate     float64                `json:"success_rate"`
-	AvgResponseTime float64                `json:"avg_response_time"`
-	TopProjects     []ProjectStats         `json:"top_projects"`
-	ProtocolDistribution map[string]int64  `json:"protocol_distribution"`
+	TotalRequests        int64            `json:"total_requests"`
+	TotalProjects        int64            `json:"total_projects"`
+	TotalRules           int64            `json:"total_rules"`
+	TotalEnvironments    int64            `json:"total_environments"`
+	RequestsToday        int64            `json:"requests_today"`
+	SuccessRate          float64          `json:"success_rate"`
+	AvgResponseTime      float64          `json:"avg_response_time"`
+	TopProjects          []ProjectStats   `json:"top_projects"`
+	ProtocolDistribution map[string]int64 `json:"protocol_distribution"`
 }
 
 // ProjectStats 项目统计
 type ProjectStats struct {
-	ProjectID   string  `json:"project_id"`
-	ProjectName string  `json:"project_name"`
-	RequestCount int64  `json:"request_count"`
-	SuccessRate float64 `json:"success_rate"`
+	ProjectID    string  `json:"project_id"`
+	ProjectName  string  `json:"project_name"`
+	RequestCount int64   `json:"request_count"`
+	SuccessRate  float64 `json:"success_rate"`
 }
 
 // RealtimeResponse 实时统计响应
 type RealtimeResponse struct {
-	Timestamp       time.Time              `json:"timestamp"`
-	RequestsPerMin  int64                  `json:"requests_per_min"`
-	ActiveConnections int                  `json:"active_connections"`
-	AvgResponseTime float64                `json:"avg_response_time"`
-	ErrorRate       float64                `json:"error_rate"`
-	ProtocolStats   map[string]ProtocolStat `json:"protocol_stats"`
+	Timestamp         time.Time               `json:"timestamp"`
+	RequestsPerMin    int64                   `json:"requests_per_min"`
+	ActiveConnections int                     `json:"active_connections"`
+	AvgResponseTime   float64                 `json:"avg_response_time"`
+	ErrorRate         float64                 `json:"error_rate"`
+	ProtocolStats     map[string]ProtocolStat `json:"protocol_stats"`
 }
 
 // ProtocolStat 协议统计
@@ -77,17 +77,17 @@ type ProtocolStat struct {
 
 // TrendResponse 趋势分析响应
 type TrendResponse struct {
-	Period    string       `json:"period"` // hour, day, week, month
+	Period     string       `json:"period"` // hour, day, week, month
 	DataPoints []TrendPoint `json:"data_points"`
 }
 
 // TrendPoint 趋势数据点
 type TrendPoint struct {
-	Timestamp   time.Time `json:"timestamp"`
-	RequestCount int64    `json:"request_count"`
-	SuccessCount int64    `json:"success_count"`
-	ErrorCount   int64    `json:"error_count"`
-	AvgDuration  float64  `json:"avg_duration"`
+	Timestamp    time.Time `json:"timestamp"`
+	RequestCount int64     `json:"request_count"`
+	SuccessCount int64     `json:"success_count"`
+	ErrorCount   int64     `json:"error_count"`
+	AvgDuration  float64   `json:"avg_duration"`
 }
 
 // ComparisonResponse 对比分析响应
@@ -99,12 +99,12 @@ type ComparisonResponse struct {
 
 // PeriodStats 时段统计
 type PeriodStats struct {
-	StartTime    time.Time `json:"start_time"`
-	EndTime      time.Time `json:"end_time"`
-	TotalRequests int64    `json:"total_requests"`
-	SuccessRate   float64  `json:"success_rate"`
-	AvgDuration   float64  `json:"avg_duration"`
-	ErrorCount    int64    `json:"error_count"`
+	StartTime     time.Time `json:"start_time"`
+	EndTime       time.Time `json:"end_time"`
+	TotalRequests int64     `json:"total_requests"`
+	SuccessRate   float64   `json:"success_rate"`
+	AvgDuration   float64   `json:"avg_duration"`
+	ErrorCount    int64     `json:"error_count"`
 }
 
 // ChangeStats 变化统计
@@ -123,10 +123,10 @@ type ChangeStats struct {
 // @Router /api/v1/statistics/overview [get]
 func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 	ctx := c.Request.Context()
-	
+
 	// 获取今天的开始时间
 	today := time.Now().Truncate(24 * time.Hour)
-	
+
 	// 查询今日请求统计
 	todayStats, err := h.requestLogRepo.GetStatistics(ctx, "", "", today, time.Now())
 	if err != nil {
@@ -134,7 +134,7 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get statistics"})
 		return
 	}
-	
+
 	// 查询总请求统计
 	totalStats, err := h.requestLogRepo.GetStatistics(ctx, "", "", time.Time{}, time.Now())
 	if err != nil {
@@ -142,34 +142,34 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get statistics"})
 		return
 	}
-	
+
 	// 查询项目总数
 	projectCount, err := h.db.Collection("projects").CountDocuments(ctx, gin.H{})
 	if err != nil {
 		logger.Error("failed to count projects", zap.Error(err))
 		projectCount = 0
 	}
-	
+
 	// 查询规则总数
 	ruleCount, err := h.db.Collection("rules").CountDocuments(ctx, gin.H{})
 	if err != nil {
 		logger.Error("failed to count rules", zap.Error(err))
 		ruleCount = 0
 	}
-	
+
 	// 查询环境总数
 	envCount, err := h.db.Collection("environments").CountDocuments(ctx, gin.H{})
 	if err != nil {
 		logger.Error("failed to count environments", zap.Error(err))
 		envCount = 0
 	}
-	
+
 	// 计算成功率
 	successRate := 0.0
 	if totalStats.TotalRequests > 0 {
 		successRate = float64(totalStats.SuccessRequests) / float64(totalStats.TotalRequests) * 100
 	}
-	
+
 	// 获取协议分布统计
 	protocolDistribution, err := h.getProtocolDistribution(ctx)
 	if err != nil {
@@ -180,14 +180,14 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 			"websocket": 0,
 		}
 	}
-	
+
 	// 获取 Top 项目统计
 	topProjects, err := h.getTopProjects(ctx, 5)
 	if err != nil {
 		logger.Error("failed to get top projects", zap.Error(err))
 		topProjects = []ProjectStats{}
 	}
-	
+
 	response := OverviewResponse{
 		TotalRequests:        totalStats.TotalRequests,
 		TotalProjects:        projectCount,
@@ -199,7 +199,7 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 		TopProjects:          topProjects,
 		ProtocolDistribution: protocolDistribution,
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -212,28 +212,28 @@ func (h *StatisticsHandler) GetOverview(c *gin.Context) {
 // @Router /api/v1/statistics/realtime [get]
 func (h *StatisticsHandler) GetRealtime(c *gin.Context) {
 	ctx := c.Request.Context()
-	
+
 	// 最近一分钟
 	oneMinuteAgo := time.Now().Add(-1 * time.Minute)
-	
+
 	stats, err := h.requestLogRepo.GetStatistics(ctx, "", "", oneMinuteAgo, time.Now())
 	if err != nil {
 		logger.Error("failed to get realtime statistics", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get statistics"})
 		return
 	}
-	
+
 	errorRate := 0.0
 	if stats.TotalRequests > 0 {
 		errorRate = float64(stats.ErrorRequests) / float64(stats.TotalRequests) * 100
 	}
-	
+
 	// 计算成功率
 	successRate := 0.0
 	if stats.TotalRequests > 0 {
 		successRate = float64(stats.SuccessRequests) / float64(stats.TotalRequests) * 100
 	}
-	
+
 	// 协议统计（简化版本）
 	protocolStats := map[string]ProtocolStat{
 		"http": {
@@ -247,7 +247,7 @@ func (h *StatisticsHandler) GetRealtime(c *gin.Context) {
 			AvgDuration: 0,
 		},
 	}
-	
+
 	response := RealtimeResponse{
 		Timestamp:         time.Now(),
 		RequestsPerMin:    stats.TotalRequests,
@@ -256,7 +256,7 @@ func (h *StatisticsHandler) GetRealtime(c *gin.Context) {
 		ErrorRate:         errorRate,
 		ProtocolStats:     protocolStats,
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -271,13 +271,13 @@ func (h *StatisticsHandler) GetRealtime(c *gin.Context) {
 // @Router /api/v1/statistics/trend [get]
 func (h *StatisticsHandler) GetTrend(c *gin.Context) {
 	ctx := c.Request.Context()
-	
+
 	period := c.DefaultQuery("period", "day")
 	duration := 7 // 默认7天
-	
+
 	var startTime time.Time
 	var interval time.Duration
-	
+
 	switch period {
 	case "hour":
 		startTime = time.Now().Add(-24 * time.Hour)
@@ -295,19 +295,19 @@ func (h *StatisticsHandler) GetTrend(c *gin.Context) {
 		startTime = time.Now().AddDate(0, 0, -duration)
 		interval = 24 * time.Hour
 	}
-	
+
 	// 生成趋势数据点
 	dataPoints := []TrendPoint{}
 	currentTime := startTime
-	
+
 	for currentTime.Before(time.Now()) {
 		nextTime := currentTime.Add(interval)
-		
+
 		stats, err := h.requestLogRepo.GetStatistics(ctx, "", "", currentTime, nextTime)
 		if err != nil {
-			logger.Error("failed to get trend statistics", 
-				zap.Time("start", currentTime), 
-				zap.Time("end", nextTime), 
+			logger.Error("failed to get trend statistics",
+				zap.Time("start", currentTime),
+				zap.Time("end", nextTime),
 				zap.Error(err))
 		} else {
 			successCount := int64(float64(stats.TotalRequests) * float64(stats.SuccessRequests) / float64(stats.TotalRequests))
@@ -322,15 +322,15 @@ func (h *StatisticsHandler) GetTrend(c *gin.Context) {
 				AvgDuration:  stats.AvgDuration,
 			})
 		}
-		
+
 		currentTime = nextTime
 	}
-	
+
 	response := TrendResponse{
 		Period:     period,
 		DataPoints: dataPoints,
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -344,12 +344,12 @@ func (h *StatisticsHandler) GetTrend(c *gin.Context) {
 // @Router /api/v1/statistics/comparison [get]
 func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 	ctx := c.Request.Context()
-	
+
 	period := c.DefaultQuery("period", "day")
-	
+
 	var currentStart, currentEnd, previousStart, previousEnd time.Time
 	now := time.Now()
-	
+
 	switch period {
 	case "day":
 		currentStart = now.Truncate(24 * time.Hour)
@@ -378,7 +378,7 @@ func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 		previousStart = currentStart.AddDate(0, 0, -1)
 		previousEnd = currentStart
 	}
-	
+
 	// 查询当前时段统计
 	currentStats, err := h.requestLogRepo.GetStatistics(ctx, "", "", currentStart, currentEnd)
 	if err != nil {
@@ -386,7 +386,7 @@ func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get statistics"})
 		return
 	}
-	
+
 	// 查询上一时段统计
 	previousStats, err := h.requestLogRepo.GetStatistics(ctx, "", "", previousStart, previousEnd)
 	if err != nil {
@@ -394,13 +394,13 @@ func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get statistics"})
 		return
 	}
-	
+
 	// 计算变化百分比
 	requestsChange := 0.0
 	if previousStats.TotalRequests > 0 {
 		requestsChange = float64(currentStats.TotalRequests-previousStats.TotalRequests) / float64(previousStats.TotalRequests) * 100
 	}
-	
+
 	// 计算成功率
 	currentSuccessRate := 0.0
 	if currentStats.TotalRequests > 0 {
@@ -411,12 +411,12 @@ func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 		previousSuccessRate = float64(previousStats.SuccessRequests) / float64(previousStats.TotalRequests) * 100
 	}
 	successRateChange := currentSuccessRate - previousSuccessRate
-	
+
 	durationChange := 0.0
 	if previousStats.AvgDuration > 0 {
 		durationChange = (currentStats.AvgDuration - previousStats.AvgDuration) / previousStats.AvgDuration * 100
 	}
-	
+
 	response := ComparisonResponse{
 		CurrentPeriod: PeriodStats{
 			StartTime:     currentStart,
@@ -440,7 +440,7 @@ func (h *StatisticsHandler) GetComparison(c *gin.Context) {
 			DurationChange:    durationChange,
 		},
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -455,13 +455,13 @@ func (h *StatisticsHandler) getProtocolDistribution(ctx context.Context) (map[st
 			},
 		},
 	}
-	
+
 	cursor, err := h.db.Collection("request_logs").Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	
+
 	distribution := make(map[string]int64)
 	for cursor.Next(ctx) {
 		var result struct {
@@ -475,11 +475,11 @@ func (h *StatisticsHandler) getProtocolDistribution(ctx context.Context) (map[st
 			distribution[result.ID] = result.Count
 		}
 	}
-	
+
 	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
-	
+
 	// 确保基本协议类型存在
 	if _, ok := distribution["http"]; !ok {
 		distribution["http"] = 0
@@ -487,7 +487,7 @@ func (h *StatisticsHandler) getProtocolDistribution(ctx context.Context) (map[st
 	if _, ok := distribution["websocket"]; !ok {
 		distribution["websocket"] = 0
 	}
-	
+
 	return distribution, nil
 }
 
@@ -520,13 +520,13 @@ func (h *StatisticsHandler) getTopProjects(ctx context.Context, limit int) ([]Pr
 			"$limit": limit,
 		},
 	}
-	
+
 	cursor, err := h.db.Collection("request_logs").Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	
+
 	var topProjects []ProjectStats
 	for cursor.Next(ctx) {
 		var result struct {
@@ -537,13 +537,13 @@ func (h *StatisticsHandler) getTopProjects(ctx context.Context, limit int) ([]Pr
 		if err := cursor.Decode(&result); err != nil {
 			return nil, err
 		}
-		
+
 		// 计算成功率
 		successRate := 0.0
 		if result.RequestCount > 0 {
 			successRate = float64(result.SuccessCount) / float64(result.RequestCount) * 100
 		}
-		
+
 		// 查询项目名称
 		projectName := result.ID
 		var project struct {
@@ -553,7 +553,7 @@ func (h *StatisticsHandler) getTopProjects(ctx context.Context, limit int) ([]Pr
 		if err == nil {
 			projectName = project.Name
 		}
-		
+
 		topProjects = append(topProjects, ProjectStats{
 			ProjectID:    result.ID,
 			ProjectName:  projectName,
@@ -561,10 +561,10 @@ func (h *StatisticsHandler) getTopProjects(ctx context.Context, limit int) ([]Pr
 			SuccessRate:  successRate,
 		})
 	}
-	
+
 	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
-	
+
 	return topProjects, nil
 }

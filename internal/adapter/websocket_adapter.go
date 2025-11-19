@@ -35,16 +35,16 @@ type WebSocketAdapter struct {
 
 // WebSocketConnection WebSocket 连接
 type WebSocketConnection struct {
-	ID         string
-	Conn       *websocket.Conn
-	ProjectID  string
-	EnvID      string
-	Send       chan []byte
-	Done       chan struct{}
-	LastPing   time.Time
-	LastPong   time.Time
-	Metadata   map[string]interface{}
-	mu         sync.RWMutex
+	ID        string
+	Conn      *websocket.Conn
+	ProjectID string
+	EnvID     string
+	Send      chan []byte
+	Done      chan struct{}
+	LastPing  time.Time
+	LastPong  time.Time
+	Metadata  map[string]interface{}
+	mu        sync.RWMutex
 }
 
 // WebSocketMessage WebSocket 消息
@@ -67,7 +67,7 @@ func NewWebSocketAdapter() *WebSocketAdapter {
 			},
 		},
 		connections:    make(map[string]*WebSocketConnection),
-		maxConnections: 1000,            // 默认最大连接数
+		maxConnections: 1000,             // 默认最大连接数
 		pingInterval:   30 * time.Second, // Ping 间隔
 		pongWait:       60 * time.Second, // Pong 等待时间
 		writeWait:      10 * time.Second, // 写超时
@@ -126,11 +126,11 @@ func (a *WebSocketAdapter) Parse(rawRequest interface{}) (*Request, error) {
 		SourceIP:   c.ClientIP(),
 		ReceivedAt: time.Now(),
 		Metadata: map[string]interface{}{
-			"connection_id": connID,
-			"project_id":    projectID,
+			"connection_id":  connID,
+			"project_id":     projectID,
 			"environment_id": envID,
-			"query":         extractQuery(c.Request.URL.Query()),
-			"event":         "connect",
+			"query":          extractQuery(c.Request.URL.Query()),
+			"event":          "connect",
 		},
 	}
 
@@ -369,5 +369,5 @@ func extractQuery(query map[string][]string) map[string]string {
 var (
 	ErrMaxConnectionsReached = errors.New("maximum connections reached")
 	ErrConnectionNotFound    = errors.New("connection not found")
-	ErrSendTimeout          = errors.New("send message timeout")
+	ErrSendTimeout           = errors.New("send message timeout")
 )

@@ -14,65 +14,65 @@ import (
 
 // RedisCluster Redis集群客户端
 type RedisCluster struct {
-	clients          []*redis.Client
-	currentCluster   *redis.ClusterClient
-	config           *RedisClusterConfig
-	mu               sync.RWMutex
-	healthChecker    *ClusterHealthChecker
-	connectionPool   *ConnectionPool
-	failureDetector  *FailureDetector
-	loadBalancer     *LoadBalancer
-	logger           *zap.Logger
-	isHealthy        bool
-	lastHealthCheck  time.Time
+	clients         []*redis.Client
+	currentCluster  *redis.ClusterClient
+	config          *RedisClusterConfig
+	mu              sync.RWMutex
+	healthChecker   *ClusterHealthChecker
+	connectionPool  *ConnectionPool
+	failureDetector *FailureDetector
+	loadBalancer    *LoadBalancer
+	logger          *zap.Logger
+	isHealthy       bool
+	lastHealthCheck time.Time
 }
 
 // RedisClusterConfig Redis集群配置
 type RedisClusterConfig struct {
 	// 集群节点配置
-	Nodes            []RedisNode `json:"nodes"`
-	Password         string      `json:"password"`
-	Username         string      `json:"username"`
+	Nodes    []RedisNode `json:"nodes"`
+	Password string      `json:"password"`
+	Username string      `json:"username"`
 
 	// 连接配置
-	PoolSize         int         `json:"pool_size"`
-	MinIdleConns     int         `json:"min_idle_conns"`
-	MaxIdleConns     int         `json:"max_idle_conns"`
-	MaxRetries       int         `json:"max_retries"`
-	DialTimeout      time.Duration `json:"dial_timeout"`
-	ReadTimeout      time.Duration `json:"read_timeout"`
-	WriteTimeout     time.Duration `json:"write_timeout"`
-	PoolTimeout      time.Duration `json:"pool_timeout"`
+	PoolSize     int           `json:"pool_size"`
+	MinIdleConns int           `json:"min_idle_conns"`
+	MaxIdleConns int           `json:"max_idle_conns"`
+	MaxRetries   int           `json:"max_retries"`
+	DialTimeout  time.Duration `json:"dial_timeout"`
+	ReadTimeout  time.Duration `json:"read_timeout"`
+	WriteTimeout time.Duration `json:"write_timeout"`
+	PoolTimeout  time.Duration `json:"pool_timeout"`
 
 	// 集群配置
-	MaxRedirects     int         `json:"max_redirects"`
-	RouteByLatency   bool        `json:"route_by_latency"`
-	RouteRandomly    bool        `json:"route_randomly"`
+	MaxRedirects   int  `json:"max_redirects"`
+	RouteByLatency bool `json:"route_by_latency"`
+	RouteRandomly  bool `json:"route_randomly"`
 
 	// 健康检查配置
 	HealthCheckInterval time.Duration `json:"health_check_interval"`
 	HealthCheckTimeout  time.Duration `json:"health_check_timeout"`
-	MaxFailures        int           `json:"max_failures"`
-	FailureBackoff     time.Duration `json:"failure_backoff"`
+	MaxFailures         int           `json:"max_failures"`
+	FailureBackoff      time.Duration `json:"failure_backoff"`
 
 	// 负载均衡配置
 	LoadBalanceStrategy string `json:"load_balance_strategy"` // round_robin, weighted, least_connections
 
 	// TLS配置
-	TLSConfig         *TLSConfig `json:"tls_config"`
+	TLSConfig *TLSConfig `json:"tls_config"`
 
 	// 分片配置
-	ShardStrategy     string `json:"shard_strategy"` // consistent_hash, range, mod
-	ReplicaFactor     int    `json:"replica_factor"`
+	ShardStrategy string `json:"shard_strategy"` // consistent_hash, range, mod
+	ReplicaFactor int    `json:"replica_factor"`
 }
 
 // RedisNode Redis节点
 type RedisNode struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Weight   int    `json:"weight"`
-	Role     string `json:"role"` // master, slave
-	IsAlive  bool   `json:"is_alive"`
+	Host    string `json:"host"`
+	Port    int    `json:"port"`
+	Weight  int    `json:"weight"`
+	Role    string `json:"role"` // master, slave
+	IsAlive bool   `json:"is_alive"`
 }
 
 // TLSConfig TLS配置
@@ -86,12 +86,12 @@ type TLSConfig struct {
 
 // ClusterHealthChecker 集群健康检查器
 type ClusterHealthChecker struct {
-	config      *RedisClusterConfig
-	nodes       map[string]*RedisNode
-	mu          sync.RWMutex
-	logger      *zap.Logger
-	stopCh      chan struct{}
-	isRunning   bool
+	config    *RedisClusterConfig
+	nodes     map[string]*RedisNode
+	mu        sync.RWMutex
+	logger    *zap.Logger
+	stopCh    chan struct{}
+	isRunning bool
 }
 
 // ConnectionPool 连接池
@@ -113,11 +113,11 @@ type FailureDetector struct {
 
 // LoadBalancer 负载均衡器
 type LoadBalancer struct {
-	config      *RedisClusterConfig
-	nodes       []*RedisNode
+	config       *RedisClusterConfig
+	nodes        []*RedisNode
 	currentIndex int
-	mu          sync.RWMutex
-	logger      *zap.Logger
+	mu           sync.RWMutex
+	logger       *zap.Logger
 }
 
 // DefaultRedisClusterConfig 默认Redis集群配置
@@ -128,25 +128,25 @@ func DefaultRedisClusterConfig() *RedisClusterConfig {
 			{Host: "localhost", Port: 6380, Weight: 1, Role: "slave"},
 			{Host: "localhost", Port: 6381, Weight: 1, Role: "slave"},
 		},
-		PoolSize:         10,
-		MinIdleConns:     5,
-		MaxIdleConns:     20,
-		MaxRetries:       3,
-		DialTimeout:      5 * time.Second,
-		ReadTimeout:      3 * time.Second,
-		WriteTimeout:     3 * time.Second,
-		PoolTimeout:      4 * time.Second,
-		MaxRedirects:     3,
-		RouteByLatency:   true,
-		RouteRandomly:    false,
+		PoolSize:            10,
+		MinIdleConns:        5,
+		MaxIdleConns:        20,
+		MaxRetries:          3,
+		DialTimeout:         5 * time.Second,
+		ReadTimeout:         3 * time.Second,
+		WriteTimeout:        3 * time.Second,
+		PoolTimeout:         4 * time.Second,
+		MaxRedirects:        3,
+		RouteByLatency:      true,
+		RouteRandomly:       false,
 		HealthCheckInterval: 30 * time.Second,
 		HealthCheckTimeout:  5 * time.Second,
-		MaxFailures:        3,
-		FailureBackoff:     60 * time.Second,
+		MaxFailures:         3,
+		FailureBackoff:      60 * time.Second,
 		LoadBalanceStrategy: "round_robin",
-		TLSConfig:         &TLSConfig{Enabled: false},
-		ShardStrategy:     "consistent_hash",
-		ReplicaFactor:     1,
+		TLSConfig:           &TLSConfig{Enabled: false},
+		ShardStrategy:       "consistent_hash",
+		ReplicaFactor:       1,
 	}
 }
 
@@ -229,19 +229,19 @@ func (rc *RedisCluster) createClusterClient() {
 
 	// 构建Redis集群选项
 	clusterOptions := &redis.ClusterOptions{
-		Addrs:           rc.getNodeAddresses(),
-		Password:        rc.config.Password,
-		Username:        rc.config.Username,
-		MaxRedirects:    rc.config.MaxRedirects,
-		RouteByLatency:  rc.config.RouteByLatency,
-		RouteRandomly:   rc.config.RouteRandomly,
-		DialTimeout:     rc.config.DialTimeout,
-		ReadTimeout:     rc.config.ReadTimeout,
-		WriteTimeout:    rc.config.WriteTimeout,
-		PoolSize:        rc.config.PoolSize,
-		MinIdleConns:    rc.config.MinIdleConns,
-		PoolTimeout:     rc.config.PoolTimeout,
-		MaxRetries:      rc.config.MaxRetries,
+		Addrs:          rc.getNodeAddresses(),
+		Password:       rc.config.Password,
+		Username:       rc.config.Username,
+		MaxRedirects:   rc.config.MaxRedirects,
+		RouteByLatency: rc.config.RouteByLatency,
+		RouteRandomly:  rc.config.RouteRandomly,
+		DialTimeout:    rc.config.DialTimeout,
+		ReadTimeout:    rc.config.ReadTimeout,
+		WriteTimeout:   rc.config.WriteTimeout,
+		PoolSize:       rc.config.PoolSize,
+		MinIdleConns:   rc.config.MinIdleConns,
+		PoolTimeout:    rc.config.PoolTimeout,
+		MaxRetries:     rc.config.MaxRetries,
 	}
 
 	// TLS配置
@@ -274,8 +274,8 @@ func (rc *RedisCluster) createIndividualClients() {
 			WriteTimeout: rc.config.WriteTimeout,
 			PoolSize:     rc.config.PoolSize / len(rc.config.Nodes),
 			MinIdleConns: rc.config.MinIdleConns / len(rc.config.Nodes),
-		PoolTimeout:  rc.config.PoolTimeout,
-		MaxRetries:   rc.config.MaxRetries,
+			PoolTimeout:  rc.config.PoolTimeout,
+			MaxRetries:   rc.config.MaxRetries,
 		}
 
 		// TLS配置
@@ -432,13 +432,13 @@ func (rc *RedisCluster) selectMasterNode() *RedisNode {
 // GetClusterStats 获取集群统计信息
 func (rc *RedisCluster) GetClusterStats(ctx context.Context) (*ClusterStats, error) {
 	stats := &ClusterStats{
-		NodeCount:    len(rc.config.Nodes),
-		HealthyNodes: 0,
+		NodeCount:      len(rc.config.Nodes),
+		HealthyNodes:   0,
 		UnhealthyNodes: 0,
-		MasterNodes:   0,
-		SlaveNodes:    0,
-		Nodes:         make([]*NodeStats, 0),
-		LastUpdate:    time.Now(),
+		MasterNodes:    0,
+		SlaveNodes:     0,
+		Nodes:          make([]*NodeStats, 0),
+		LastUpdate:     time.Now(),
 	}
 
 	// 收集各节点统计
@@ -478,24 +478,24 @@ func (rc *RedisCluster) GetClusterStats(ctx context.Context) (*ClusterStats, err
 
 // ClusterStats 集群统计信息
 type ClusterStats struct {
-	NodeCount       int          `json:"node_count"`
-	HealthyNodes    int          `json:"healthy_nodes"`
-	UnhealthyNodes  int          `json:"unhealthy_nodes"`
-	MasterNodes     int          `json:"master_nodes"`
-	SlaveNodes      int          `json:"slave_nodes"`
-	Nodes           []*NodeStats `json:"nodes"`
-	LastUpdate      time.Time    `json:"last_update"`
+	NodeCount      int          `json:"node_count"`
+	HealthyNodes   int          `json:"healthy_nodes"`
+	UnhealthyNodes int          `json:"unhealthy_nodes"`
+	MasterNodes    int          `json:"master_nodes"`
+	SlaveNodes     int          `json:"slave_nodes"`
+	Nodes          []*NodeStats `json:"nodes"`
+	LastUpdate     time.Time    `json:"last_update"`
 }
 
 // NodeStats 节点统计信息
 type NodeStats struct {
-	Address        string `json:"address"`
-	Role           string `json:"role"`
-	Weight         int    `json:"weight"`
-	IsAlive        bool   `json:"is_alive"`
-	TotalConns     uint32 `json:"total_conns"`
-	IdleConns      uint32 `json:"idle_conns"`
-	StaleConns     uint32 `json:"stale_conns"`
+	Address    string `json:"address"`
+	Role       string `json:"role"`
+	Weight     int    `json:"weight"`
+	IsAlive    bool   `json:"is_alive"`
+	TotalConns uint32 `json:"total_conns"`
+	IdleConns  uint32 `json:"idle_conns"`
+	StaleConns uint32 `json:"stale_conns"`
 }
 
 // Start 启动Redis集群

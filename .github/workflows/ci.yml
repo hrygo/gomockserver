@@ -29,7 +29,16 @@ jobs:
         run: |
           go mod download
           go mod verify
-      
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run CI quality check
+        run: |
+          ./scripts/quality/ci-quality-check.sh
+
       - name: Run unit tests
         run: |
           go test -v -race -coverprofile=tests/coverage/coverage.out -covermode=atomic ./...

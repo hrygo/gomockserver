@@ -14,250 +14,250 @@ import (
 
 // CacheMonitor 缓存监控器
 type CacheMonitor struct {
-	mu                    sync.RWMutex
-	config                *MonitorConfig
-	metrics               *DetailedMetrics
-	alertManager          *AlertManager
-	dashboard             *Dashboard
-	exporters             map[string]MetricsExporter
-	isRunning             bool
-	stopCh                chan struct{}
-	logger                *zap.Logger
+	mu           sync.RWMutex
+	config       *MonitorConfig
+	metrics      *DetailedMetrics
+	alertManager *AlertManager
+	dashboard    *Dashboard
+	exporters    map[string]MetricsExporter
+	isRunning    bool
+	stopCh       chan struct{}
+	logger       *zap.Logger
 }
 
 // MonitorConfig 监控配置
 type MonitorConfig struct {
 	// 数据收集配置
-	CollectionInterval    time.Duration `json:"collection_interval"`
+	CollectionInterval   time.Duration `json:"collection_interval"`
 	RetentionPeriod      time.Duration `json:"retention_period"`
 	EnableDetailedStats  bool          `json:"enable_detailed_stats"`
 	EnableRealTimeAlerts bool          `json:"enable_real_time_alerts"`
 
 	// 指标配置
-	MetricsEnabled       map[string]bool `json:"metrics_enabled"`
-	Percentiles          []float64      `json:"percentiles"`
-	HistogramBuckets     []float64      `json:"histogram_buckets"`
+	MetricsEnabled   map[string]bool `json:"metrics_enabled"`
+	Percentiles      []float64       `json:"percentiles"`
+	HistogramBuckets []float64       `json:"histogram_buckets"`
 
 	// 告警配置
-	AlertThresholds      *AlertThresholds `json:"alert_thresholds"`
-	AlertCooldown        time.Duration    `json:"alert_cooldown"`
-	MaxAlertsPerMinute   int              `json:"max_alerts_per_minute"`
+	AlertThresholds    *AlertThresholds `json:"alert_thresholds"`
+	AlertCooldown      time.Duration    `json:"alert_cooldown"`
+	MaxAlertsPerMinute int              `json:"max_alerts_per_minute"`
 
 	// 导出配置
-	EnablePrometheus     bool     `json:"enable_prometheus"`
-	EnableInfluxDB       bool     `json:"enable_influxdb"`
-	EnableJSONExport     bool     `json:"enable_json_export"`
-	ExportInterval       time.Duration `json:"export_interval"`
-	ExportPath           string   `json:"export_path"`
+	EnablePrometheus bool          `json:"enable_prometheus"`
+	EnableInfluxDB   bool          `json:"enable_influxdb"`
+	EnableJSONExport bool          `json:"enable_json_export"`
+	ExportInterval   time.Duration `json:"export_interval"`
+	ExportPath       string        `json:"export_path"`
 }
 
 // DetailedMetrics 详细指标
 type DetailedMetrics struct {
 	// 基础指标
-	TotalRequests        int64     `json:"total_requests"`
-	TotalHits            int64     `json:"total_hits"`
-	TotalMisses          int64     `json:"total_misses"`
-	HitRate              float64   `json:"hit_rate"`
+	TotalRequests int64   `json:"total_requests"`
+	TotalHits     int64   `json:"total_hits"`
+	TotalMisses   int64   `json:"total_misses"`
+	HitRate       float64 `json:"hit_rate"`
 
 	// 响应时间指标
-	ResponseTimeStats    *ResponseTimeStats `json:"response_time_stats"`
+	ResponseTimeStats *ResponseTimeStats `json:"response_time_stats"`
 
 	// 吞吐量指标
-	ThroughputStats      *ThroughputStats   `json:"throughput_stats"`
+	ThroughputStats *ThroughputStats `json:"throughput_stats"`
 
 	// 缓存层级指标
-	LevelMetrics         map[string]*LevelMetrics `json:"level_metrics"`
+	LevelMetrics map[string]*LevelMetrics `json:"level_metrics"`
 
 	// 键级别指标
-	TopKeys              []*KeyMetrics `json:"top_keys"`
-	HotKeys              []*KeyMetrics `json:"hot_keys"`
-	ColdKeys             []*KeyMetrics `json:"cold_keys"`
+	TopKeys  []*KeyMetrics `json:"top_keys"`
+	HotKeys  []*KeyMetrics `json:"hot_keys"`
+	ColdKeys []*KeyMetrics `json:"cold_keys"`
 
 	// 内存指标
-	MemoryMetrics        *MemoryMetrics `json:"memory_metrics"`
+	MemoryMetrics *MemoryMetrics `json:"memory_metrics"`
 
 	// 网络指标
-	NetworkMetrics       *NetworkMetrics `json:"network_metrics"`
+	NetworkMetrics *NetworkMetrics `json:"network_metrics"`
 
 	// 错误指标
-	ErrorMetrics         *ErrorMetrics `json:"error_metrics"`
+	ErrorMetrics *ErrorMetrics `json:"error_metrics"`
 
 	// 时间窗口指标
-	TimeWindowMetrics    map[string]*WindowMetrics `json:"time_window_metrics"`
+	TimeWindowMetrics map[string]*WindowMetrics `json:"time_window_metrics"`
 
 	// 趋势指标
-	TrendMetrics         *TrendMetrics `json:"trend_metrics"`
+	TrendMetrics *TrendMetrics `json:"trend_metrics"`
 
 	// 最后更新时间
-	LastUpdateTime       time.Time `json:"last_update_time"`
+	LastUpdateTime time.Time `json:"last_update_time"`
 }
 
 // ResponseTimeStats 响应时间统计
 type ResponseTimeStats struct {
-	Min                  time.Duration `json:"min"`
-	Max                  time.Duration `json:"max"`
-	Mean                 time.Duration `json:"mean"`
-	Median               time.Duration `json:"median"`
-	P50                  time.Duration `json:"p50"`
-	P75                  time.Duration `json:"p75"`
-	P90                  time.Duration `json:"p90"`
-	P95                  time.Duration `json:"p95"`
-	P99                  time.Duration `json:"p99"`
-	P999                 time.Duration `json:"p999"`
-	StdDev               time.Duration `json:"std_dev"`
-	Percentiles          map[float64]time.Duration `json:"percentiles"`
+	Min         time.Duration             `json:"min"`
+	Max         time.Duration             `json:"max"`
+	Mean        time.Duration             `json:"mean"`
+	Median      time.Duration             `json:"median"`
+	P50         time.Duration             `json:"p50"`
+	P75         time.Duration             `json:"p75"`
+	P90         time.Duration             `json:"p90"`
+	P95         time.Duration             `json:"p95"`
+	P99         time.Duration             `json:"p99"`
+	P999        time.Duration             `json:"p999"`
+	StdDev      time.Duration             `json:"std_dev"`
+	Percentiles map[float64]time.Duration `json:"percentiles"`
 }
 
 // ThroughputStats 吞吐量统计
 type ThroughputStats struct {
-	CurrentQPS           float64 `json:"current_qps"`
-	PeakQPS              float64 `json:"peak_qps"`
-	AverageQPS           float64 `json:"average_qps"`
-	RequestsPerSecond    []float64 `json:"requests_per_second"` // 最近60秒
-	RequestsPerMinute    []float64 `json:"requests_per_minute"` // 最近60分钟
+	CurrentQPS        float64   `json:"current_qps"`
+	PeakQPS           float64   `json:"peak_qps"`
+	AverageQPS        float64   `json:"average_qps"`
+	RequestsPerSecond []float64 `json:"requests_per_second"` // 最近60秒
+	RequestsPerMinute []float64 `json:"requests_per_minute"` // 最近60分钟
 }
 
 // LevelMetrics 缓存层级指标
 type LevelMetrics struct {
-	Level                string        `json:"level"`
-	TotalRequests        int64         `json:"total_requests"`
-	Hits                 int64         `json:"hits"`
-	Misses               int64         `json:"misses"`
-	HitRate              float64       `json:"hit_rate"`
-	AvgResponseTime      time.Duration `json:"avg_response_time"`
-	DataSize             int64         `json:"data_size"`
-	EntryCount           int64         `json:"entry_count"`
-	Evictions            int64         `json:"evictions"`
-	Expirations          int64         `json:"expirations"`
-	ErrorRate            float64       `json:"error_rate"`
+	Level           string        `json:"level"`
+	TotalRequests   int64         `json:"total_requests"`
+	Hits            int64         `json:"hits"`
+	Misses          int64         `json:"misses"`
+	HitRate         float64       `json:"hit_rate"`
+	AvgResponseTime time.Duration `json:"avg_response_time"`
+	DataSize        int64         `json:"data_size"`
+	EntryCount      int64         `json:"entry_count"`
+	Evictions       int64         `json:"evictions"`
+	Expirations     int64         `json:"expirations"`
+	ErrorRate       float64       `json:"error_rate"`
 }
 
 // KeyMetrics 键指标
 type KeyMetrics struct {
-	Key                  string        `json:"key"`
-	AccessCount          int64         `json:"access_count"`
-	HitCount             int64         `json:"hit_count"`
-	MissCount            int64         `json:"miss_count"`
-	HitRate              float64       `json:"hit_rate"`
-	LastAccessTime       time.Time     `json:"last_access_time"`
-	AvgResponseTime      time.Duration `json:"avg_response_time"`
-	DataSize             int64         `json:"data_size"`
-	TTL                  time.Duration `json:"ttl"`
-	Level                string        `json:"level"`
-	AccessFrequency      float64       `json:"access_frequency"`
+	Key             string        `json:"key"`
+	AccessCount     int64         `json:"access_count"`
+	HitCount        int64         `json:"hit_count"`
+	MissCount       int64         `json:"miss_count"`
+	HitRate         float64       `json:"hit_rate"`
+	LastAccessTime  time.Time     `json:"last_access_time"`
+	AvgResponseTime time.Duration `json:"avg_response_time"`
+	DataSize        int64         `json:"data_size"`
+	TTL             time.Duration `json:"ttl"`
+	Level           string        `json:"level"`
+	AccessFrequency float64       `json:"access_frequency"`
 }
 
 // MemoryMetrics 内存指标
 type MemoryMetrics struct {
-	TotalMemory          int64         `json:"total_memory"`
-	UsedMemory           int64         `json:"used_memory"`
-	FreeMemory           int64         `json:"free_memory"`
-	MemoryUsagePercent   float64       `json:"memory_usage_percent"`
-	FragmentationRatio   float64       `json:"fragmentation_ratio"`
-	EvictionMemory       int64         `json:"eviction_memory"`
-	OverheadMemory       int64         `json:"overhead_memory"`
-	MemoryGrowthRate     float64       `json:"memory_growth_rate"`
+	TotalMemory        int64   `json:"total_memory"`
+	UsedMemory         int64   `json:"used_memory"`
+	FreeMemory         int64   `json:"free_memory"`
+	MemoryUsagePercent float64 `json:"memory_usage_percent"`
+	FragmentationRatio float64 `json:"fragmentation_ratio"`
+	EvictionMemory     int64   `json:"eviction_memory"`
+	OverheadMemory     int64   `json:"overhead_memory"`
+	MemoryGrowthRate   float64 `json:"memory_growth_rate"`
 }
 
 // NetworkMetrics 网络指标
 type NetworkMetrics struct {
-	BytesTransferred     int64         `json:"bytes_transferred"`
-	ConnectionsCount     int64         `json:"connections_count"`
-	ActiveConnections    int64         `json:"active_connections"`
-	NetworkLatency       time.Duration `json:"network_latency"`
-	ThroughputMBps       float64       `json:"throughput_mbps"`
-	ErrorRate            float64       `json:"error_rate"`
-	Retries              int64         `json:"retries"`
+	BytesTransferred  int64         `json:"bytes_transferred"`
+	ConnectionsCount  int64         `json:"connections_count"`
+	ActiveConnections int64         `json:"active_connections"`
+	NetworkLatency    time.Duration `json:"network_latency"`
+	ThroughputMBps    float64       `json:"throughput_mbps"`
+	ErrorRate         float64       `json:"error_rate"`
+	Retries           int64         `json:"retries"`
 }
 
 // ErrorMetrics 错误指标
 type ErrorMetrics struct {
-	TotalErrors          int64         `json:"total_errors"`
-	ErrorRate            float64       `json:"error_rate"`
-	TimeoutErrors        int64         `json:"timeout_errors"`
-	ConnectionErrors     int64         `json:"connection_errors"`
-	SerializationErrors  int64         `json:"serialization_errors"`
-	ValidationErrors     int64         `json:"validation_errors"`
-	OtherErrors          int64         `json:"other_errors"`
-	ErrorsByType         map[string]int64 `json:"errors_by_type"`
-	RecentErrors         []*ErrorEntry `json:"recent_errors"`
+	TotalErrors         int64            `json:"total_errors"`
+	ErrorRate           float64          `json:"error_rate"`
+	TimeoutErrors       int64            `json:"timeout_errors"`
+	ConnectionErrors    int64            `json:"connection_errors"`
+	SerializationErrors int64            `json:"serialization_errors"`
+	ValidationErrors    int64            `json:"validation_errors"`
+	OtherErrors         int64            `json:"other_errors"`
+	ErrorsByType        map[string]int64 `json:"errors_by_type"`
+	RecentErrors        []*ErrorEntry    `json:"recent_errors"`
 }
 
 // ErrorEntry 错误条目
 type ErrorEntry struct {
-	Timestamp            time.Time     `json:"timestamp"`
-	ErrorType            string        `json:"error_type"`
-	ErrorMessage         string        `json:"error_message"`
-	Key                  string        `json:"key"`
-	Level                string        `json:"level"`
-	Duration             time.Duration `json:"duration"`
+	Timestamp    time.Time     `json:"timestamp"`
+	ErrorType    string        `json:"error_type"`
+	ErrorMessage string        `json:"error_message"`
+	Key          string        `json:"key"`
+	Level        string        `json:"level"`
+	Duration     time.Duration `json:"duration"`
 }
 
 // WindowMetrics 时间窗口指标
 type WindowMetrics struct {
-	Window               time.Duration `json:"window"`
-	StartTime            time.Time     `json:"start_time"`
-	EndTime              time.Time     `json:"end_time"`
-	TotalRequests        int64         `json:"total_requests"`
-	TotalHits            int64         `json:"total_hits"`
-	HitRate              float64       `json:"hit_rate"`
-	AvgResponseTime      time.Duration `json:"avg_response_time"`
-	Throughput           float64       `json:"throughput"`
-	ErrorRate            float64       `json:"error_rate"`
+	Window          time.Duration `json:"window"`
+	StartTime       time.Time     `json:"start_time"`
+	EndTime         time.Time     `json:"end_time"`
+	TotalRequests   int64         `json:"total_requests"`
+	TotalHits       int64         `json:"total_hits"`
+	HitRate         float64       `json:"hit_rate"`
+	AvgResponseTime time.Duration `json:"avg_response_time"`
+	Throughput      float64       `json:"throughput"`
+	ErrorRate       float64       `json:"error_rate"`
 }
 
 // TrendMetrics 趋势指标
 type TrendMetrics struct {
-	HitRateTrend         float64 `json:"hit_rate_trend"`
-	ResponseTimeTrend    float64 `json:"response_time_trend"`
-	ThroughputTrend      float64 `json:"throughput_trend"`
-	ErrorRateTrend       float64 `json:"error_rate_trend"`
-	MemoryUsageTrend     float64 `json:"memory_usage_trend"`
-	Prediction           *TrendPrediction `json:"prediction"`
+	HitRateTrend      float64          `json:"hit_rate_trend"`
+	ResponseTimeTrend float64          `json:"response_time_trend"`
+	ThroughputTrend   float64          `json:"throughput_trend"`
+	ErrorRateTrend    float64          `json:"error_rate_trend"`
+	MemoryUsageTrend  float64          `json:"memory_usage_trend"`
+	Prediction        *TrendPrediction `json:"prediction"`
 }
 
 // TrendPrediction 趋势预测
 type TrendPrediction struct {
-	HitRate              float64   `json:"hit_rate"`
-	ResponseTime         time.Duration `json:"response_time"`
-	Throughput           float64   `json:"throughput"`
-	ErrorRate            float64   `json:"error_rate"`
-	MemoryUsage          int64     `json:"memory_usage"`
-	Confidence           float64   `json:"confidence"`
-	PredictionTime       time.Time `json:"prediction_time"`
+	HitRate        float64       `json:"hit_rate"`
+	ResponseTime   time.Duration `json:"response_time"`
+	Throughput     float64       `json:"throughput"`
+	ErrorRate      float64       `json:"error_rate"`
+	MemoryUsage    int64         `json:"memory_usage"`
+	Confidence     float64       `json:"confidence"`
+	PredictionTime time.Time     `json:"prediction_time"`
 }
 
 // AlertManager 告警管理器
 type AlertManager struct {
-	mu                   sync.RWMutex
-	config               *AlertThresholds
-	activeAlerts         map[string]*Alert
-	alertHistory         []*Alert
-	rateLimiter          *RateLimiter
-	logger               *zap.Logger
+	mu           sync.RWMutex
+	config       *AlertThresholds
+	activeAlerts map[string]*Alert
+	alertHistory []*Alert
+	rateLimiter  *RateLimiter
+	logger       *zap.Logger
 }
 
 // Alert 告警
 type Alert struct {
-	ID                   string        `json:"id"`
-	Type                 string        `json:"type"`
-	Severity             string        `json:"severity"`
-	Title                string        `json:"title"`
-	Description          string        `json:"description"`
-	CurrentValue         interface{}   `json:"current_value"`
-	ThresholdValue       interface{}   `json:"threshold_value"`
-	Timestamp            time.Time     `json:"timestamp"`
-	Duration             time.Duration `json:"duration"`
-	Status               string        `json:"status"`
-	Metadata             map[string]interface{} `json:"metadata"`
+	ID             string                 `json:"id"`
+	Type           string                 `json:"type"`
+	Severity       string                 `json:"severity"`
+	Title          string                 `json:"title"`
+	Description    string                 `json:"description"`
+	CurrentValue   interface{}            `json:"current_value"`
+	ThresholdValue interface{}            `json:"threshold_value"`
+	Timestamp      time.Time              `json:"timestamp"`
+	Duration       time.Duration          `json:"duration"`
+	Status         string                 `json:"status"`
+	Metadata       map[string]interface{} `json:"metadata"`
 }
 
 // Dashboard 仪表板
 type Dashboard struct {
-	mu                   sync.RWMutex
-	metrics              *DetailedMetrics
-	refreshInterval      time.Duration
-	logger               *zap.Logger
+	mu              sync.RWMutex
+	metrics         *DetailedMetrics
+	refreshInterval time.Duration
+	logger          *zap.Logger
 }
 
 // MetricsExporter 指标导出器接口
@@ -269,45 +269,45 @@ type MetricsExporter interface {
 
 // RateLimiter 速率限制器
 type RateLimiter struct {
-	mu                   sync.Mutex
-	tokens               int
-	maxTokens            int
-	refillRate           int
-	lastRefill           time.Time
+	mu         sync.Mutex
+	tokens     int
+	maxTokens  int
+	refillRate int
+	lastRefill time.Time
 }
 
 // DefaultMonitorConfig 默认监控配置
 func DefaultMonitorConfig() *MonitorConfig {
 	return &MonitorConfig{
 		CollectionInterval:   30 * time.Second,
-		RetentionPeriod:     24 * time.Hour,
-		EnableDetailedStats: true,
+		RetentionPeriod:      24 * time.Hour,
+		EnableDetailedStats:  true,
 		EnableRealTimeAlerts: true,
 		MetricsEnabled: map[string]bool{
-			"hit_rate":        true,
-			"response_time":   true,
-			"throughput":      true,
-			"memory":          true,
-			"errors":          true,
-			"level_metrics":   true,
-			"key_metrics":     true,
+			"hit_rate":      true,
+			"response_time": true,
+			"throughput":    true,
+			"memory":        true,
+			"errors":        true,
+			"level_metrics": true,
+			"key_metrics":   true,
 		},
-		Percentiles: []float64{0.5, 0.75, 0.9, 0.95, 0.99, 0.999},
+		Percentiles:      []float64{0.5, 0.75, 0.9, 0.95, 0.99, 0.999},
 		HistogramBuckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 		AlertThresholds: &AlertThresholds{
 			ResponseTimeThreshold: 100 * time.Millisecond,
-			HitRateThreshold:       0.8,
-			QPSThreshold:           10000,
-			MemoryThreshold:        1024 * 1024 * 1024, // 1GB
-			CPUThreshold:           0.8,
+			HitRateThreshold:      0.8,
+			QPSThreshold:          10000,
+			MemoryThreshold:       1024 * 1024 * 1024, // 1GB
+			CPUThreshold:          0.8,
 		},
-		AlertCooldown:        5 * time.Minute,
-		MaxAlertsPerMinute:   10,
-		EnablePrometheus:     false,
-		EnableInfluxDB:       false,
-		EnableJSONExport:     true,
-		ExportInterval:       1 * time.Minute,
-		ExportPath:          "./metrics",
+		AlertCooldown:      5 * time.Minute,
+		MaxAlertsPerMinute: 10,
+		EnablePrometheus:   false,
+		EnableInfluxDB:     false,
+		EnableJSONExport:   true,
+		ExportInterval:     1 * time.Minute,
+		ExportPath:         "./metrics",
 	}
 }
 
@@ -318,11 +318,11 @@ func NewCacheMonitor(config *MonitorConfig, logger *zap.Logger) *CacheMonitor {
 	}
 
 	monitor := &CacheMonitor{
-		config:     config,
-		metrics:    &DetailedMetrics{},
-		exporters:  make(map[string]MetricsExporter),
-		stopCh:     make(chan struct{}),
-		logger:     logger.Named("cache_monitor"),
+		config:    config,
+		metrics:   &DetailedMetrics{},
+		exporters: make(map[string]MetricsExporter),
+		stopCh:    make(chan struct{}),
+		logger:    logger.Named("cache_monitor"),
 	}
 
 	// 初始化告警管理器
@@ -356,11 +356,11 @@ func (cm *CacheMonitor) initializeMetrics() {
 			RequestsPerSecond: make([]float64, 60),
 			RequestsPerMinute: make([]float64, 60),
 		},
-		LevelMetrics: make(map[string]*LevelMetrics),
-		TopKeys:      make([]*KeyMetrics, 0),
-		HotKeys:      make([]*KeyMetrics, 0),
-		ColdKeys:     make([]*KeyMetrics, 0),
-		MemoryMetrics: &MemoryMetrics{},
+		LevelMetrics:   make(map[string]*LevelMetrics),
+		TopKeys:        make([]*KeyMetrics, 0),
+		HotKeys:        make([]*KeyMetrics, 0),
+		ColdKeys:       make([]*KeyMetrics, 0),
+		MemoryMetrics:  &MemoryMetrics{},
 		NetworkMetrics: &NetworkMetrics{},
 		ErrorMetrics: &ErrorMetrics{
 			ErrorsByType: make(map[string]int64),
@@ -588,11 +588,11 @@ func (cm *CacheMonitor) updateTimeWindowMetrics() {
 // updateTrendMetrics 更新趋势指标
 func (cm *CacheMonitor) updateTrendMetrics() {
 	// 模拟趋势计算
-	cm.metrics.TrendMetrics.HitRateTrend = 0.05           // 5% 增长趋势
-	cm.metrics.TrendMetrics.ResponseTimeTrend = -0.02      // 2% 改善趋势
-	cm.metrics.TrendMetrics.ThroughputTrend = 0.10         // 10% 增长趋势
-	cm.metrics.TrendMetrics.ErrorRateTrend = -0.01         // 1% 减少趋势
-	cm.metrics.TrendMetrics.MemoryUsageTrend = 0.03        // 3% 增长趋势
+	cm.metrics.TrendMetrics.HitRateTrend = 0.05       // 5% 增长趋势
+	cm.metrics.TrendMetrics.ResponseTimeTrend = -0.02 // 2% 改善趋势
+	cm.metrics.TrendMetrics.ThroughputTrend = 0.10    // 10% 增长趋势
+	cm.metrics.TrendMetrics.ErrorRateTrend = -0.01    // 1% 减少趋势
+	cm.metrics.TrendMetrics.MemoryUsageTrend = 0.03   // 3% 增长趋势
 
 	// 简单的预测
 	cm.metrics.TrendMetrics.Prediction = &TrendPrediction{

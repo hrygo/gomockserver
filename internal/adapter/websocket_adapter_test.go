@@ -188,7 +188,7 @@ func TestExtractQuery(t *testing.T) {
 func TestWebSocketAdapter_Upgrade(t *testing.T) {
 	// 由于需要实际的 WebSocket 连接，这个测试较为复杂
 	// 这里提供一个基本的框架，实际测试可能需要更复杂的设置
-	
+
 	gin.SetMode(gin.TestMode)
 	adapter := NewWebSocketAdapter()
 
@@ -211,11 +211,11 @@ func TestWebSocketAdapter_Upgrade(t *testing.T) {
 	// 建立 WebSocket 连接
 	dialer := websocket.Dialer{}
 	conn, resp, err := dialer.Dial(wsURL, nil)
-	
+
 	if err == nil {
 		defer conn.Close()
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
-		
+
 		// 验证连接已建立
 		time.Sleep(100 * time.Millisecond)
 		assert.Equal(t, 1, adapter.GetConnectionCount())

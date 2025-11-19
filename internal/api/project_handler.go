@@ -123,7 +123,7 @@ func (h *ProjectHandler) CreateEnvironment(c *gin.Context) {
 	environment.ProjectID = projectID
 
 	// 添加调试日志
-	logger.Info("Creating environment", 
+	logger.Info("Creating environment",
 		zap.String("project_id", projectID),
 		zap.String("environment_name", environment.Name),
 		zap.String("environment_project_id", environment.ProjectID))

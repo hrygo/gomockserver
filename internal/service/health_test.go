@@ -21,30 +21,30 @@ func TestNewHealthChecker(t *testing.T) {
 
 func TestHealthCheck_Basic(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	t.Run("Basic health check without MongoDB", func(t *testing.T) {
 		checker := NewHealthChecker(nil)
-		
+
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("GET", "/health", nil)
-		
+
 		checker.Check(c)
-		
+
 		assert.Equal(t, 200, w.Code)
 		assert.Contains(t, w.Body.String(), "healthy")
 		assert.Contains(t, w.Body.String(), Version)
 	})
-	
+
 	t.Run("Health check with detailed query", func(t *testing.T) {
 		checker := NewHealthChecker(nil)
-		
+
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("GET", "/health?detailed=true", nil)
-		
+
 		checker.Check(c)
-		
+
 		assert.Equal(t, 200, w.Code)
 		// 当没有MongoDB客户端时，不会有components字段
 		// assert.Contains(t, w.Body.String(), "components")
@@ -54,34 +54,34 @@ func TestHealthCheck_Basic(t *testing.T) {
 
 func TestHealthCheck_WithMongoDB(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	
+
 	// 尝试连接真实MongoDB（如果可用）
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		t.Skip("MongoDB not available, skipping integration test")
 		return
 	}
 	defer client.Disconnect(context.Background())
-	
+
 	// 检查连接
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		t.Skip("MongoDB ping failed, skipping integration test")
 		return
 	}
-	
+
 	t.Run("Health check with healthy MongoDB", func(t *testing.T) {
 		checker := NewHealthChecker(client)
-		
+
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = httptest.NewRequest("GET", "/health?detailed=true", nil)
-		
+
 		checker.Check(c)
-		
+
 		assert.Equal(t, 200, w.Code)
 		assert.Contains(t, w.Body.String(), "database")
 		assert.Contains(t, w.Body.String(), "healthy")
@@ -90,9 +90,9 @@ func TestHealthCheck_WithMongoDB(t *testing.T) {
 
 func TestCheckDatabase_NoClient(t *testing.T) {
 	checker := NewHealthChecker(nil)
-	
+
 	status := checker.checkDatabase(context.Background())
-	
+
 	assert.Equal(t, StatusHealthy, status.Status)
 	assert.Contains(t, status.Message, "not configured")
 }
@@ -129,7 +129,7 @@ func TestFormatUptime(t *testing.T) {
 			contains: []string{"3d", "2h"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := formatUptime(tt.duration)
@@ -172,7 +172,7 @@ func TestFormatString(t *testing.T) {
 			expected: "1d 5h 20m 10s",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := formatString(tt.format, tt.args...)
@@ -193,7 +193,7 @@ func TestIntToString(t *testing.T) {
 		{123, "123"},
 		{1000, "1000"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
 			result := intToString(tt.input)
@@ -213,7 +213,7 @@ func TestFormatWithOneArg(t *testing.T) {
 		{"test %d test", 42, "test 42 test"},
 		{"no placeholder", 100, "no placeholder"},
 	}
-	
+
 	for _, tt := range tests {
 		result := formatWithOneArg(tt.format, tt.arg)
 		assert.Equal(t, tt.expected, result)
@@ -223,7 +223,7 @@ func TestFormatWithOneArg(t *testing.T) {
 func TestFormatWithTwoArgs(t *testing.T) {
 	result := formatWithTwoArgs("%dm %ds", 5, 30)
 	assert.Equal(t, "5m 30s", result)
-	
+
 	result = formatWithTwoArgs("%dh %dm", 2, 15)
 	assert.Equal(t, "2h 15m", result)
 }
@@ -241,13 +241,13 @@ func TestFormatWithFourArgs(t *testing.T) {
 func TestHealthResponseStructure(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := NewHealthChecker(nil)
-	
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/health", nil)
-	
+
 	checker.Check(c)
-	
+
 	// 验证响应结构
 	assert.Equal(t, 200, w.Code)
 	body := w.Body.String()

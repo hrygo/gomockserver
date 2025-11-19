@@ -1,0 +1,8 @@
+query GetDashboardStatistics {
+  hello
+  status
+}
+
+query GetServerStatus {
+  status
+}

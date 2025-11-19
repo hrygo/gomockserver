@@ -16,30 +16,30 @@ import (
 
 // ProxyConfig 代理配置
 type ProxyConfig struct {
-	TargetURL       string                 `json:"target_url"`
-	Timeout         int                    `json:"timeout"`          // 超时时间（秒）
-	ModifyRequest   *RequestModifier       `json:"modify_request"`   // 请求修改器
-	ModifyResponse  *ResponseModifier      `json:"modify_response"`  // 响应修改器
-	InjectDelay     int                    `json:"inject_delay"`     // 注入延迟（毫秒）
-	ErrorRate       float64                `json:"error_rate"`       // 错误率（0-1）
-	ErrorStatusCode int                    `json:"error_status_code"` // 错误状态码
-	FollowRedirect  bool                   `json:"follow_redirect"`  // 是否跟随重定向
+	TargetURL       string            `json:"target_url"`
+	Timeout         int               `json:"timeout"`           // 超时时间（秒）
+	ModifyRequest   *RequestModifier  `json:"modify_request"`    // 请求修改器
+	ModifyResponse  *ResponseModifier `json:"modify_response"`   // 响应修改器
+	InjectDelay     int               `json:"inject_delay"`      // 注入延迟（毫秒）
+	ErrorRate       float64           `json:"error_rate"`        // 错误率（0-1）
+	ErrorStatusCode int               `json:"error_status_code"` // 错误状态码
+	FollowRedirect  bool              `json:"follow_redirect"`   // 是否跟随重定向
 }
 
 // RequestModifier 请求修改器
 type RequestModifier struct {
-	Headers map[string]string      `json:"headers"`  // 添加/修改的请求头
-	Query   map[string]string      `json:"query"`    // 添加/修改的查询参数
-	Body    map[string]interface{} `json:"body"`     // 修改请求体（仅JSON）
-	RemoveHeaders []string           `json:"remove_headers"` // 移除的请求头
+	Headers       map[string]string      `json:"headers"`        // 添加/修改的请求头
+	Query         map[string]string      `json:"query"`          // 添加/修改的查询参数
+	Body          map[string]interface{} `json:"body"`           // 修改请求体（仅JSON）
+	RemoveHeaders []string               `json:"remove_headers"` // 移除的请求头
 }
 
 // ResponseModifier 响应修改器
 type ResponseModifier struct {
-	Headers      map[string]string      `json:"headers"`       // 添加/修改的响应头
-	BodyReplace  map[string]interface{} `json:"body_replace"`  // 替换响应体字段
-	StatusCode   int                    `json:"status_code"`   // 修改状态码
-	RemoveHeaders []string              `json:"remove_headers"` // 移除的响应头
+	Headers       map[string]string      `json:"headers"`        // 添加/修改的响应头
+	BodyReplace   map[string]interface{} `json:"body_replace"`   // 替换响应体字段
+	StatusCode    int                    `json:"status_code"`    // 修改状态码
+	RemoveHeaders []string               `json:"remove_headers"` // 移除的响应头
 }
 
 // ProxyExecutor 代理执行器
@@ -68,7 +68,7 @@ func (p *ProxyExecutor) Execute(request *adapter.Request, config *ProxyConfig) (
 			logger.Info("injecting error response",
 				zap.Float64("error_rate", config.ErrorRate),
 				zap.Int("status_code", statusCode))
-			
+
 			return &adapter.Response{
 				StatusCode: statusCode,
 				Headers: map[string]string{
@@ -146,7 +146,7 @@ func (p *ProxyExecutor) Execute(request *adapter.Request, config *ProxyConfig) (
 	logger.Info("proxying request",
 		zap.String("method", method),
 		zap.String("target_url", targetURL))
-	
+
 	resp, err := p.client.Do(httpReq)
 	if err != nil {
 		logger.Error("failed to proxy request", zap.Error(err))

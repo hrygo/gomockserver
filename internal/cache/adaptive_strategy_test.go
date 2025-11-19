@@ -67,12 +67,12 @@ func TestAdaptiveStrategy_ConfigValidation(t *testing.T) {
 
 func TestStrategyStats_Creation(t *testing.T) {
 	stats := &StrategyStats{
-		TotalRequests:      1000,
-		HitRate:            0.85,
+		TotalRequests:       1000,
+		HitRate:             0.85,
 		AvgResponseTime:     25 * time.Millisecond,
 		MemoryUsage:         100 * 1024 * 1024,
-		CPULoad:            0.4,
-		OptimalHitRate:     0.9,
+		CPULoad:             0.4,
+		OptimalHitRate:      0.9,
 		OptimalResponseTime: 20 * time.Millisecond,
 	}
 

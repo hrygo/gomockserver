@@ -64,14 +64,29 @@ func NewMockResolver() *MockResolver {
 func (r *MockResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error) {
 	r.logger.Debug("执行Mock解析",
 		zap.String("field", fieldCtx.FieldName),
-		zap.String("parent_type", fieldCtx.ParentType))
+		zap.String("parent_type", fieldCtx.ParentType),
+		zap.Any("arguments", fieldCtx.Arguments))
 
 	switch fieldCtx.FieldName {
 	case "user":
+		// 检查是否有传递的变量参数
+		userID := "mock-user-1" // 默认ID
+		userName := "Mock User" // 默认名称
+
+		// 从Arguments中获取id变量（处理 $id 参数）
+		if fieldCtx.Arguments != nil {
+			if idValue, exists := fieldCtx.Arguments["id"]; exists {
+				if idStr, ok := idValue.(string); ok {
+					userID = idStr
+					userName = "User " + idStr // 使用变量值定制响应
+				}
+			}
+		}
+
 		return map[string]interface{}{
-			"id":         "mock-user-1",
-			"name":       "Mock User",
-			"email":      "mock@example.com",
+			"id":         userID,
+			"name":       userName,
+			"email":      userID + "@example.com",
 			"createdAt":  time.Now().Format(time.RFC3339),
 			"__typename": "User",
 		}, nil
@@ -107,7 +122,7 @@ func (r *MockResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContext
 		}, nil
 	case "_service":
 		return map[string]interface{}{
-			"sdl": "type Query { user(id: ID!): User users: [User!]! hello: HelloResponse status: ServerStatus } type User { id: ID! name: String! email: String createdAt: String! } type HelloResponse { message: String! timestamp: Int! } type ServerStatus { status: String! version: String! timestamp: String! }",
+			"sdl":        "type Query { user(id: ID!): User users: [User!]! hello: HelloResponse status: ServerStatus } type User { id: ID! name: String! email: String createdAt: String! } type HelloResponse { message: String! timestamp: Int! } type ServerStatus { status: String! version: String! timestamp: String! }",
 			"__typename": "Service",
 		}, nil
 	default:
@@ -138,9 +153,9 @@ func (r *ProxyResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContex
 	// 简化实现 - 将在Phase 3中完善HTTP代理功能
 	// 目前返回一个模拟的代理结果
 	return map[string]interface{}{
-		"proxied":   true,
-		"field":     fieldCtx.FieldName,
-		"timestamp": time.Now().Unix(),
+		"proxied":    true,
+		"field":      fieldCtx.FieldName,
+		"timestamp":  time.Now().Unix(),
 		"__typename": "ProxyResult",
 	}, nil
 }

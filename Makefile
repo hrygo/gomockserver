@@ -1,4 +1,4 @@
-.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend start-redis stop-redis restart-redis redis-cli redis-logs redis-status redis-test redis-bench redis-flush test-cache-coverage test-redis-full
+.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend start-redis stop-redis restart-redis redis-cli redis-logs redis-status redis-test redis-bench redis-flush test-cache-coverage test-redis-full project-health script-check script-fix ci-check full-health clean-temp clean-coverage clean-all
 
 # 变量定义
 BINARY_NAME=mockserver
@@ -93,6 +93,14 @@ help:
 	@echo "  make version         - 显示版本信息"
 	@echo "  make dev-env         - 启动开发环境 (MongoDB)"
 	@echo "  make clean-env       - 清理开发环境"
+	@echo "  make project-health  - 项目质量检查"
+	@echo "  make script-check    - 脚本完整性检查"
+	@echo "  make script-fix      - 检查并修复脚本问题"
+	@echo "  make ci-check        - CI质量门禁检查"
+	@echo "  make full-health     - 完整质量检查(包含脚本)"
+	@echo "  make clean-temp      - 清理临时文件和构建产物"
+	@echo "  make clean-coverage  - 清理测试覆盖率文件"
+	@echo "  make clean-all       - 清理所有临时文件和覆盖率"
 	@echo "  make t               - 别名: make test"
 	@echo "  make c               - 别名: make test-coverage"
 	@echo ""
@@ -462,18 +470,21 @@ start-backend:
 	@nohup go run ./cmd/mockserver/main.go -config config.dev.yaml > /tmp/mockserver.log 2>&1 &
 	@echo $$! > /tmp/mockserver.pid
 	@echo "⏳ Waiting for backend to start..."
-	@sleep 5
-	@if curl -s http://localhost:8080/api/v1/system/health > /dev/null 2>&1; then \
-		echo "✅ Backend server started successfully"; \
-		echo "📌 Admin API: http://localhost:8080/api/v1"; \
-		echo "📌 Mock API: http://localhost:9090"; \
-		echo "📋 Logs: tail -f /tmp/mockserver.log"; \
-	else \
-		echo "❌ Failed to start backend server"; \
+	@for i in 1 2 3 4 5; do \
+		if curl -s http://localhost:8080/api/v1/system/health > /dev/null 2>&1; then \
+			echo "✅ Backend server started successfully ($${i}s)"; \
+			echo "📌 Admin API: http://localhost:8080/api/v1"; \
+			echo "📌 Mock API: http://localhost:9090"; \
+			echo "📋 Logs: tail -f /tmp/mockserver.log"; \
+			exit 0; \
+		fi; \
+		echo "⏳ Waiting... ($${i}/5)"; \
+		sleep 1; \
+	done
+	@echo "❌ Failed to start backend server after 5 seconds"; \
 		echo "📋 Last 20 lines of log:"; \
 		tail -20 /tmp/mockserver.log 2>/dev/null || echo "No logs found"; \
-		exit 1; \
-	fi
+		exit 1;
 
 # 停止后端服务
 stop-backend:
@@ -531,51 +542,6 @@ stop-frontend:
 	fi
 
 # 启动全栈应用（MongoDB + 后端 + 前端）
-start-all:
-	@echo "🚀 Starting full stack application..."
-	@echo ""
-	@echo "Step 1/3: Starting MongoDB..."
-	@make start-mongo
-	@echo ""
-	@echo "Step 2/3: Starting Backend..."
-	@sleep 3
-	@make start-backend
-	@echo ""
-	@echo "Step 3/3: Starting Frontend..."
-	@make start-frontend
-	@echo ""
-	@echo "═══════════════════════════════════════════════════════"
-	@echo "✅ Full stack application is running!"
-	@echo "═══════════════════════════════════════════════════════"
-	@echo ""
-	@echo "🌐 Access URLs:"
-	@echo "  Frontend:   http://localhost:5173"
-	@echo "  Admin API:  http://localhost:8080/api/v1"
-	@echo "  Mock API:   http://localhost:9090"
-	@echo "  MongoDB:    mongodb://localhost:27017"
-	@echo ""
-	@echo "📋 View Logs:"
-	@echo "  Backend:    tail -f /tmp/mockserver.log"
-	@echo "  Frontend:   tail -f /tmp/frontend.log"
-	@echo "  MongoDB:    make mongo-logs"
-	@echo ""
-	@echo "🛑 Stop All:"
-	@echo "  make stop-all"
-	@echo "═══════════════════════════════════════════════════════"
-
-# 停止全栈应用
-stop-all:
-	@echo "🛑 Stopping full stack application..."
-	@make stop-frontend 2>/dev/null || true
-	@make stop-backend 2>/dev/null || true
-	@pkill -f "vite" 2>/dev/null || true
-	@pkill -f "mockserver/main.go" 2>/dev/null || true
-	@lsof -ti:5173 | xargs kill -9 2>/dev/null || true
-	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-	@lsof -ti:9090 | xargs kill -9 2>/dev/null || true
-	@make stop-mongo 2>/dev/null || true
-	@rm -f /tmp/mockserver.pid /tmp/frontend.pid /tmp/mockserver.log /tmp/frontend.log
-	@echo "✅ Full stack application stopped"
 
 # ════════════════════════════════════════════════════════
 # 依赖管理
@@ -640,17 +606,6 @@ pre-commit: qa
 t: test
 c: test-coverage
 
-# 快速启动开发环境
-dev-env: start-mongo
-	@echo "✅ Development environment ready!"
-	@echo "📌 MongoDB: localhost:27017"
-	@echo "🚀 Run 'make run' or 'make dev' to start the server"
-
-# 清理开发环境
-clean-env: stop-mongo
-	@echo "🧽 Cleaning development environment..."
-	@docker volume rm mongodb_data 2>/dev/null || true
-	@echo "✅ Environment cleaned"
 
 # ════════════════════════════════════════════════════════
 # Redis 相关命令
@@ -793,7 +748,6 @@ start-all:
 	@make start-redis
 	@echo ""
 	@echo "Step 3/4: Starting Backend..."
-	@sleep 3
 	@make start-backend
 	@echo ""
 	@echo "Step 4/4: Starting Frontend..."
@@ -854,3 +808,59 @@ version:
 	@echo "Version:    $(VERSION)"
 	@echo "Build Time: $(BUILD_TIME)"
 	@echo "Git Commit: $(GIT_COMMIT)"
+
+# ════════════════════════════════════════════════════════
+# 项目质量和清理命令
+# ════════════════════════════════════════════════════════
+
+# 项目质量检查
+project-health:
+	@echo "🔍 运行项目质量检查..."
+	@./scripts/project-health-check.sh
+
+# 脚本完整性检查
+script-check:
+	@echo "🔍 检查脚本完整性..."
+	@./scripts/quality/script-integrity-check.sh
+
+# 脚本完整性检查（自动修复）
+script-fix:
+	@echo "🔧 检查并修复脚本问题..."
+	@./scripts/quality/script-integrity-check.sh -f
+
+# CI质量门禁检查
+ci-check:
+	@echo "🔍 运行CI质量门禁检查..."
+	@./scripts/quality/ci-quality-check.sh
+
+# 完整质量检查（包含脚本检查）
+full-health: project-health script-check
+	@echo "✅ 完整质量检查通过"
+
+# 清理临时文件
+clean-temp:
+	@echo "🧽 清理临时文件和构建产物..."
+	@rm -f $(BINARY_NAME) || true
+	@rm -f *.log || true
+	@rm -f *.tmp || true
+	@rm -f *.temp || true
+	@rm -rf $(BIN_DIR) || true
+	@rm -f web/frontend/dist || true
+	@rm -rf web/frontend/.next || true
+	@rm -rf web/frontend/build || true
+	@echo "✅ 临时文件清理完成"
+
+# 清理测试覆盖率文件
+clean-coverage:
+	@echo "🧽 清理测试覆盖率文件..."
+	@find tests/coverage -name "*.out" -type f -delete 2>/dev/null || true
+	@find tests/coverage -name "*.html" -type f -delete 2>/dev/null || true
+	@find . -name "coverage*.out" -type f -delete 2>/dev/null || true
+	@echo "✅ 覆盖率文件清理完成"
+
+# 清理所有临时文件和覆盖率
+clean-all: clean-temp clean-coverage
+	@echo "🧽 深度清理项目..."
+	@find . -name ".DS_Store" -type f -delete 2>/dev/null || true
+	@find . -name "Thumbs.db" -type f -delete 2>/dev/null || true
+	@echo "✅ 深度清理完成"

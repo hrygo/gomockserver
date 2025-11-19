@@ -42,17 +42,17 @@ type RequestLogFilter struct {
 
 // RequestLogStatistics 请求日志统计信息
 type RequestLogStatistics struct {
-	TotalRequests   int64              `json:"total_requests"`
-	SuccessRequests int64              `json:"success_requests"`
-	ErrorRequests   int64              `json:"error_requests"`
-	AvgDuration     float64            `json:"avg_duration"`
-	MaxDuration     int64              `json:"max_duration"`
-	MinDuration     int64              `json:"min_duration"`
-	ProtocolStats   map[string]int64   `json:"protocol_stats"`
-	StatusCodeStats map[string]int64   `json:"status_code_stats"`
-	TopPaths        []PathStat         `json:"top_paths"`
-	TopRules        []RuleStat         `json:"top_rules"`
-	HourlyStats     []HourlyStat       `json:"hourly_stats"`
+	TotalRequests   int64            `json:"total_requests"`
+	SuccessRequests int64            `json:"success_requests"`
+	ErrorRequests   int64            `json:"error_requests"`
+	AvgDuration     float64          `json:"avg_duration"`
+	MaxDuration     int64            `json:"max_duration"`
+	MinDuration     int64            `json:"min_duration"`
+	ProtocolStats   map[string]int64 `json:"protocol_stats"`
+	StatusCodeStats map[string]int64 `json:"status_code_stats"`
+	TopPaths        []PathStat       `json:"top_paths"`
+	TopRules        []RuleStat       `json:"top_rules"`
+	HourlyStats     []HourlyStat     `json:"hourly_stats"`
 }
 
 // PathStat 路径统计
@@ -95,7 +95,7 @@ func (r *mongoRequestLogRepository) EnsureIndexes(ctx context.Context) error {
 			},
 		},
 		{
-			Keys: bson.D{{Key: "request_id", Value: 1}},
+			Keys:    bson.D{{Key: "request_id", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		},
 		{
@@ -111,7 +111,7 @@ func (r *mongoRequestLogRepository) EnsureIndexes(ctx context.Context) error {
 			Keys: bson.D{{Key: "protocol", Value: 1}},
 		},
 		{
-			Keys: bson.D{{Key: "timestamp", Value: 1}},
+			Keys:    bson.D{{Key: "timestamp", Value: 1}},
 			Options: options.Index().SetExpireAfterSeconds(7 * 24 * 60 * 60), // 7天自动过期
 		},
 	}
@@ -128,7 +128,7 @@ func (r *mongoRequestLogRepository) Create(ctx context.Context, log *models.Requ
 	if log.Timestamp.IsZero() {
 		log.Timestamp = time.Now()
 	}
-	
+
 	_, err := r.collection.InsertOne(ctx, log)
 	return err
 }
@@ -150,7 +150,7 @@ func (r *mongoRequestLogRepository) FindByID(ctx context.Context, id string) (*m
 func (r *mongoRequestLogRepository) List(ctx context.Context, filter RequestLogFilter) ([]*models.RequestLog, int64, error) {
 	// 构建查询条件
 	query := bson.M{}
-	
+
 	if filter.ProjectID != "" {
 		query["project_id"] = filter.ProjectID
 	}
@@ -245,7 +245,7 @@ func (r *mongoRequestLogRepository) DeleteByProjectID(ctx context.Context, proje
 // CountByProjectID 统计指定项目的日志数量
 func (r *mongoRequestLogRepository) CountByProjectID(ctx context.Context, projectID string, startTime, endTime time.Time) (int64, error) {
 	query := bson.M{"project_id": projectID}
-	
+
 	if !startTime.IsZero() || !endTime.IsZero() {
 		timeQuery := bson.M{}
 		if !startTime.IsZero() {
@@ -292,13 +292,13 @@ func (r *mongoRequestLogRepository) GetStatistics(ctx context.Context, projectID
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: matchStage}},
 		{{Key: "$group", Value: bson.M{
-			"_id":             nil,
-			"total_requests":  bson.M{"$sum": 1},
-			"success_count":   bson.M{"$sum": bson.M{"$cond": []interface{}{bson.M{"$and": []interface{}{bson.M{"$gte": []interface{}{"$status_code", 200}}, bson.M{"$lt": []interface{}{"$status_code", 400}}}}, 1, 0}}},
-			"error_count":     bson.M{"$sum": bson.M{"$cond": []interface{}{bson.M{"$gte": []interface{}{"$status_code", 400}}, 1, 0}}},
-			"avg_duration":    bson.M{"$avg": "$duration"},
-			"max_duration":    bson.M{"$max": "$duration"},
-			"min_duration":    bson.M{"$min": "$duration"},
+			"_id":            nil,
+			"total_requests": bson.M{"$sum": 1},
+			"success_count":  bson.M{"$sum": bson.M{"$cond": []interface{}{bson.M{"$and": []interface{}{bson.M{"$gte": []interface{}{"$status_code", 200}}, bson.M{"$lt": []interface{}{"$status_code", 400}}}}, 1, 0}}},
+			"error_count":    bson.M{"$sum": bson.M{"$cond": []interface{}{bson.M{"$gte": []interface{}{"$status_code", 400}}, 1, 0}}},
+			"avg_duration":   bson.M{"$avg": "$duration"},
+			"max_duration":   bson.M{"$max": "$duration"},
+			"min_duration":   bson.M{"$min": "$duration"},
 		}}},
 	}
 
@@ -310,12 +310,12 @@ func (r *mongoRequestLogRepository) GetStatistics(ctx context.Context, projectID
 
 	if cursor.Next(ctx) {
 		var result struct {
-			TotalRequests  int64   `bson:"total_requests"`
-			SuccessCount   int64   `bson:"success_count"`
-			ErrorCount     int64   `bson:"error_count"`
-			AvgDuration    float64 `bson:"avg_duration"`
-			MaxDuration    int64   `bson:"max_duration"`
-			MinDuration    int64   `bson:"min_duration"`
+			TotalRequests int64   `bson:"total_requests"`
+			SuccessCount  int64   `bson:"success_count"`
+			ErrorCount    int64   `bson:"error_count"`
+			AvgDuration   float64 `bson:"avg_duration"`
+			MaxDuration   int64   `bson:"max_duration"`
+			MinDuration   int64   `bson:"min_duration"`
 		}
 		if err := cursor.Decode(&result); err != nil {
 			return nil, err

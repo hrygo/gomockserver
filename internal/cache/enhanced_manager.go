@@ -12,14 +12,14 @@ import (
 
 // EnhancedCacheManager 增强的缓存管理器
 type EnhancedCacheManager struct {
-	*ThreeLevelCacheManager  // 嵌入基础管理器
-	adaptiveStrategy       *AdaptiveStrategy
-	predictiveCache        *PredictiveCache
-	performanceMonitor     *PerformanceMonitor
-	optimizer              *CacheOptimizer
-	autoTuner              *AutoTuner
-	mu                    sync.RWMutex
-	logger                *zap.Logger
+	*ThreeLevelCacheManager // 嵌入基础管理器
+	adaptiveStrategy        *AdaptiveStrategy
+	predictiveCache         *PredictiveCache
+	performanceMonitor      *PerformanceMonitor
+	optimizer               *CacheOptimizer
+	autoTuner               *AutoTuner
+	mu                      sync.RWMutex
+	logger                  *zap.Logger
 }
 
 // PerformanceMonitor 性能监控器
@@ -33,16 +33,16 @@ type PerformanceMonitor struct {
 
 // PerformanceMetrics 性能指标
 type PerformanceMetrics struct {
-	TotalRequests       int64         `json:"total_requests"`
-	AvgResponseTime     time.Duration `json:"avg_response_time"`
-	P95ResponseTime    time.Duration `json:"p95_response_time"`
-	HitRate            float64       `json:"hit_rate"`
-	QPS                float64       `json:"qps"`
-	MemoryUsage        int64         `json:"memory_usage"`
-	CPULoad            float64       `json:"cpu_load"`
-	NetworkLatency     time.Duration `json:"network_latency"`
-	DiskIOPS           int64         `json:"disk_iops"`
-	LastUpdateTime     time.Time     `json:"last_update_time"`
+	TotalRequests   int64         `json:"total_requests"`
+	AvgResponseTime time.Duration `json:"avg_response_time"`
+	P95ResponseTime time.Duration `json:"p95_response_time"`
+	HitRate         float64       `json:"hit_rate"`
+	QPS             float64       `json:"qps"`
+	MemoryUsage     int64         `json:"memory_usage"`
+	CPULoad         float64       `json:"cpu_load"`
+	NetworkLatency  time.Duration `json:"network_latency"`
+	DiskIOPS        int64         `json:"disk_iops"`
+	LastUpdateTime  time.Time     `json:"last_update_time"`
 }
 
 // PerformanceAdjustment 性能调整记录
@@ -58,10 +58,10 @@ type PerformanceAdjustment struct {
 // AlertThresholds 告警阈值
 type AlertThresholds struct {
 	ResponseTimeThreshold time.Duration `json:"response_time_threshold"`
-	HitRateThreshold       float64       `json:"hit_rate_threshold"`
-	QPSThreshold           float64       `json:"qps_threshold"`
-	MemoryThreshold        int64         `json:"memory_threshold"`
-	CPUThreshold           float64       `json:"cpu_threshold"`
+	HitRateThreshold      float64       `json:"hit_rate_threshold"`
+	QPSThreshold          float64       `json:"qps_threshold"`
+	MemoryThreshold       int64         `json:"memory_threshold"`
+	CPUThreshold          float64       `json:"cpu_threshold"`
 }
 
 // EnhancedCacheConfig 增强缓存配置
@@ -72,11 +72,11 @@ type EnhancedCacheConfig struct {
 	*AlertThresholds
 	*OptimizationConfig
 	*AutoTuningConfig
-	EnableAdaptive     bool `json:"enable_adaptive"`
-	EnablePredictive    bool `json:"enable_predictive"`
-	EnableMonitoring    bool `json:"enable_monitoring"`
-	EnableOptimizer     bool `json:"enable_optimizer"`
-	EnableAutoTuning    bool `json:"enable_auto_tuning"`
+	EnableAdaptive   bool `json:"enable_adaptive"`
+	EnablePredictive bool `json:"enable_predictive"`
+	EnableMonitoring bool `json:"enable_monitoring"`
+	EnableOptimizer  bool `json:"enable_optimizer"`
+	EnableAutoTuning bool `json:"enable_auto_tuning"`
 }
 
 // DefaultEnhancedCacheConfig 默认增强缓存配置
@@ -87,18 +87,18 @@ func DefaultEnhancedCacheConfig() *EnhancedCacheConfig {
 		StrategyTuningConfig: DefaultTuningConfig(),
 		AlertThresholds: &AlertThresholds{
 			ResponseTimeThreshold: 50 * time.Millisecond,
-			HitRateThreshold:       0.7,
-			QPSThreshold:           20000,
-			MemoryThreshold:        100 * 1024 * 1024, // 100MB
-			CPUThreshold:           0.8,
+			HitRateThreshold:      0.7,
+			QPSThreshold:          20000,
+			MemoryThreshold:       100 * 1024 * 1024, // 100MB
+			CPUThreshold:          0.8,
 		},
-		OptimizationConfig:  DefaultOptimizationConfig(),
-		AutoTuningConfig:    DefaultAutoTuningConfig(),
-		EnableAdaptive:      true,
-		EnablePredictive:    true,
-		EnableMonitoring:    true,
-		EnableOptimizer:     true,
-		EnableAutoTuning:    true,
+		OptimizationConfig: DefaultOptimizationConfig(),
+		AutoTuningConfig:   DefaultAutoTuningConfig(),
+		EnableAdaptive:     true,
+		EnablePredictive:   true,
+		EnableMonitoring:   true,
+		EnableOptimizer:    true,
+		EnableAutoTuning:   true,
 	}
 }
 
@@ -119,7 +119,7 @@ func NewEnhancedCacheManager(
 
 	enhanced := &EnhancedCacheManager{
 		ThreeLevelCacheManager: baseManager,
-		logger:                logger.Named("enhanced_cache_manager"),
+		logger:                 logger.Named("enhanced_cache_manager"),
 	}
 
 	// 创建自适应策略
@@ -248,11 +248,11 @@ func (ecm *EnhancedCacheManager) GetAutoTuner() *AutoTuner {
 func (ecm *EnhancedCacheManager) GetCurrentMetrics(ctx context.Context) (*PerformanceMetrics, error) {
 	if ecm.performanceMonitor == nil {
 		return &PerformanceMetrics{
-			HitRate:        0.0,
+			HitRate:         0.0,
 			AvgResponseTime: time.Hour,
-			MemoryUsage:    0,
-			CPULoad:        0,
-			LastUpdateTime: time.Now(),
+			MemoryUsage:     0,
+			CPULoad:         0,
+			LastUpdateTime:  time.Now(),
 		}, nil
 	}
 	return ecm.performanceMonitor.GetCurrentMetrics(), nil
@@ -347,11 +347,11 @@ func (ecm *EnhancedCacheManager) GetEnhancedStats(ctx context.Context) (*Enhance
 // EnhancedStats 增强统计信息
 type EnhancedStats struct {
 	*CacheStats
-	AdaptiveStrategy    *StrategyStats            `json:"adaptive_strategy"`
-	AdjustmentHistory    []StrategyAdjustmentRecord `json:"adjustment_history"`
-	PredictiveStats     map[string]interface{}    `json:"predictive_stats"`
-	PerformanceMetrics *PerformanceMetrics      `json:"performance_metrics"`
-	PerformanceHistory []PerformanceAdjustment  `json:"performance_history"`
+	AdaptiveStrategy   *StrategyStats             `json:"adaptive_strategy"`
+	AdjustmentHistory  []StrategyAdjustmentRecord `json:"adjustment_history"`
+	PredictiveStats    map[string]interface{}     `json:"predictive_stats"`
+	PerformanceMetrics *PerformanceMetrics        `json:"performance_metrics"`
+	PerformanceHistory []PerformanceAdjustment    `json:"performance_history"`
 }
 
 // UpdatePerformanceMetrics 更新性能指标
@@ -385,7 +385,7 @@ func (ecm *EnhancedCacheManager) PreloadPredictions(ctx context.Context) error {
 	// 收集所有预测
 	predictions := make([]*Prediction, 0)
 	ecm.mu.RLock()
-		if ecm.predictiveCache != nil {
+	if ecm.predictiveCache != nil {
 		// 这里需要暴露predictiveCache的内部数据
 		// 简化实现，直接预测常用键
 		commonKeys := []string{"rules:project:default", "rules:environment:default:dev"}
@@ -404,8 +404,8 @@ func (ecm *EnhancedCacheManager) PreloadPredictions(ctx context.Context) error {
 // OptimizeCache 优化缓存性能
 func (ecm *EnhancedCacheManager) OptimizeCache(ctx context.Context) (*OptimizationResult, error) {
 	result := &OptimizationResult{
-		Timestamp: time.Now(),
-		Actions:   make([]string, 0),
+		Timestamp:    time.Now(),
+		Actions:      make([]string, 0),
 		Improvements: make(map[string]float64),
 	}
 
@@ -419,7 +419,7 @@ func (ecm *EnhancedCacheManager) OptimizeCache(ctx context.Context) (*Optimizati
 	if currentStats.PerformanceMetrics != nil {
 		metrics := currentStats.PerformanceMetrics
 
-	// 响应时间优化
+		// 响应时间优化
 		if metrics.AvgResponseTime > 50*time.Millisecond {
 			result.Actions = append(result.Actions, "response_time_optimization")
 			if ecm.adaptiveStrategy != nil {
@@ -429,7 +429,7 @@ func (ecm *EnhancedCacheManager) OptimizeCache(ctx context.Context) (*Optimizati
 			result.Improvements["response_time"] = 0.3 // 预期30%改善
 		}
 
-	// 命中率优化
+		// 命中率优化
 		if metrics.HitRate < 0.8 {
 			result.Actions = append(result.Actions, "hit_rate_optimization")
 			if ecm.adaptiveStrategy != nil {
@@ -438,7 +438,7 @@ func (ecm *EnhancedCacheManager) OptimizeCache(ctx context.Context) (*Optimizati
 			result.Improvements["hit_rate"] = 0.2 // 预期20%改善
 		}
 
-	// 内存使用优化
+		// 内存使用优化
 		if metrics.MemoryUsage > 90*1024*1024 { // 90MB
 			result.Actions = append(result.Actions, "memory_optimization")
 			if ecm.adaptiveStrategy != nil {
@@ -453,8 +453,8 @@ func (ecm *EnhancedCacheManager) OptimizeCache(ctx context.Context) (*Optimizati
 
 // OptimizationResult 优化结果
 type OptimizationResult struct {
-	Timestamp   time.Time           `json:"timestamp"`
-	Actions     []string           `json:"actions"`
+	Timestamp    time.Time          `json:"timestamp"`
+	Actions      []string           `json:"actions"`
 	Improvements map[string]float64 `json:"improvements"`
 }
 
@@ -688,10 +688,10 @@ func NewPerformanceMonitor(thresholds *AlertThresholds, logger *zap.Logger) *Per
 	if thresholds == nil {
 		thresholds = &AlertThresholds{
 			ResponseTimeThreshold: 50 * time.Millisecond,
-			HitRateThreshold:       0.7,
-			QPSThreshold:           20000,
-			MemoryThreshold:        100 * 1024 * 1024,
-			CPUThreshold:           0.8,
+			HitRateThreshold:      0.7,
+			QPSThreshold:          20000,
+			MemoryThreshold:       100 * 1024 * 1024,
+			CPUThreshold:          0.8,
 		}
 	}
 
@@ -699,7 +699,7 @@ func NewPerformanceMonitor(thresholds *AlertThresholds, logger *zap.Logger) *Per
 		metrics:           &PerformanceMetrics{LastUpdateTime: time.Now()},
 		adjustmentHistory: make([]PerformanceAdjustment, 0),
 		alertThresholds:   thresholds,
-		logger:           logger.Named("performance_monitor"),
+		logger:            logger.Named("performance_monitor"),
 	}
 }
 
@@ -730,16 +730,16 @@ func (pm *PerformanceMonitor) GetCurrentMetrics() *PerformanceMetrics {
 	defer pm.mu.RUnlock()
 
 	return &PerformanceMetrics{
-		TotalRequests:    pm.metrics.TotalRequests,
-		AvgResponseTime:   pm.metrics.AvgResponseTime,
-		P95ResponseTime:  pm.metrics.P95ResponseTime,
-		HitRate:          pm.metrics.HitRate,
-		QPS:              pm.metrics.QPS,
-		MemoryUsage:      pm.metrics.MemoryUsage,
-		CPULoad:          pm.metrics.CPULoad,
-		NetworkLatency:   pm.metrics.NetworkLatency,
-		DiskIOPS:         pm.metrics.DiskIOPS,
-		LastUpdateTime:   pm.metrics.LastUpdateTime,
+		TotalRequests:   pm.metrics.TotalRequests,
+		AvgResponseTime: pm.metrics.AvgResponseTime,
+		P95ResponseTime: pm.metrics.P95ResponseTime,
+		HitRate:         pm.metrics.HitRate,
+		QPS:             pm.metrics.QPS,
+		MemoryUsage:     pm.metrics.MemoryUsage,
+		CPULoad:         pm.metrics.CPULoad,
+		NetworkLatency:  pm.metrics.NetworkLatency,
+		DiskIOPS:        pm.metrics.DiskIOPS,
+		LastUpdateTime:  pm.metrics.LastUpdateTime,
 	}
 }
 

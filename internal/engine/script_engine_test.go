@@ -257,8 +257,8 @@ func TestScriptEngine_Match_MissingScript(t *testing.T) {
 	}
 
 	rule := &models.Rule{
-		ID:        "rule-10",
-		MatchType: models.MatchTypeScript,
+		ID:             "rule-10",
+		MatchType:      models.MatchTypeScript,
 		MatchCondition: map[string]interface{}{
 			// 没有 script 字段
 		},

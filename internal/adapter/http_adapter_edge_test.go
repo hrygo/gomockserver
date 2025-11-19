@@ -144,7 +144,7 @@ func TestHTTPAdapter_Parse_ErrorHandling(t *testing.T) {
 			expectNil:  true,
 		},
 		{
-			name: "整数类型错误",
+			name:       "整数类型错误",
 			rawRequest: 123,
 			expectNil:  true,
 		},
@@ -358,5 +358,3 @@ func TestHTTPAdapter_EmptyAndSpecialValues(t *testing.T) {
 		})
 	}
 }
-
-

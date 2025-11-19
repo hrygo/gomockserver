@@ -68,7 +68,7 @@ func StartAdminServer(addr string, service *AdminService) error {
 			projects.GET("/:id", service.projectHandler.GetProject)
 			projects.PUT("/:id", service.projectHandler.UpdateProject)
 			projects.DELETE("/:id", service.projectHandler.DeleteProject)
-			
+
 			// 环境管理 API (在项目下)
 			environments := projects.Group("/:id/environments")
 			{
@@ -118,6 +118,13 @@ func StartAdminServer(addr string, service *AdminService) error {
 			}
 		}
 	}
+
+	// GraphQL API
+	graphqlHandler := api.NewGraphQLHandler()
+	r.GET("/api/graphql", graphqlHandler.HandleGraphQL)
+	r.POST("/api/graphql", graphqlHandler.HandleGraphQL)
+	// GraphQL Playground (for development)
+	r.GET("/api/graphql/playground", graphqlHandler.HandlePlayground)
 
 	logger.Info("starting admin server", zap.String("address", addr))
 	return r.Run(addr)

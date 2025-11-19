@@ -16,14 +16,14 @@ tests/
 │   ├── run_all_e2e_tests.sh    # E2E测试执行脚本
 │   ├── e2e_test.sh             # 基础功能测试
 │   ├── advanced_e2e_test.sh    # 高级功能测试
+│   ├── simple_cache_test.sh    # 缓存功能测试
+│   ├── simple_websocket_test.sh # WebSocket基础测试
+│   ├── simple_edge_case_test.sh # 边界条件测试
 │   ├── stress_e2e_test.sh      # 压力测试
-│   ├── websocket_e2e_test.sh   # WebSocket测试
-│   ├── edge_case_e2e_test.sh   # 边界条件测试
 │   ├── install_tools.sh        # 测试工具安装脚本
-│   ├── lib/                    # 测试框架库
-│   │   ├── test_framework.sh   # 测试框架核心
-│   │   └── tool_installer.sh   # 工具安装器
-│   └── platform_compatibility_test.sh  # 平台兼容性测试
+│   └── lib/                    # 测试框架库
+│       ├── test_framework.sh   # 测试框架核心
+│       └── tool_installer.sh   # 工具安装器
 ├── coverage/                   # 覆盖率数据文件
 │   └── *.out                   # 覆盖率原始数据
 └── data/                       # 测试数据

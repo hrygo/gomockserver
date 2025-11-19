@@ -22,13 +22,13 @@ func TestPredictiveCache_Creation(t *testing.T) {
 func TestAccessPattern_Creation(t *testing.T) {
 	now := time.Now()
 	pattern := &AccessPattern{
-		Key:            "test_key",
-		AccessTimes:    []time.Time{now.Add(-1 * time.Hour), now.Add(-30 * time.Minute), now},
-		Periodicity:    1800.0, // 30 minutes in seconds
-		Predictability: 0.8,
-		LastPredicted:  now,
+		Key:                "test_key",
+		AccessTimes:        []time.Time{now.Add(-1 * time.Hour), now.Add(-30 * time.Minute), now},
+		Periodicity:        1800.0, // 30 minutes in seconds
+		Predictability:     0.8,
+		LastPredicted:      now,
 		PredictionAccuracy: 0.75,
-		SeasonalFactor: 1.2,
+		SeasonalFactor:     1.2,
 	}
 
 	assert.Equal(t, "test_key", pattern.Key)

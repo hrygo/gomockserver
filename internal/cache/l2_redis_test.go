@@ -59,9 +59,10 @@ func TestRedisL2Cache_BasicOperations(t *testing.T) {
 		assert.Equal(t, value, retrievedValue)
 	}
 
-	// 测试获取不存在的键
-	_, err = cache.Get(ctx, "non_existent_key")
-	assert.Error(t, err)
+	// 测试获取不存在的键 - Redis L2缓存对不存在的键返回nil而不是错误
+	retrievedValue, err = cache.Get(ctx, "non_existent_key")
+	assert.NoError(t, err)        // 应该没有错误
+	assert.Nil(t, retrievedValue) // 值应该是nil
 }
 
 // TestRedisL2Cache_Exists 测试存在性检查
@@ -120,9 +121,11 @@ func TestRedisL2Cache_Delete(t *testing.T) {
 	err = cache.Delete(ctx, key)
 	assert.NoError(t, err)
 
-	// 确认值已被删除
-	_, err = cache.Get(ctx, key)
-	assert.Error(t, err)
+	// 确认值已被删除 - Redis L2缓存对删除的键返回nil而不是错误
+	var deletedValue interface{}
+	deletedValue, err = cache.Get(ctx, key)
+	assert.NoError(t, err)      // 应该没有错误
+	assert.Nil(t, deletedValue) // 值应该是nil
 }
 
 // TestRedisL2Cache_Ping 测试连接检查
@@ -174,12 +177,12 @@ func TestRedisL2Cache_Clear(t *testing.T) {
 		// 验证缓存已清空（对于特定前缀的键）
 		for i := 0; i < 3; i++ {
 			key := "key_" + string(rune('0'+i))
-			_, err := cache.Get(ctx, key)
-			assert.Error(t, err)
+			value, err := cache.Get(ctx, key)
+			assert.NoError(t, err) // 应该没有错误
+			assert.Nil(t, value)   // 值应该是nil
 		}
 	}
 }
-
 
 // TestRedisL2Cache_ErrorHandling 测试错误处理
 func TestRedisL2Cache_ErrorHandling(t *testing.T) {

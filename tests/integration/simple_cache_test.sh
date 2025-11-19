@@ -59,17 +59,17 @@ test_redis_connection() {
 
     # 检查 redis-cli 是否可用
     if ! command -v redis-cli >/dev/null 2>&1; then
-        log_fail "redis-cli 命令不可用"
+        test_fail "redis-cli 命令不可用"
         return 1
     fi
 
     # 测试连接
     local ping_result=$(redis-cli ping 2>/dev/null || echo "FAILED")
     if [ "$ping_result" = "PONG" ]; then
-        log_pass "Redis 连接成功"
+        test_pass "Redis 连接成功"
         return 0
     else
-        log_fail "Redis 连接失败: $ping_result"
+        test_fail "Redis 连接失败: $ping_result"
         return 1
     fi
 }
@@ -91,16 +91,16 @@ test_redis_operations() {
             # DELETE 操作
             local del_result=$(redis-cli del "$test_key" 2>/dev/null || echo "FAILED")
             if [ "$del_result" = "1" ]; then
-                log_pass "Redis 基础操作成功"
+                test_pass "Redis 基础操作成功"
                 return 0
             else
-                log_fail "Redis DELETE 操作失败: $del_result"
+                test_fail "Redis DELETE 操作失败: $del_result"
             fi
         else
-            log_fail "Redis GET 操作失败: 期望 $test_value, 得到 $get_result"
+            test_fail "Redis GET 操作失败: 期望 $test_value, 得到 $get_result"
         fi
     else
-        log_fail "Redis SET 操作失败: $set_result"
+        test_fail "Redis SET 操作失败: $set_result"
     fi
 
     return 1
@@ -124,16 +124,16 @@ test_redis_expiration() {
             # 立即获取应该成功
             local get_result=$(redis-cli get "$test_key" 2>/dev/null || echo "FAILED")
             if [ "$get_result" = "$test_value" ]; then
-                log_pass "Redis 过期功能正常"
+                test_pass "Redis 过期功能正常"
                 return 0
             else
-                log_fail "Redis 过期键立即获取失败"
+                test_fail "Redis 过期键立即获取失败"
             fi
         else
-            log_fail "Redis TTL 检查失败: $ttl_result"
+            test_fail "Redis TTL 检查失败: $ttl_result"
         fi
     else
-        log_fail "Redis SETEX 操作失败: $setex_result"
+        test_fail "Redis SETEX 操作失败: $setex_result"
     fi
 
     return 1
@@ -147,19 +147,19 @@ test_mockserver_health() {
     # 检查 Admin API
     local admin_response=$(curl -s -w "%{http_code}" -o /dev/null "$ADMIN_API/system/health" 2>/dev/null || echo "000")
     if [ "$admin_response" = "200" ]; then
-        log_pass "Admin API 健康检查通过"
+        test_pass "Admin API 健康检查通过"
     else
-        log_fail "Admin API 健康检查失败: HTTP $admin_response"
+        test_fail "Admin API 健康检查失败: HTTP $admin_response"
         return 1
     fi
 
     # 检查 Mock API
     local mock_response=$(curl -s -w "%{http_code}" -o /dev/null "$MOCK_API/health" 2>/dev/null || echo "000")
     if [ "$mock_response" = "200" ] || [ "$mock_response" = "404" ]; then
-        log_pass "Mock API 健康检查通过"
+        test_pass "Mock API 健康检查通过"
         return 0
     else
-        log_fail "Mock API 健康检查失败: HTTP $mock_response"
+        test_fail "Mock API 健康检查失败: HTTP $mock_response"
         return 1
     fi
 }
@@ -178,7 +178,7 @@ test_mockserver_cache_integration() {
 
     local project_id=$(echo "$project_response" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
     if [ -z "$project_id" ]; then
-        log_fail "创建测试项目失败"
+        test_fail "创建测试项目失败"
         return 1
     fi
 
@@ -191,7 +191,7 @@ test_mockserver_cache_integration() {
 
     local env_id=$(echo "$env_response" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
     if [ -z "$env_id" ]; then
-        log_fail "创建测试环境失败"
+        test_fail "创建测试环境失败"
         return 1
     fi
 
@@ -215,7 +215,7 @@ test_mockserver_cache_integration() {
 
     local rule_id=$(echo "$rule_response" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
     if [ -z "$rule_id" ]; then
-        log_fail "创建 Mock 规则失败"
+        test_fail "创建 Mock 规则失败"
         return 1
     fi
 
@@ -226,13 +226,13 @@ test_mockserver_cache_integration() {
         "$MOCK_API/api/cache-test" 2>/dev/null)
 
     if [ "${api_response: -3}" = "200" ]; then
-        log_pass "MockServer 缓存集成测试成功"
+        test_pass "MockServer 缓存集成测试成功"
 
         # 清理测试数据
         curl -s -X DELETE "$ADMIN_API/projects/$project_id" >/dev/null 2>&1 || true
         return 0
     else
-        log_fail "MockServer API 响应失败: HTTP ${api_response: -3}"
+        test_fail "MockServer API 响应失败: HTTP ${api_response: -3}"
         return 1
     fi
 }
@@ -247,13 +247,13 @@ test_redis_memory() {
     if [ "$memory_info" != "ERROR" ]; then
         local used_memory=$(echo "$memory_info" | grep "used_memory_human:" | cut -d: -f2 | tr -d '\r')
         if [ -n "$used_memory" ]; then
-            log_pass "Redis 内存监控成功: 当前使用 $used_memory"
+            test_pass "Redis 内存监控成功: 当前使用 $used_memory"
             return 0
         else
-            log_fail "Redis 内存信息解析失败"
+            test_fail "Redis 内存信息解析失败"
         fi
     else
-        log_fail "Redis 内存信息获取失败"
+        test_fail "Redis 内存信息获取失败"
     fi
 
     return 1
@@ -261,28 +261,20 @@ test_redis_memory() {
 
 # 生成测试报告
 generate_report() {
-    echo ""
-    echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}   简化缓存集成测试结果${NC}"
-    echo -e "${BLUE}========================================${NC}"
-    echo ""
-    echo -e "${CYAN}测试统计:${NC}"
-    echo -e "  总测试数: $TOTAL_TESTS"
-    echo -e "  通过: ${GREEN}$PASSED_TESTS${NC}"
-    echo -e "  失败: ${RED}$FAILED_TESTS${NC}"
-    echo -e "  通过率: $(( PASSED_TESTS * 100 / TOTAL_TESTS ))%"
-    echo ""
+    print_test_summary
+    local exit_code=$?
 
-    if [ $FAILED_TESTS -eq 0 ]; then
+    echo ""
+    if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}🎉 所有缓存集成测试通过！${NC}"
         echo -e "${GREEN}✅ Redis 缓存系统工作正常${NC}"
         echo -e "${GREEN}✅ MockServer 集成成功${NC}"
-        return 0
     else
         echo -e "${RED}❌ 部分测试失败${NC}"
         echo -e "${YELLOW}💡 请检查 Redis 和 MockServer 状态${NC}"
-        return 1
     fi
+
+    return $exit_code
 }
 
 # 主测试流程

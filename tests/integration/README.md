@@ -4,6 +4,8 @@
 
 MockServer 提供了完整的端到端（E2E）测试套件，用于验证系统的功能完整性、性能表现和稳定性。测试覆盖了从基础功能到高级特性，从正常场景到边界条件的全方位测试。
 
+**✨ 测试套件已优化 (2025-11-19)**: 已完成测试套件清理，移除了重复和过期的测试脚本，保留官方测试文件，确保测试结构清晰、高效。
+
 ## 🚀 快速开始
 
 ### 运行所有测试
@@ -22,11 +24,14 @@ MockServer 提供了完整的端到端（E2E）测试套件，用于验证系统
 # 高级功能测试
 ./tests/integration/advanced_e2e_test.sh
 
+# 缓存功能测试
+./tests/integration/simple_cache_test.sh
+
 # WebSocket 测试
-./tests/integration/websocket_e2e_test.sh
+./tests/integration/simple_websocket_test.sh
 
 # 边界条件测试
-./tests/integration/edge_case_e2e_test.sh
+./tests/integration/simple_edge_case_test.sh
 
 # 压力测试
 ./tests/integration/stress_e2e_test.sh
@@ -37,13 +42,16 @@ MockServer 提供了完整的端到端（E2E）测试套件，用于验证系统
 ```
 tests/integration/
 ├── lib/
-│   └── test_framework.sh    # 测试框架核心
+│   ├── test_framework.sh    # 测试框架核心
+│   └── tool_installer.sh    # 工具安装脚本
 ├── e2e_test.sh            # 基础功能测试
 ├── advanced_e2e_test.sh     # 高级功能测试
-├── websocket_e2e_test.sh    # WebSocket 测试
-├── edge_case_e2e_test.sh     # 边界条件测试
+├── simple_cache_test.sh    # 缓存功能测试
+├── simple_websocket_test.sh # WebSocket基础测试
+├── simple_edge_case_test.sh # 边界条件测试
 ├── stress_e2e_test.sh       # 压力测试
-├── run_all_e2e_tests.sh      # 测试套件管理器
+├── install_tools.sh         # 测试工具安装
+├── run_all_e2e_tests.sh     # 测试套件管理器
 └── README.md               # 本文档
 ```
 

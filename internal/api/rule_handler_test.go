@@ -273,9 +273,9 @@ func TestRuleHandler_UpdateRule(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "无效的JSON",
-			ruleID:         "rule-001",
-			requestBody:    "invalid json",
+			name:        "无效的JSON",
+			ruleID:      "rule-001",
+			requestBody: "invalid json",
 			mockSetup: func(m *MockRuleRepository) {
 				m.On("FindByID", mock.Anything, "rule-001").Return(&models.Rule{
 					ID:       "rule-001",

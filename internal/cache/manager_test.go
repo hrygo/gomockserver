@@ -137,11 +137,11 @@ func (m *MockFrequencyTracker) GetTopKeys(limit int) []string {
 
 // MockThreeLevelCacheManager 模拟三级缓存管理器
 type MockThreeLevelCacheManager struct {
-	l1Cache    *MockL1Cache
-	l2Cache    *MockL2Cache
-	tracker    *MockFrequencyTracker
-	strategy   *CacheStrategy
-	stats      *CacheStats
+	l1Cache  *MockL1Cache
+	l2Cache  *MockL2Cache
+	tracker  *MockFrequencyTracker
+	strategy *CacheStrategy
+	stats    *CacheStats
 }
 
 func NewMockThreeLevelCacheManager() *MockThreeLevelCacheManager {
@@ -408,12 +408,12 @@ func TestThreeLevelCacheManager_Strategy(t *testing.T) {
 
 	// 更新策略
 	newStrategy := &CacheStrategy{
-		L1MaxEntries:    20000,
-		L1TTL:           2 * time.Minute,
-		L2TTL:           20 * time.Minute,
-		HotDataThreshold: 0.9,
+		L1MaxEntries:      20000,
+		L1TTL:             2 * time.Minute,
+		L2TTL:             20 * time.Minute,
+		HotDataThreshold:  0.9,
 		WarmDataThreshold: 0.3,
-		PreloadEnabled:   false,
+		PreloadEnabled:    false,
 	}
 
 	err := manager.UpdateStrategy(newStrategy)

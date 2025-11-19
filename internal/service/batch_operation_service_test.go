@@ -93,7 +93,7 @@ func TestBatchEnable(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		ruleIDs := []string{"rule1", "rule2"}
-		
+
 		for _, id := range ruleIDs {
 			rule := createTestRule(id, false)
 			mockRepo.On("FindByID", ctx, id).Return(rule, nil).Once()
@@ -118,17 +118,17 @@ func TestBatchEnable(t *testing.T) {
 	t.Run("Partial Success", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1", "rule2", "rule3"}
-		
+
 		// rule1 成功
 		rule1 := createTestRule("rule1", false)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule1, nil).Once()
 		mockRepo.On("Update", ctx, mock.Anything).Return(nil).Once()
-		
+
 		// rule2 查找失败
 		mockRepo.On("FindByID", ctx, "rule2").Return(nil, errors.New("database error")).Once()
-		
+
 		// rule3 更新失败
 		rule3 := createTestRule("rule3", false)
 		mockRepo.On("FindByID", ctx, "rule3").Return(rule3, nil).Once()
@@ -150,7 +150,7 @@ func TestBatchEnable(t *testing.T) {
 	t.Run("Rule Not Found", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"nonexistent"}
 		mockRepo.On("FindByID", ctx, "nonexistent").Return(nil, nil).Once()
 
@@ -174,7 +174,7 @@ func TestBatchDisable(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		ruleIDs := []string{"rule1", "rule2"}
-		
+
 		for _, id := range ruleIDs {
 			rule := createTestRule(id, true)
 			mockRepo.On("FindByID", ctx, id).Return(rule, nil).Once()
@@ -202,7 +202,7 @@ func TestBatchDelete(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		ruleIDs := []string{"rule1", "rule2", "rule3"}
-		
+
 		for _, id := range ruleIDs {
 			mockRepo.On("Delete", ctx, id).Return(nil).Once()
 		}
@@ -222,9 +222,9 @@ func TestBatchDelete(t *testing.T) {
 	t.Run("Partial Failure", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1", "rule2"}
-		
+
 		mockRepo.On("Delete", ctx, "rule1").Return(nil).Once()
 		mockRepo.On("Delete", ctx, "rule2").Return(errors.New("delete failed")).Once()
 
@@ -251,7 +251,7 @@ func TestBatchUpdate(t *testing.T) {
 		updates := map[string]interface{}{
 			"priority": 200,
 		}
-		
+
 		for _, id := range ruleIDs {
 			rule := createTestRule(id, true)
 			mockRepo.On("FindByID", ctx, id).Return(rule, nil).Once()
@@ -273,12 +273,12 @@ func TestBatchUpdate(t *testing.T) {
 	t.Run("Update Priority - Float64", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1"}
 		updates := map[string]interface{}{
 			"priority": float64(150),
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.MatchedBy(func(r *models.Rule) bool {
@@ -295,12 +295,12 @@ func TestBatchUpdate(t *testing.T) {
 	t.Run("Update Tags - Success", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1"}
 		updates := map[string]interface{}{
 			"tags": []string{"prod", "important"},
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.MatchedBy(func(r *models.Rule) bool {
@@ -317,12 +317,12 @@ func TestBatchUpdate(t *testing.T) {
 	t.Run("Update Tags - Interface Array", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1"}
 		updates := map[string]interface{}{
 			"tags": []interface{}{"tag1", "tag2"},
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.MatchedBy(func(r *models.Rule) bool {
@@ -339,12 +339,12 @@ func TestBatchUpdate(t *testing.T) {
 	t.Run("Update Enabled - Success", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1"}
 		updates := map[string]interface{}{
 			"enabled": false,
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.MatchedBy(func(r *models.Rule) bool {
@@ -361,7 +361,7 @@ func TestBatchUpdate(t *testing.T) {
 	t.Run("Invalid Field", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1"}
 		updates := map[string]interface{}{
 			"invalid_field": "value",
@@ -377,14 +377,14 @@ func TestBatchUpdate(t *testing.T) {
 	t.Run("Multiple Fields Update", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		ruleIDs := []string{"rule1"}
 		updates := map[string]interface{}{
 			"priority": 300,
 			"enabled":  false,
 			"tags":     []string{"updated"},
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.MatchedBy(func(r *models.Rule) bool {
@@ -420,12 +420,12 @@ func TestExecuteBatchOperation(t *testing.T) {
 	t.Run("Enable Operation", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		req := &models.BatchOperationRequest{
 			Operation: "enable",
 			RuleIDs:   []string{"rule1"},
 		}
-		
+
 		rule := createTestRule("rule1", false)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.Anything).Return(nil).Once()
@@ -441,12 +441,12 @@ func TestExecuteBatchOperation(t *testing.T) {
 	t.Run("Disable Operation", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		req := &models.BatchOperationRequest{
 			Operation: "disable",
 			RuleIDs:   []string{"rule1"},
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.Anything).Return(nil).Once()
@@ -462,12 +462,12 @@ func TestExecuteBatchOperation(t *testing.T) {
 	t.Run("Delete Operation", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		req := &models.BatchOperationRequest{
 			Operation: "delete",
 			RuleIDs:   []string{"rule1"},
 		}
-		
+
 		mockRepo.On("Delete", ctx, "rule1").Return(nil).Once()
 
 		result, err := ExecuteBatchOperation(ctx, service, req)
@@ -481,13 +481,13 @@ func TestExecuteBatchOperation(t *testing.T) {
 	t.Run("Update Operation", func(t *testing.T) {
 		mockRepo = new(MockBatchRuleRepository)
 		service.ruleRepo = mockRepo
-		
+
 		req := &models.BatchOperationRequest{
 			Operation: "update",
 			RuleIDs:   []string{"rule1"},
 			Updates:   map[string]interface{}{"priority": 100},
 		}
-		
+
 		rule := createTestRule("rule1", true)
 		mockRepo.On("FindByID", ctx, "rule1").Return(rule, nil).Once()
 		mockRepo.On("Update", ctx, mock.Anything).Return(nil).Once()

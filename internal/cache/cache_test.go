@@ -25,10 +25,10 @@ func TestCacheEntry_Creation(t *testing.T) {
 		Value:     "test_value",
 		Level:     L1_HOT,
 		TTL:       10 * time.Minute,
-		CreatedAt:  time.Now(),
-		AccessAt:   time.Now(),
-		HitCount:   5,
-		ExpireAt:   time.Now().Add(10 * time.Minute),
+		CreatedAt: time.Now(),
+		AccessAt:  time.Now(),
+		HitCount:  5,
+		ExpireAt:  time.Now().Add(10 * time.Minute),
 	}
 
 	assert.Equal(t, "test_key", entry.Key)
@@ -91,10 +91,10 @@ func BenchmarkCacheEntry_Creation(b *testing.B) {
 			Value:     "test_value",
 			Level:     L1_HOT,
 			TTL:       10 * time.Minute,
-			CreatedAt:  time.Now(),
-			AccessAt:   time.Now(),
-			HitCount:   5,
-			ExpireAt:   time.Now().Add(10 * time.Minute),
+			CreatedAt: time.Now(),
+			AccessAt:  time.Now(),
+			HitCount:  5,
+			ExpireAt:  time.Now().Add(10 * time.Minute),
 		}
 	}
 }

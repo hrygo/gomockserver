@@ -25,10 +25,10 @@ type RegexCacheStats struct {
 
 // MatchEngine 规则匹配引擎
 type MatchEngine struct {
-	ruleRepo     repository.RuleRepository
-	regexCache   *LRURegexCache
-	cacheStats   RegexCacheStats
-	statsMu      sync.RWMutex
+	ruleRepo   repository.RuleRepository
+	regexCache *LRURegexCache
+	cacheStats RegexCacheStats
+	statsMu    sync.RWMutex
 }
 
 // NewMatchEngine 创建匹配引擎

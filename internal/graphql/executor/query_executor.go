@@ -113,8 +113,8 @@ func (e *QueryExecutor) executeSelectQuery(ctx context.Context, execCtx *types.E
 		// 如果无法解析，返回默认结果
 		result.Data = map[string]interface{}{
 			"__typename": "QueryResult",
-			"status":    "success",
-			"timestamp": time.Now().Unix(),
+			"status":     "success",
+			"timestamp":  time.Now().Unix(),
 		}
 		return
 	}
@@ -122,13 +122,29 @@ func (e *QueryExecutor) executeSelectQuery(ctx context.Context, execCtx *types.E
 	// 执行每个字段的解析
 	data := make(map[string]interface{})
 	for _, fieldName := range queryFields {
+		// 解析字段参数（如果有的话）
+		fieldArguments := make(map[string]interface{})
+
+		// 从查询字符串中提取字段参数
+		if strings.Contains(execCtx.Query.Query, fieldName+"(") {
+			fieldArgs := e.extractFieldArguments(execCtx.Query.Query, fieldName, execCtx.Variables)
+			fieldArguments = fieldArgs
+		} else {
+			// 如果没有字段参数，传递全部变量（兼容性）
+			fieldArguments = execCtx.Variables
+		}
+
 		fieldCtx := &types.FieldContext{
 			ParentType: "Query",
 			FieldName:  fieldName,
-			Arguments:  execCtx.Variables,
+			Arguments:  fieldArguments,
 			Alias:      fieldName,
 			Path:       []string{fieldName},
 		}
+
+		e.logger.Debug("解析字段",
+			zap.String("field", fieldName),
+			zap.Any("arguments", fieldArguments))
 
 		fieldResult, err := e.resolver.ResolveField(ctx, fieldCtx)
 		if err != nil {
@@ -159,8 +175,8 @@ func (e *QueryExecutor) executeMutationQuery(ctx context.Context, execCtx *types
 		// 如果无法解析，返回默认结果
 		result.Data = map[string]interface{}{
 			"__typename": "MutationResult",
-			"success":   true,
-			"timestamp": time.Now().Unix(),
+			"success":    true,
+			"timestamp":  time.Now().Unix(),
 		}
 		return
 	}
@@ -203,8 +219,8 @@ func (e *QueryExecutor) executeSubscriptionQuery(ctx context.Context, execCtx *t
 	// 目前返回一个示例结果
 	result.Data = map[string]interface{}{
 		"__typename": "SubscriptionResult",
-		"connected": true,
-		"timestamp": time.Now().Unix(),
+		"connected":  true,
+		"timestamp":  time.Now().Unix(),
 	}
 }
 
@@ -245,8 +261,8 @@ func (e *QueryExecutor) executeMiddlewareChain(ctx context.Context, execCtx *typ
 // wrapError 包装错误
 func (e *QueryExecutor) wrapError(err error, kind types.ErrorKind) *types.GraphQLErrorWrapper {
 	return &types.GraphQLErrorWrapper{
-		Kind:    kind,
-		Message: err.Error(),
+		Kind:     kind,
+		Message:  err.Error(),
 		Internal: err,
 	}
 }
@@ -417,7 +433,7 @@ func (m *TimeoutMiddleware) Handle(ctx context.Context, execCtx *types.Execution
 		return result
 	case <-ctx.Done():
 		return &types.GraphQLResult{
-			Data:   nil,
+			Data: nil,
 			Errors: []*types.GraphQLErrorWrapper{
 				{
 					Kind:    types.ErrorKindExecution,
@@ -438,33 +454,41 @@ func (e *QueryExecutor) parseSimpleQuery(query string) []string {
 	// 移除注释和多余空白
 	cleanQuery := strings.TrimSpace(query)
 
-	// 简单的正则表达式匹配GraphQL字段
-	// 匹配模式: { field1, field2, field3 } 或 query { field1 field2 }
-
-	// 1. 查找查询块的内容
-	queryBlockRegex := regexp.MustCompile(`\{([^{}]+)\}`)
-	matches := queryBlockRegex.FindAllStringSubmatch(cleanQuery, -1)
-
+	// 处理不同类型的GraphQL查询格式
 	var fields []string
 
-	for _, match := range matches {
-		if len(match) > 1 {
-			blockContent := strings.TrimSpace(match[1])
+	// 1. 处理带变量和参数的查询，如: query GetUser($id: ID!) { user(id: $id) { id name } }
+	// 提取顶层字段名（在第一个 { 块中，但不在嵌套块中的字段）
+	if strings.Contains(cleanQuery, "(") && strings.Contains(cleanQuery, "$") {
+		// 对于带变量的查询，查找第一个 { 和 } 之间的顶层字段
+		firstBrace := strings.Index(cleanQuery, "{")
+		lastBrace := strings.LastIndex(cleanQuery, "}")
 
-			// 2. 分割字段名
-			fieldRegex := regexp.MustCompile(`(\w+)`)
-			fieldMatches := fieldRegex.FindAllString(blockContent, -1)
+		if firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace {
+			// 提取第一个查询块
+			firstBlock := cleanQuery[firstBrace+1 : lastBrace]
 
-			// 过滤掉GraphQL关键字
-			for _, field := range fieldMatches {
-				field = strings.TrimSpace(field)
-				if field != "" &&
-				   !strings.EqualFold(field, "query") &&
-				   !strings.EqualFold(field, "mutation") &&
-				   !strings.EqualFold(field, "subscription") &&
-				   !strings.Contains(field, "(") {
-					fields = append(fields, field)
-				}
+			// 找到嵌套的开始位置（第一个内嵌的 {）
+			nestedStart := strings.Index(firstBlock, "{")
+			if nestedStart != -1 {
+				// 只处理嵌套之前的部分（顶层字段）
+				topLevelContent := strings.TrimSpace(firstBlock[:nestedStart])
+				fields = e.extractTopLevelFields(topLevelContent)
+			} else {
+				// 没有嵌套，直接处理整个块
+				fields = e.extractTopLevelFields(firstBlock)
+			}
+		}
+	} else {
+		// 2. 处理简单查询，如: { hello status user }
+		queryBlockRegex := regexp.MustCompile(`\{([^{}]+)\}`)
+		matches := queryBlockRegex.FindAllStringSubmatch(cleanQuery, -1)
+
+		for _, match := range matches {
+			if len(match) > 1 {
+				blockContent := strings.TrimSpace(match[1])
+				extractedFields := e.extractTopLevelFields(blockContent)
+				fields = append(fields, extractedFields...)
 			}
 		}
 	}
@@ -484,4 +508,102 @@ func (e *QueryExecutor) parseSimpleQuery(query string) []string {
 		zap.String("original_query", cleanQuery))
 
 	return uniqueFields
+}
+
+// extractTopLevelFields 从查询内容中提取顶层字段名
+func (e *QueryExecutor) extractTopLevelFields(content string) []string {
+	var fields []string
+
+	// 使用更简单的正则表达式匹配字段名和参数
+	// 首先匹配带参数的字段: fieldName(argument: value)
+	fieldWithArgsRegex := regexp.MustCompile(`(\w+)\s*\([^)]*\)`)
+	matches := fieldWithArgsRegex.FindAllStringSubmatch(content, -1)
+
+	for _, match := range matches {
+		if len(match) > 1 {
+			field := strings.TrimSpace(match[1])
+			// 过滤掉GraphQL关键字
+			if field != "" &&
+				!strings.EqualFold(field, "query") &&
+				!strings.EqualFold(field, "mutation") &&
+				!strings.EqualFold(field, "subscription") &&
+				!strings.EqualFold(field, "fragment") {
+				fields = append(fields, field)
+			}
+		}
+	}
+
+	// 然后匹配不带参数的字段: fieldName
+	// 移除已经处理的带参数的字段
+	contentWithoutArgs := fieldWithArgsRegex.ReplaceAllString(content, "")
+
+	// 匹配简单的字段名
+	simpleFieldRegex := regexp.MustCompile(`(\w+)`)
+	simpleMatches := simpleFieldRegex.FindAllStringSubmatch(contentWithoutArgs, -1)
+
+	for _, match := range simpleMatches {
+		if len(match) > 1 {
+			field := strings.TrimSpace(match[1])
+			// 过滤掉GraphQL关键字
+			if field != "" &&
+				!strings.EqualFold(field, "query") &&
+				!strings.EqualFold(field, "mutation") &&
+				!strings.EqualFold(field, "subscription") &&
+				!strings.EqualFold(field, "fragment") {
+				fields = append(fields, field)
+			}
+		}
+	}
+
+	return fields
+}
+
+// extractFieldArguments 从查询字符串中提取字段参数
+func (e *QueryExecutor) extractFieldArguments(query, fieldName string, variables map[string]interface{}) map[string]interface{} {
+	args := make(map[string]interface{})
+
+	// 构建字段参数的正则表达式
+	// 匹配模式: fieldName(arg1: $var1, arg2: "value2")
+	pattern := fmt.Sprintf(`%s\s*\(([^)]+)\)`, regexp.QuoteMeta(fieldName))
+	argRegex := regexp.MustCompile(pattern)
+
+	matches := argRegex.FindStringSubmatch(query)
+	if len(matches) > 1 {
+		argsString := strings.TrimSpace(matches[1])
+
+		// 解析参数字符串 "id: $id, name: \"test\""
+		argPairs := strings.Split(argsString, ",")
+		for _, pair := range argPairs {
+			pair = strings.TrimSpace(pair)
+			if parts := strings.SplitN(pair, ":", 2); len(parts) == 2 {
+				argName := strings.TrimSpace(parts[0])
+				argValue := strings.TrimSpace(parts[1])
+
+				// 处理变量引用 ($variable)
+				if strings.HasPrefix(argValue, "$") {
+					varName := strings.TrimPrefix(argValue, "$")
+					if varValue, exists := variables[varName]; exists {
+						args[argName] = varValue
+					}
+				} else {
+					// 处理字面量值（移除引号）
+					if strings.HasPrefix(argValue, "\"") && strings.HasSuffix(argValue, "\"") {
+						args[argName] = strings.Trim(argValue, "\"")
+					} else if argValue == "true" || argValue == "false" {
+						args[argName] = argValue == "true"
+					} else {
+						// 尝试解析为数字或其他类型
+						args[argName] = argValue
+					}
+				}
+			}
+		}
+	}
+
+	e.logger.Debug("提取字段参数",
+		zap.String("field", fieldName),
+		zap.Any("extracted_args", args),
+		zap.Any("available_variables", variables))
+
+	return args
 }

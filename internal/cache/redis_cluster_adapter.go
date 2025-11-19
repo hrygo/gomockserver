@@ -13,74 +13,74 @@ import (
 
 // RedisClusterAdapter Redis集群适配器
 type RedisClusterAdapter struct {
-	cluster          *RedisCluster
-	config           *RedisClusterAdapterConfig
-	keyPrefix        string
-	mu               sync.RWMutex
-	logger           *zap.Logger
-	stats            *RedisClusterStats
-	failover         *FailoverManager
-	sharding         *ShardingManager
-	replication      *ReplicationManager
+	cluster     *RedisCluster
+	config      *RedisClusterAdapterConfig
+	keyPrefix   string
+	mu          sync.RWMutex
+	logger      *zap.Logger
+	stats       *RedisClusterStats
+	failover    *FailoverManager
+	sharding    *ShardingManager
+	replication *ReplicationManager
 }
 
 // RedisClusterAdapterConfig Redis集群适配器配置
 type RedisClusterAdapterConfig struct {
 	KeyPrefix         string        `json:"key_prefix"`
 	DefaultTTL        time.Duration `json:"default_ttl"`
-	MaxTTL           time.Duration `json:"max_ttl"`
+	MaxTTL            time.Duration `json:"max_ttl"`
 	EnableSharding    bool          `json:"enable_sharding"`
 	EnableReplication bool          `json:"enable_replication"`
 	EnableFailover    bool          `json:"enable_failover"`
 	EnableCompression bool          `json:"enable_compression"`
-	SerializeFormat  string        `json:"serialize_format"` // json, msgpack, gob
+	SerializeFormat   string        `json:"serialize_format"` // json, msgpack, gob
 }
 
 // RedisClusterStats Redis集群统计
 type RedisClusterStats struct {
-	TotalRequests     int64         `json:"total_requests"`
-	HitRequests       int64         `json:"hit_requests"`
-	MissRequests      int64         `json:"miss_requests"`
-	ErrorRequests     int64         `json:"error_requests"`
-	SetRequests       int64         `json:"set_requests"`
-	DeleteRequests    int64         `json:"delete_requests"`
-	HitRate           float64       `json:"hit_rate"`
-	ErrorRate         float64       `json:"error_rate"`
-	AvgResponseTime   time.Duration `json:"avg_response_time"`
-	TotalBytes        int64         `json:"total_bytes"`
-	CompressedBytes   int64         `json:"compressed_bytes"`
-	ShardStats        map[string]*ShardStats `json:"shard_stats"`
-	ReplicationStats  *ReplicationStats `json:"replication_stats"`
-	FailoverStats     *FailoverStats    `json:"failover_stats"`
-	LastUpdate        time.Time     `json:"last_update"`
+	TotalRequests    int64                  `json:"total_requests"`
+	HitRequests      int64                  `json:"hit_requests"`
+	MissRequests     int64                  `json:"miss_requests"`
+	ErrorRequests    int64                  `json:"error_requests"`
+	SetRequests      int64                  `json:"set_requests"`
+	DeleteRequests   int64                  `json:"delete_requests"`
+	HitRate          float64                `json:"hit_rate"`
+	ErrorRate        float64                `json:"error_rate"`
+	AvgResponseTime  time.Duration          `json:"avg_response_time"`
+	TotalBytes       int64                  `json:"total_bytes"`
+	CompressedBytes  int64                  `json:"compressed_bytes"`
+	ShardStats       map[string]*ShardStats `json:"shard_stats"`
+	ReplicationStats *ReplicationStats      `json:"replication_stats"`
+	FailoverStats    *FailoverStats         `json:"failover_stats"`
+	LastUpdate       time.Time              `json:"last_update"`
 }
 
 // ShardStats 分片统计
 type ShardStats struct {
-	ShardID          string        `json:"shard_id"`
-	NodeAddress      string        `json:"node_address"`
-	RequestCount     int64         `json:"request_count"`
-	HitCount         int64         `json:"hit_count"`
-	ErrorCount       int64         `json:"error_count"`
-	DataSize         int64         `json:"data_size"`
-	AvgResponseTime  time.Duration `json:"avg_response_time"`
+	ShardID         string        `json:"shard_id"`
+	NodeAddress     string        `json:"node_address"`
+	RequestCount    int64         `json:"request_count"`
+	HitCount        int64         `json:"hit_count"`
+	ErrorCount      int64         `json:"error_count"`
+	DataSize        int64         `json:"data_size"`
+	AvgResponseTime time.Duration `json:"avg_response_time"`
 }
 
 // ReplicationStats 复制统计
 type ReplicationStats struct {
-	MasterWrites     int64     `json:"master_writes"`
-	SlaveReplications int64     `json:"slave_replications"`
-	ReplicationLag   time.Duration `json:"replication_lag"`
-	ReplicationErrors int64     `json:"replication_errors"`
+	MasterWrites      int64         `json:"master_writes"`
+	SlaveReplications int64         `json:"slave_replications"`
+	ReplicationLag    time.Duration `json:"replication_lag"`
+	ReplicationErrors int64         `json:"replication_errors"`
 }
 
 // FailoverStats 故障转移统计
 type FailoverStats struct {
-	TotalFailovers   int64         `json:"total_failovers"`
+	TotalFailovers  int64         `json:"total_failovers"`
 	SuccessfulFails int64         `json:"successful_fails"`
-	FailedFails      int64         `json:"failed_fails"`
-	AvgFailoverTime  time.Duration `json:"avg_failover_time"`
-	LastFailover     time.Time     `json:"last_failover"`
+	FailedFails     int64         `json:"failed_fails"`
+	AvgFailoverTime time.Duration `json:"avg_failover_time"`
+	LastFailover    time.Time     `json:"last_failover"`
 }
 
 // FailoverManager 故障转移管理器
@@ -104,11 +104,11 @@ type ShardingManager struct {
 
 // ShardInfo 分片信息
 type ShardInfo struct {
-	ID         int    `json:"id"`
-	NodeAddr   string `json:"node_addr"`
-	Weight     int    `json:"weight"`
-	IsHealthy  bool   `json:"is_healthy"`
-	KeyRange   string `json:"key_range"`
+	ID        int    `json:"id"`
+	NodeAddr  string `json:"node_addr"`
+	Weight    int    `json:"weight"`
+	IsHealthy bool   `json:"is_healthy"`
+	KeyRange  string `json:"key_range"`
 }
 
 // ReplicationManager 复制管理器
@@ -126,12 +126,12 @@ func DefaultRedisClusterAdapterConfig() *RedisClusterAdapterConfig {
 	return &RedisClusterAdapterConfig{
 		KeyPrefix:         "cache:",
 		DefaultTTL:        1 * time.Hour,
-		MaxTTL:           24 * time.Hour,
+		MaxTTL:            24 * time.Hour,
 		EnableSharding:    true,
 		EnableReplication: true,
 		EnableFailover:    true,
 		EnableCompression: false,
-		SerializeFormat:  "json",
+		SerializeFormat:   "json",
 	}
 }
 
@@ -142,25 +142,25 @@ func NewRedisClusterAdapter(cluster *RedisCluster, config *RedisClusterAdapterCo
 	}
 
 	adapter := &RedisClusterAdapter{
-		cluster: cluster,
-		config:  config,
+		cluster:   cluster,
+		config:    config,
 		keyPrefix: config.KeyPrefix,
-		logger:  logger.Named("redis_cluster_adapter"),
+		logger:    logger.Named("redis_cluster_adapter"),
 		stats: &RedisClusterStats{
 			ShardStats:       make(map[string]*ShardStats),
 			ReplicationStats: &ReplicationStats{},
 			FailoverStats:    &FailoverStats{},
-			LastUpdate:      time.Now(),
+			LastUpdate:       time.Now(),
 		},
 	}
 
 	// 初始化故障转移管理器
 	if config.EnableFailover {
 		adapter.failover = &FailoverManager{
-			config: config,
+			config:  config,
 			cluster: cluster,
-			logger: logger.Named("failover_manager"),
-			stats:  &FailoverStats{},
+			logger:  logger.Named("failover_manager"),
+			stats:   &FailoverStats{},
 		}
 	}
 
@@ -178,11 +178,11 @@ func NewRedisClusterAdapter(cluster *RedisCluster, config *RedisClusterAdapterCo
 	// 初始化复制管理器
 	if config.EnableReplication {
 		adapter.replication = &ReplicationManager{
-			config:          config,
-			cluster:         cluster,
-			logger:          logger.Named("replication_manager"),
-			stats:           &ReplicationStats{},
-			replicaEnabled:  true,
+			config:         config,
+			cluster:        cluster,
+			logger:         logger.Named("replication_manager"),
+			stats:          &ReplicationStats{},
+			replicaEnabled: true,
 		}
 	}
 
@@ -211,7 +211,7 @@ func (rca *RedisClusterAdapter) initializeShards() {
 		}
 		rca.sharding.shards[i] = shard
 		rca.stats.ShardStats[strconv.Itoa(i)] = &ShardStats{
-			ShardID: strconv.Itoa(i),
+			ShardID:     strconv.Itoa(i),
 			NodeAddress: shard.NodeAddr,
 		}
 	}
@@ -455,30 +455,30 @@ func (rca *RedisClusterAdapter) GetStats() *RedisClusterStats {
 
 	// 返回统计信息的深拷贝
 	stats := &RedisClusterStats{
-		TotalRequests:     rca.stats.TotalRequests,
-		HitRequests:       rca.stats.HitRequests,
-		MissRequests:      rca.stats.MissRequests,
-		ErrorRequests:     rca.stats.ErrorRequests,
-		SetRequests:       rca.stats.SetRequests,
-		DeleteRequests:    rca.stats.DeleteRequests,
-		HitRate:           rca.stats.HitRate,
-		ErrorRate:         rca.stats.ErrorRate,
-		AvgResponseTime:   rca.stats.AvgResponseTime,
-		TotalBytes:        rca.stats.TotalBytes,
-		CompressedBytes:   rca.stats.CompressedBytes,
-		ShardStats:        make(map[string]*ShardStats),
+		TotalRequests:   rca.stats.TotalRequests,
+		HitRequests:     rca.stats.HitRequests,
+		MissRequests:    rca.stats.MissRequests,
+		ErrorRequests:   rca.stats.ErrorRequests,
+		SetRequests:     rca.stats.SetRequests,
+		DeleteRequests:  rca.stats.DeleteRequests,
+		HitRate:         rca.stats.HitRate,
+		ErrorRate:       rca.stats.ErrorRate,
+		AvgResponseTime: rca.stats.AvgResponseTime,
+		TotalBytes:      rca.stats.TotalBytes,
+		CompressedBytes: rca.stats.CompressedBytes,
+		ShardStats:      make(map[string]*ShardStats),
 		ReplicationStats: &ReplicationStats{
 			MasterWrites:      rca.stats.ReplicationStats.MasterWrites,
 			SlaveReplications: rca.stats.ReplicationStats.SlaveReplications,
-			ReplicationLag:   rca.stats.ReplicationStats.ReplicationLag,
+			ReplicationLag:    rca.stats.ReplicationStats.ReplicationLag,
 			ReplicationErrors: rca.stats.ReplicationStats.ReplicationErrors,
 		},
 		FailoverStats: &FailoverStats{
-			TotalFailovers:   rca.stats.FailoverStats.TotalFailovers,
+			TotalFailovers:  rca.stats.FailoverStats.TotalFailovers,
 			SuccessfulFails: rca.stats.FailoverStats.SuccessfulFails,
-			FailedFails:      rca.stats.FailoverStats.FailedFails,
-			AvgFailoverTime:  rca.stats.FailoverStats.AvgFailoverTime,
-			LastFailover:     rca.stats.FailoverStats.LastFailover,
+			FailedFails:     rca.stats.FailoverStats.FailedFails,
+			AvgFailoverTime: rca.stats.FailoverStats.AvgFailoverTime,
+			LastFailover:    rca.stats.FailoverStats.LastFailover,
 		},
 		LastUpdate: rca.stats.LastUpdate,
 	}

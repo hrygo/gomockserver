@@ -32,14 +32,14 @@ func TestTemplateEngine_Render(t *testing.T) {
 			name:     "uuid function",
 			template: "Request ID: {{uuid}}",
 			context:  &TemplateContext{},
-			want:     "",  // UUID is random
+			want:     "", // UUID is random
 			wantErr:  false,
 		},
 		{
 			name:     "timestamp function",
 			template: "Timestamp: {{timestamp}}",
 			context:  &TemplateContext{},
-			want:     "",  // timestamp is dynamic
+			want:     "", // timestamp is dynamic
 			wantErr:  false,
 		},
 		{
@@ -68,14 +68,14 @@ func TestTemplateEngine_Render(t *testing.T) {
 			name:     "random function",
 			template: "Random: {{random 1 100}}",
 			context:  &TemplateContext{},
-			want:     "",  // random value
+			want:     "", // random value
 			wantErr:  false,
 		},
 		{
 			name:     "randomString function",
 			template: "Token: {{randomString 8}}",
 			context:  &TemplateContext{},
-			want:     "",  // random string
+			want:     "", // random string
 			wantErr:  false,
 		},
 		{
@@ -174,8 +174,8 @@ func TestTemplateEngine_Render(t *testing.T) {
 					Path: "/test",
 				},
 			},
-			want:     "",
-			wantErr:  false,
+			want:    "",
+			wantErr: false,
 		},
 		{
 			name:     "toJSONPretty function",
@@ -185,8 +185,8 @@ func TestTemplateEngine_Render(t *testing.T) {
 					Path: "/test",
 				},
 			},
-			want:     "",
-			wantErr:  false,
+			want:    "",
+			wantErr: false,
 		},
 	}
 
@@ -198,7 +198,7 @@ func TestTemplateEngine_Render(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			
+
 			if tt.want != "" {
 				assert.Equal(t, tt.want, got)
 			} else {
@@ -301,7 +301,7 @@ func TestMockExecutor_DynamicResponse(t *testing.T) {
 				Response: models.Response{
 					Type: models.ResponseTypeDynamic,
 					Content: map[string]interface{}{
-						"status_code": 200,
+						"status_code":  200,
 						"content_type": "JSON",
 						"body": map[string]interface{}{
 							"request_id": "{{uuid}}",
@@ -443,7 +443,7 @@ func TestTemplateEngine_BuiltInFunctions(t *testing.T) {
 		result, err := engine.Render("{{timestamp}}", ctx)
 		require.NoError(t, err)
 		assert.NotEmpty(t, result)
-		
+
 		// Parse and verify it's a valid timestamp
 		var ts int64
 		err = json.Unmarshal([]byte(result), &ts)
@@ -460,7 +460,7 @@ func TestTemplateEngine_BuiltInFunctions(t *testing.T) {
 	t.Run("now with format", func(t *testing.T) {
 		result, err := engine.Render("{{now \"2006-01-02\"}}", ctx)
 		require.NoError(t, err)
-		
+
 		// Verify date format
 		_, err = time.Parse("2006-01-02", result)
 		require.NoError(t, err)
@@ -469,7 +469,7 @@ func TestTemplateEngine_BuiltInFunctions(t *testing.T) {
 	t.Run("random range", func(t *testing.T) {
 		result, err := engine.Render("{{random 10 20}}", ctx)
 		require.NoError(t, err)
-		
+
 		var num int
 		err = json.Unmarshal([]byte(result), &num)
 		require.NoError(t, err)

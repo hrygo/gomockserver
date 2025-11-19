@@ -10,18 +10,18 @@ import (
 // Metrics 系统指标收集器
 type Metrics struct {
 	// HTTP 请求指标
-	HTTPRequestsTotal   *prometheus.CounterVec
-	HTTPRequestDuration *prometheus.HistogramVec
+	HTTPRequestsTotal    *prometheus.CounterVec
+	HTTPRequestDuration  *prometheus.HistogramVec
 	HTTPRequestsInFlight prometheus.Gauge
 
 	// WebSocket 指标
-	WebSocketConnections prometheus.Gauge
+	WebSocketConnections   prometheus.Gauge
 	WebSocketMessagesTotal *prometheus.CounterVec
 
 	// 规则匹配指标
-	RuleMatchesTotal   *prometheus.CounterVec
-	RuleMatchDuration  *prometheus.HistogramVec
-	RulesTotal         prometheus.Gauge
+	RuleMatchesTotal  *prometheus.CounterVec
+	RuleMatchDuration *prometheus.HistogramVec
+	RulesTotal        prometheus.Gauge
 
 	// 系统资源指标
 	GoroutinesCount prometheus.Gauge

@@ -12,74 +12,74 @@ import (
 
 // AutoTuner 自动调优器
 type AutoTuner struct {
-	mu                    sync.RWMutex
-	config                *AutoTuningConfig
-	currentStrategy       *CacheStrategy
-	performanceHistory    []PerformanceSnapshot
-	tuningHistory         []TuningAction
-	isActive              bool
-	stopCh                chan struct{}
-	logger                *zap.Logger
-	metricsCollector      MetricsCollector
+	mu                 sync.RWMutex
+	config             *AutoTuningConfig
+	currentStrategy    *CacheStrategy
+	performanceHistory []PerformanceSnapshot
+	tuningHistory      []TuningAction
+	isActive           bool
+	stopCh             chan struct{}
+	logger             *zap.Logger
+	metricsCollector   MetricsCollector
 }
 
 // AutoTuningConfig 自动调优配置
 type AutoTuningConfig struct {
 	// 调优控制
-	EnableAutoTuning       bool          `json:"enable_auto_tuning"`
-	TuningInterval        time.Duration `json:"tuning_interval"`
-	MinDataPoints         int           `json:"min_data_points"`
-	ReactionSpeed         float64       `json:"reaction_speed"`         // 反应速度 0.0-1.0
-	MaxAdjustmentPerStep  float64       `json:"max_adjustment_per_step"` // 每步最大调整幅度
+	EnableAutoTuning     bool          `json:"enable_auto_tuning"`
+	TuningInterval       time.Duration `json:"tuning_interval"`
+	MinDataPoints        int           `json:"min_data_points"`
+	ReactionSpeed        float64       `json:"reaction_speed"`          // 反应速度 0.0-1.0
+	MaxAdjustmentPerStep float64       `json:"max_adjustment_per_step"` // 每步最大调整幅度
 
 	// 性能阈值
-	TargetHitRate         float64       `json:"target_hit_rate"`
-	TargetResponseTime    time.Duration `json:"target_response_time"`
-	AcceptableHitRate     float64       `json:"acceptable_hit_rate"`
-	MaxResponseTime       time.Duration `json:"max_response_time"`
+	TargetHitRate      float64       `json:"target_hit_rate"`
+	TargetResponseTime time.Duration `json:"target_response_time"`
+	AcceptableHitRate  float64       `json:"acceptable_hit_rate"`
+	MaxResponseTime    time.Duration `json:"max_response_time"`
 
 	// 调优参数范围
-	HotThresholdRange     [2]float64    `json:"hot_threshold_range"`
-	WarmThresholdRange    [2]float64    `json:"warm_threshold_range"`
-	L1CapacityRange       [2]int        `json:"l1_capacity_range"`
-	TTLRange              [2]time.Duration `json:"ttl_range"`
+	HotThresholdRange  [2]float64       `json:"hot_threshold_range"`
+	WarmThresholdRange [2]float64       `json:"warm_threshold_range"`
+	L1CapacityRange    [2]int           `json:"l1_capacity_range"`
+	TTLRange           [2]time.Duration `json:"ttl_range"`
 
 	// 调优权重
-	HitRateWeight         float64       `json:"hit_rate_weight"`
-	ResponseTimeWeight    float64       `json:"response_time_weight"`
-	MemoryWeight          float64       `json:"memory_weight"`
+	HitRateWeight      float64 `json:"hit_rate_weight"`
+	ResponseTimeWeight float64 `json:"response_time_weight"`
+	MemoryWeight       float64 `json:"memory_weight"`
 
 	// 安全约束
-	MinHitRate            float64       `json:"min_hit_rate"`
-	MaxMemoryUsage        int64         `json:"max_memory_usage"`
-	MinL1Capacity         int           `json:"min_l1_capacity"`
-	MaxL1Capacity         int           `json:"max_l1_capacity"`
+	MinHitRate     float64 `json:"min_hit_rate"`
+	MaxMemoryUsage int64   `json:"max_memory_usage"`
+	MinL1Capacity  int     `json:"min_l1_capacity"`
+	MaxL1Capacity  int     `json:"max_l1_capacity"`
 
 	// 高级设置
-	EnablePredictiveTuning bool         `json:"enable_predictive_tuning"`
+	EnablePredictiveTuning bool          `json:"enable_predictive_tuning"`
 	PredictionWindow       time.Duration `json:"prediction_window"`
-	LoadBasedTuning        bool         `json:"load_based_tuning"`
+	LoadBasedTuning        bool          `json:"load_based_tuning"`
 }
 
 // PerformanceSnapshot 性能快照
 type PerformanceSnapshot struct {
-	Timestamp       time.Time         `json:"timestamp"`
-	Metrics         *PerformanceMetrics `json:"metrics"`
-	LoadFactor      float64           `json:"load_factor"`
-	AccessPattern   string            `json:"access_pattern"`
+	Timestamp     time.Time           `json:"timestamp"`
+	Metrics       *PerformanceMetrics `json:"metrics"`
+	LoadFactor    float64             `json:"load_factor"`
+	AccessPattern string              `json:"access_pattern"`
 }
 
 // TuningAction 调优动作
 type TuningAction struct {
-	Timestamp       time.Time         `json:"timestamp"`
-	Action          string            `json:"action"`
-	Parameter       string            `json:"parameter"`
-	OldValue        interface{}       `json:"old_value"`
-	NewValue        interface{}       `json:"new_value"`
-	Reason          string            `json:"reason"`
-	ExpectedImpact  string            `json:"expected_impact"`
-	ActualImpact    float64           `json:"actual_impact"`
-	Success         bool              `json:"success"`
+	Timestamp      time.Time   `json:"timestamp"`
+	Action         string      `json:"action"`
+	Parameter      string      `json:"parameter"`
+	OldValue       interface{} `json:"old_value"`
+	NewValue       interface{} `json:"new_value"`
+	Reason         string      `json:"reason"`
+	ExpectedImpact string      `json:"expected_impact"`
+	ActualImpact   float64     `json:"actual_impact"`
+	Success        bool        `json:"success"`
 }
 
 // MetricsCollector 性能指标收集器接口
@@ -92,30 +92,30 @@ type MetricsCollector interface {
 // DefaultAutoTuningConfig 默认自动调优配置
 func DefaultAutoTuningConfig() *AutoTuningConfig {
 	return &AutoTuningConfig{
-		EnableAutoTuning:      true,
-		TuningInterval:        2 * time.Minute,
-		MinDataPoints:         5,
-		ReactionSpeed:         0.3,
-		MaxAdjustmentPerStep:  0.1,
+		EnableAutoTuning:     true,
+		TuningInterval:       2 * time.Minute,
+		MinDataPoints:        5,
+		ReactionSpeed:        0.3,
+		MaxAdjustmentPerStep: 0.1,
 
-		TargetHitRate:         0.85,
-		TargetResponseTime:    20 * time.Millisecond,
-		AcceptableHitRate:     0.75,
-		MaxResponseTime:       50 * time.Millisecond,
+		TargetHitRate:      0.85,
+		TargetResponseTime: 20 * time.Millisecond,
+		AcceptableHitRate:  0.75,
+		MaxResponseTime:    50 * time.Millisecond,
 
-		HotThresholdRange:     [2]float64{0.6, 0.9},
-		WarmThresholdRange:    [2]float64{0.1, 0.4},
-		L1CapacityRange:       [2]int{2000, 8000},
-		TTLRange:              [2]time.Duration{10 * time.Minute, 1 * time.Hour},
+		HotThresholdRange:  [2]float64{0.6, 0.9},
+		WarmThresholdRange: [2]float64{0.1, 0.4},
+		L1CapacityRange:    [2]int{2000, 8000},
+		TTLRange:           [2]time.Duration{10 * time.Minute, 1 * time.Hour},
 
-		HitRateWeight:         0.5,
-		ResponseTimeWeight:    0.4,
-		MemoryWeight:          0.1,
+		HitRateWeight:      0.5,
+		ResponseTimeWeight: 0.4,
+		MemoryWeight:       0.1,
 
-		MinHitRate:            0.6,
-		MaxMemoryUsage:        150 * 1024 * 1024, // 150MB
-		MinL1Capacity:         1000,
-		MaxL1Capacity:         10000,
+		MinHitRate:     0.6,
+		MaxMemoryUsage: 150 * 1024 * 1024, // 150MB
+		MinL1Capacity:  1000,
+		MaxL1Capacity:  10000,
 
 		EnablePredictiveTuning: true,
 		PredictionWindow:       10 * time.Minute,
@@ -288,11 +288,11 @@ func (at *AutoTuner) simulateMetrics() *PerformanceMetrics {
 	memoryUsage := int64(5000) * 1024 // 默认5000个条目，每个1KB
 
 	return &PerformanceMetrics{
-		HitRate:        hitRate,
+		HitRate:         hitRate,
 		AvgResponseTime: responseTime,
-		MemoryUsage:    memoryUsage,
-		CPULoad:        0.2 + hitRate*0.3, // 简单的CPU负载模型
-		LastUpdateTime: time.Now(),
+		MemoryUsage:     memoryUsage,
+		CPULoad:         0.2 + hitRate*0.3, // 简单的CPU负载模型
+		LastUpdateTime:  time.Now(),
 	}
 }
 
@@ -359,12 +359,12 @@ func (at *AutoTuner) analyzeAndPlanTuning() []TuningAction {
 
 // PerformanceTrend 性能趋势
 type PerformanceTrend struct {
-	HitRateTrend        float64 `json:"hit_rate_trend"`        // 命中率趋势 (-1 to 1)
-	ResponseTimeTrend   float64 `json:"response_time_trend"`   // 响应时间趋势 (-1 to 1)
-	MemoryTrend         float64 `json:"memory_trend"`         // 内存趋势 (-1 to 1)
-	CurrentHitRate      float64 `json:"current_hit_rate"`
+	HitRateTrend        float64       `json:"hit_rate_trend"`      // 命中率趋势 (-1 to 1)
+	ResponseTimeTrend   float64       `json:"response_time_trend"` // 响应时间趋势 (-1 to 1)
+	MemoryTrend         float64       `json:"memory_trend"`        // 内存趋势 (-1 to 1)
+	CurrentHitRate      float64       `json:"current_hit_rate"`
 	CurrentResponseTime time.Duration `json:"current_response_time"`
-	CurrentMemoryUsage  int64   `json:"current_memory_usage"`
+	CurrentMemoryUsage  int64         `json:"current_memory_usage"`
 }
 
 // calculatePerformanceTrend 计算性能趋势
@@ -400,7 +400,7 @@ func (at *AutoTuner) calculatePerformanceTrend() *PerformanceTrend {
 	return &PerformanceTrend{
 		HitRateTrend:        hitRateTrend,
 		ResponseTimeTrend:   -responseTimeTrend, // 响应时间越小越好，所以取反
-		MemoryTrend:         -memoryTrend,        // 内存使用越小越好，所以取反
+		MemoryTrend:         -memoryTrend,       // 内存使用越小越好，所以取反
 		CurrentHitRate:      latest.Metrics.HitRate,
 		CurrentResponseTime: latest.Metrics.AvgResponseTime,
 		CurrentMemoryUsage:  latest.Metrics.MemoryUsage,
@@ -616,10 +616,10 @@ func (at *AutoTuner) analyzePredictiveTuning() []TuningAction {
 
 // PerformancePrediction 性能预测
 type PerformancePrediction struct {
-	PredictedHitRate      float64     `json:"predicted_hit_rate"`
+	PredictedHitRate      float64       `json:"predicted_hit_rate"`
 	PredictedResponseTime time.Duration `json:"predicted_response_time"`
-	PredictedMemoryUsage  int64       `json:"predicted_memory_usage"`
-	Confidence           float64     `json:"confidence"`
+	PredictedMemoryUsage  int64         `json:"predicted_memory_usage"`
+	Confidence            float64       `json:"confidence"`
 }
 
 // predictPerformanceTrend 预测性能趋势
@@ -661,7 +661,7 @@ func (at *AutoTuner) predictPerformanceTrend() *PerformancePrediction {
 		PredictedHitRate:      predictedHitRate,
 		PredictedResponseTime: predictedResponseTime,
 		PredictedMemoryUsage:  predictedMemoryUsage,
-		Confidence:           confidence,
+		Confidence:            confidence,
 	}
 }
 
@@ -748,11 +748,11 @@ func (at *AutoTuner) getCurrentPerformanceSnapshot() *PerformanceMetrics {
 
 	// 返回默认性能指标
 	return &PerformanceMetrics{
-		HitRate:        0.0,
+		HitRate:         0.0,
 		AvgResponseTime: time.Hour,
-		MemoryUsage:    0,
-		CPULoad:        0,
-		LastUpdateTime: time.Now(),
+		MemoryUsage:     0,
+		CPULoad:         0,
+		LastUpdateTime:  time.Now(),
 	}
 }
 
@@ -800,13 +800,13 @@ func (at *AutoTuner) GetTuningStats() map[string]interface{} {
 	defer at.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"is_active":              at.isActive,
-		"total_tuning_actions":   len(at.tuningHistory),
-		"performance_snapshots":  len(at.performanceHistory),
-		"current_strategy":       at.currentStrategy,
-		"last_tuning_time":       "none",
-		"successful_tunings":     0,
-		"failed_tunings":         0,
+		"is_active":             at.isActive,
+		"total_tuning_actions":  len(at.tuningHistory),
+		"performance_snapshots": len(at.performanceHistory),
+		"current_strategy":      at.currentStrategy,
+		"last_tuning_time":      "none",
+		"successful_tunings":    0,
+		"failed_tunings":        0,
 	}
 
 	if len(at.tuningHistory) > 0 {

@@ -104,7 +104,7 @@ test_long_path() {
     local project_id=$(simple_extract_field "$project_response" "id")
 
     if [ -n "$project_id" ]; then
-        log_pass "测试项目创建成功"
+        test_pass "测试项目创建成功"
 
         # 创建测试环境
         local env_data='{"name": "长路径测试环境", "project_id": "'$project_id'", "description": "边界条件环境"}'
@@ -112,7 +112,7 @@ test_long_path() {
         local env_id=$(simple_extract_field "$env_response" "id")
 
         if [ -n "$env_id" ]; then
-            log_pass "测试环境创建成功"
+            test_pass "测试环境创建成功"
 
             # 创建长路径规则
             local long_path="/test/$(head -c 200 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 100)"
@@ -134,7 +134,7 @@ test_long_path() {
             local rule_id=$(simple_extract_field "$rule_response" "id")
 
             if [ -n "$rule_id" ]; then
-                log_pass "长路径规则创建成功 (路径长度: ${#long_path})"
+                test_pass "长路径规则创建成功 (路径长度: ${#long_path})"
 
                 # 测试长路径请求
                 local path_response=$(simple_http_request "GET" \
@@ -142,22 +142,22 @@ test_long_path() {
                     "-H \"X-Project-ID: $project_id\" -H \"X-Environment-ID: $env_id\"")
 
                 if [ -n "$path_response" ]; then
-                    log_pass "长路径请求处理成功"
+                    test_pass "长路径请求处理成功"
 
                     # 清理测试数据
                     curl -s -X DELETE "$ADMIN_API/projects/$project_id" >/dev/null 2>&1 || true
                     return 0
                 else
-                    log_fail "长路径请求处理失败"
+                    test_fail "长路径请求处理失败"
                 fi
             else
-                log_fail "长路径规则创建失败"
+                test_fail "长路径规则创建失败"
             fi
         else
-            log_fail "测试环境创建失败"
+            test_fail "测试环境创建失败"
         fi
     else
-        log_fail "测试项目创建失败"
+        test_fail "测试项目创建失败"
     fi
 
     # 清理测试数据
@@ -176,7 +176,7 @@ test_large_payload() {
     local project_id=$(simple_extract_field "$project_response" "id")
 
     if [ -n "$project_id" ]; then
-        log_pass "测试项目创建成功"
+        test_pass "测试项目创建成功"
 
         # 创建测试环境
         local env_data='{"name": "大请求体测试环境", "project_id": "'$project_id'", "description": "边界条件环境"}'
@@ -184,7 +184,7 @@ test_large_payload() {
         local env_id=$(simple_extract_field "$env_response" "id")
 
         if [ -n "$env_id" ]; then
-            log_pass "测试环境创建成功"
+            test_pass "测试环境创建成功"
 
             # 创建大请求体规则
             local large_payload=$(head -c 10000 /dev/urandom | base64)
@@ -209,7 +209,7 @@ test_large_payload() {
             local rule_id=$(simple_extract_field "$rule_response" "id")
 
             if [ -n "$rule_id" ]; then
-                log_pass "大请求体规则创建成功 (载荷大小: ${#large_payload} 字节)"
+                test_pass "大请求体规则创建成功 (载荷大小: ${#large_payload} 字节)"
 
                 # 测试大请求体请求
                 local payload_response=$(simple_http_request "POST" \
@@ -217,22 +217,22 @@ test_large_payload() {
                     "-H \"X-Project-ID: $project_id\" -H \"X-Environment-ID: $env_id\" -H \"Content-Type: application/json\" -d '$large_payload'")
 
                 if [ -n "$payload_response" ]; then
-                    log_pass "大请求体处理成功"
+                    test_pass "大请求体处理成功"
 
                     # 清理测试数据
                     curl -s -X DELETE "$ADMIN_API/projects/$project_id" >/dev/null 2>&1 || true
                     return 0
                 else
-                    log_fail "大请求体处理失败"
+                    test_fail "大请求体处理失败"
                 fi
             else
-                log_fail "大请求体规则创建失败"
+                test_fail "大请求体规则创建失败"
             fi
         else
-            log_fail "测试环境创建失败"
+            test_fail "测试环境创建失败"
         fi
     else
-        log_fail "测试项目创建失败"
+        test_fail "测试项目创建失败"
     fi
 
     # 清理测试数据
@@ -251,7 +251,7 @@ test_special_characters() {
     local project_id=$(simple_extract_field "$project_response" "id")
 
     if [ -n "$project_id" ]; then
-        log_pass "测试项目创建成功"
+        test_pass "测试项目创建成功"
 
         # 创建测试环境
         local env_data='{"name": "特殊字符测试环境", "project_id": "'$project_id'", "description": "边界条件环境"}'
@@ -259,7 +259,7 @@ test_special_characters() {
         local env_id=$(simple_extract_field "$env_response" "id")
 
         if [ -n "$env_id" ]; then
-            log_pass "测试环境创建成功"
+            test_pass "测试环境创建成功"
 
             # 创建特殊字符规则
             local special_chars='!@#$%^&*()_+-=[]{}|;:,.<>?'
@@ -287,7 +287,7 @@ test_special_characters() {
             local rule_id=$(simple_extract_field "$rule_response" "id")
 
             if [ -n "$rule_id" ]; then
-                log_pass "特殊字符规则创建成功"
+                test_pass "特殊字符规则创建成功"
 
                 # 测试特殊字符请求
                 local chars_response=$(simple_http_request "GET" \
@@ -295,22 +295,22 @@ test_special_characters() {
                     "-H \"X-Project-ID: $project_id\" -H \"X-Environment-ID: $env_id\" -H \"X-Special: $special_chars\"")
 
                 if [ -n "$chars_response" ]; then
-                    log_pass "特殊字符处理成功"
+                    test_pass "特殊字符处理成功"
 
                     # 清理测试数据
                     curl -s -X DELETE "$ADMIN_API/projects/$project_id" >/dev/null 2>&1 || true
                     return 0
                 else
-                    log_fail "特殊字符处理失败"
+                    test_fail "特殊字符处理失败"
                 fi
             else
-                log_fail "特殊字符规则创建失败"
+                test_fail "特殊字符规则创建失败"
             fi
         else
-            log_fail "测试环境创建失败"
+            test_fail "测试环境创建失败"
         fi
     else
-        log_fail "测试项目创建失败"
+        test_fail "测试项目创建失败"
     fi
 
     # 清理测试数据
@@ -327,9 +327,9 @@ test_error_scenarios() {
     local error_response=$(simple_http_request "GET" "$MOCK_API/nonexistent-endpoint" "")
 
     if [ -n "$error_response" ]; then
-        log_pass "不存在的端点正确返回响应"
+        test_pass "不存在的端点正确返回响应"
     else
-        log_fail "不存在的端点处理异常"
+        test_fail "不存在的端点处理异常"
     fi
 
     # 测试无效的JSON格式（通过直接curl验证服务器健壮性）
@@ -342,38 +342,35 @@ test_error_scenarios() {
     local http_code="${invalid_response: -3}"
 
     if [ "$http_code" = "400" ] || [ "$http_code" = "422" ]; then
-        log_pass "无效JSON格式正确返回错误码: $http_code"
+        test_pass "无效JSON格式正确返回错误码: $http_code"
         return 0
     else
-        log_fail "无效JSON格式处理异常: HTTP $http_code"
+        test_fail "无效JSON格式处理异常: HTTP $http_code"
         return 1
     fi
 }
 
 # 生成测试报告
 generate_report() {
+    print_test_summary
+    local exit_code=$?
+
     echo ""
     echo -e "${BLUE}========================================${NC}"
     echo -e "${BLUE}   边界条件测试结果${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo ""
-    echo -e "${CYAN}测试统计:${NC}"
-    echo -e "  总测试数: $TOTAL_TESTS"
-    echo -e "  通过: ${GREEN}$PASSED_TESTS${NC}"
-    echo -e "  失败: ${RED}$FAILED_TESTS${NC}"
-    echo -e "  通过率: $(( PASSED_TESTS * 100 / TOTAL_TESTS ))%"
-    echo ""
 
-    if [ $FAILED_TESTS -eq 0 ]; then
+    if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}🎉 所有边界条件测试通过！${NC}"
         echo -e "${GREEN}✅ 系统边界处理能力正常${NC}"
         echo -e "${GREEN}✅ 错误场景处理健壮${NC}"
-        return 0
     else
         echo -e "${RED}❌ 部分边界条件测试失败${NC}"
         echo -e "${YELLOW}💡 请检查系统边界处理能力${NC}"
-        return 1
     fi
+
+    return $exit_code
 }
 
 # 主测试流程

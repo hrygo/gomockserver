@@ -12,9 +12,9 @@ import (
 // ThreeLevelCacheManager 三级缓存管理器
 type ThreeLevelCacheManager struct {
 	// 缓存组件
-	l1Cache  L1Cache
-	l2Cache  L2Cache
-	tracker  FrequencyTracker
+	l1Cache L1Cache
+	l2Cache L2Cache
+	tracker FrequencyTracker
 
 	// 配置和状态
 	strategy *CacheStrategy
@@ -22,10 +22,10 @@ type ThreeLevelCacheManager struct {
 	logger   *zap.Logger
 
 	// 控制
-	ctx       context.Context
-	cancel    context.CancelFunc
-	started   bool
-	mu        sync.RWMutex
+	ctx     context.Context
+	cancel  context.CancelFunc
+	started bool
+	mu      sync.RWMutex
 }
 
 // NewThreeLevelCacheManager 创建三级缓存管理器

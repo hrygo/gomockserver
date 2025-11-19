@@ -34,13 +34,13 @@ func NewLRURegexCache(capacity int) *LRURegexCache {
 func (c *LRURegexCache) Get(pattern string) (*regexp.Regexp, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if element, exists := c.cache[pattern]; exists {
 		// 移动到列表头部（最近使用）
 		c.list.MoveToFront(element)
 		return element.Value.(*regexCacheItem).regex, true
 	}
-	
+
 	return nil, false
 }
 
@@ -48,7 +48,7 @@ func (c *LRURegexCache) Get(pattern string) (*regexp.Regexp, bool) {
 func (c *LRURegexCache) Put(pattern string, regex *regexp.Regexp) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if element, exists := c.cache[pattern]; exists {
 		// 更新现有项
 		c.list.MoveToFront(element)
@@ -64,7 +64,7 @@ func (c *LRURegexCache) Put(pattern string, regex *regexp.Regexp) {
 				delete(c.cache, item.pattern)
 			}
 		}
-		
+
 		// 添加到列表头部
 		item := &regexCacheItem{pattern: pattern, regex: regex}
 		element := c.list.PushFront(item)

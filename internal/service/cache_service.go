@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/gomockserver/mockserver/internal/cache"
-	"github.com/gomockserver/mockserver/internal/repository"
 	"github.com/gomockserver/mockserver/internal/models"
+	"github.com/gomockserver/mockserver/internal/repository"
 	"go.uber.org/zap"
 )
 
 // CacheService 缓存服务
 type CacheService struct {
-	manager  cache.Manager
-	logger   *zap.Logger
+	manager cache.Manager
+	logger  *zap.Logger
 }
 
 // NewCacheService 创建缓存服务

@@ -37,32 +37,32 @@ type HealthResponse struct {
 
 // SystemMetricsResponse 系统指标响应
 type SystemMetricsResponse struct {
-	Timestamp   time.Time       `json:"timestamp"`
-	Runtime     RuntimeMetrics  `json:"runtime"`
-	Memory      MemoryMetrics   `json:"memory"`
-	Goroutines  int             `json:"goroutines"`
-	Database    DatabaseMetrics `json:"database"`
+	Timestamp  time.Time       `json:"timestamp"`
+	Runtime    RuntimeMetrics  `json:"runtime"`
+	Memory     MemoryMetrics   `json:"memory"`
+	Goroutines int             `json:"goroutines"`
+	Database   DatabaseMetrics `json:"database"`
 }
 
 // RuntimeMetrics 运行时指标
 type RuntimeMetrics struct {
-	Uptime      int64  `json:"uptime"`      // 秒
-	GoVersion   string `json:"go_version"`
-	NumCPU      int    `json:"num_cpu"`
-	GOOS        string `json:"goos"`
-	GOARCH      string `json:"goarch"`
+	Uptime    int64  `json:"uptime"` // 秒
+	GoVersion string `json:"go_version"`
+	NumCPU    int    `json:"num_cpu"`
+	GOOS      string `json:"goos"`
+	GOARCH    string `json:"goarch"`
 }
 
 // MemoryMetrics 内存指标
 type MemoryMetrics struct {
-	Alloc      uint64  `json:"alloc"`       // bytes
-	TotalAlloc uint64  `json:"total_alloc"` // bytes
-	Sys        uint64  `json:"sys"`         // bytes
-	NumGC      uint32  `json:"num_gc"`
-	HeapAlloc  uint64  `json:"heap_alloc"`  // bytes
-	HeapSys    uint64  `json:"heap_sys"`    // bytes
-	HeapInuse  uint64  `json:"heap_inuse"`  // bytes
-	StackInuse uint64  `json:"stack_inuse"` // bytes
+	Alloc         uint64  `json:"alloc"`       // bytes
+	TotalAlloc    uint64  `json:"total_alloc"` // bytes
+	Sys           uint64  `json:"sys"`         // bytes
+	NumGC         uint32  `json:"num_gc"`
+	HeapAlloc     uint64  `json:"heap_alloc"`      // bytes
+	HeapSys       uint64  `json:"heap_sys"`        // bytes
+	HeapInuse     uint64  `json:"heap_inuse"`      // bytes
+	StackInuse    uint64  `json:"stack_inuse"`     // bytes
 	GCCPUFraction float64 `json:"gc_cpu_fraction"` // GC CPU 占用率
 }
 
@@ -232,7 +232,7 @@ func (h *HealthHandler) Ready(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "ready",
+		"status":    "ready",
 		"timestamp": time.Now(),
 	})
 }
@@ -246,7 +246,7 @@ func (h *HealthHandler) Ready(c *gin.Context) {
 // @Router /api/v1/live [get]
 func (h *HealthHandler) Live(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"status": "alive",
+		"status":    "alive",
 		"timestamp": time.Now(),
 	})
 }

@@ -95,7 +95,7 @@ func TestRegexValidationError(t *testing.T) {
 		Pattern: "test.*pattern",
 		Message: "test error",
 	}
-	
+
 	expected := "regex validation error for pattern 'test.*pattern': test error"
 	assert.Equal(t, expected, err.Error())
 }

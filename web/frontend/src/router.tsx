@@ -6,6 +6,7 @@ import ProjectDetail from './pages/Projects/ProjectDetail'
 import Rules from './pages/Rules'
 import MockTest from './pages/MockTest'
 import Settings from './pages/Settings'
+import GraphQLTestComponent from './components/GraphQLTestComponent'
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
       {
         path: 'settings',
         element: <Settings />,
+      },
+      {
+        path: 'graphql-test',
+        element: <GraphQLTestComponent />,
       },
     ],
   },

@@ -28,8 +28,8 @@ func DefaultCORSConfig() CORSConfig {
 		},
 		AllowHeaders: []string{
 			"Content-Type",
-			"Authorization",  // 预留用于 v0.9.0
-			"X-Request-ID",   // 前端添加的请求追踪 ID
+			"Authorization", // 预留用于 v0.9.0
+			"X-Request-ID",  // 前端添加的请求追踪 ID
 		},
 		ExposeHeaders: []string{
 			"X-Request-ID",

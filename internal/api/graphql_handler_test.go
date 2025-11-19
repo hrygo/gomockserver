@@ -23,50 +23,50 @@ func TestGraphQLHandler_HandleGraphQL_POST(t *testing.T) {
 		name           string
 		requestBody    string
 		expectedStatus int
-		expectData      bool
-		expectError     bool
+		expectData     bool
+		expectError    bool
 	}{
 		{
 			name:           "基础查询",
 			requestBody:    `{"query": "{ hello }"}`,
 			expectedStatus: http.StatusOK,
-			expectData:      true,
-			expectError:     false,
+			expectData:     true,
+			expectError:    false,
 		},
 		{
 			name:           "查询用户",
 			requestBody:    `{"query": "{ user }"}`,
 			expectedStatus: http.StatusOK,
-			expectData:      true,
-			expectError:     false,
+			expectData:     true,
+			expectError:    false,
 		},
 		{
 			name:           "查询多个字段",
 			requestBody:    `{"query": "{ hello status user }"}`,
 			expectedStatus: http.StatusOK,
-			expectData:      true,
-			expectError:     false,
+			expectData:     true,
+			expectError:    false,
 		},
 		{
 			name:           "带变量的查询",
 			requestBody:    `{"query": "query GetUser($id: ID!) { user(id: $id) { id name } }", "variables": {"id": "test"}}`,
 			expectedStatus: http.StatusOK,
-			expectData:      true,
-			expectError:     false,
+			expectData:     true,
+			expectError:    false,
 		},
 		{
 			name:           "空查询",
 			requestBody:    `{"query": ""}`,
 			expectedStatus: http.StatusBadRequest,
-			expectData:      false,
-			expectError:     true,
+			expectData:     false,
+			expectError:    true,
 		},
 		{
 			name:           "无效JSON",
 			requestBody:    `{"query": "{ hello }",}`,
 			expectedStatus: http.StatusBadRequest,
-			expectData:      false,
-			expectError:     true,
+			expectData:     false,
+			expectError:    true,
 		},
 	}
 
@@ -105,33 +105,33 @@ func TestGraphQLHandler_HandleGraphQL_GET(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		queryParam      string
+		queryParam     string
 		expectedStatus int
-		expectData      bool
+		expectData     bool
 	}{
 		{
 			name:           "GET基础查询",
-			queryParam:      "{ hello }",
+			queryParam:     "{ hello }",
 			expectedStatus: http.StatusOK,
-			expectData:      true,
+			expectData:     true,
 		},
 		{
 			name:           "GET查询用户",
-			queryParam:      "{ user }",
+			queryParam:     "{ user }",
 			expectedStatus: http.StatusOK,
-			expectData:      true,
+			expectData:     true,
 		},
 		{
 			name:           "GET带变量查询",
-			queryParam:      `query GetUser($id: ID!) { user(id: $id) { id name } }`,
+			queryParam:     `query GetUser($id: ID!) { user(id: $id) { id name } }`,
 			expectedStatus: http.StatusOK,
-			expectData:      true,
+			expectData:     true,
 		},
 		{
 			name:           "GET空查询",
-			queryParam:      "",
+			queryParam:     "",
 			expectedStatus: http.StatusBadRequest,
-			expectData:      false,
+			expectData:     false,
 		},
 	}
 

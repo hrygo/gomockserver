@@ -192,7 +192,7 @@ func TestCORSMiddlewareIntegration(t *testing.T) {
 
 	router := gin.New()
 	router.Use(CORS())
-	
+
 	// 模拟实际的 API 路由
 	api := router.Group("/api/v1")
 	{

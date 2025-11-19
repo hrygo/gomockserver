@@ -7,6 +7,7 @@ import {
   ApiOutlined,
   ExperimentOutlined,
   SettingOutlined,
+  CodeOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 
@@ -39,6 +40,11 @@ const Sidebar: React.FC = () => {
       key: '/mock-test',
       icon: <ExperimentOutlined />,
       label: 'Mock 测试',
+    },
+    {
+      key: '/graphql-test',
+      icon: <CodeOutlined />,
+      label: 'GraphQL 测试',
     },
     {
       key: '/settings',

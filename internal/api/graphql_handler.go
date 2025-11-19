@@ -16,7 +16,7 @@ import (
 
 // GraphQLHandler GraphQL HTTP处理器
 type GraphQLHandler struct {
-	queryExecutor  *executor.QueryExecutor
+	queryExecutor *executor.QueryExecutor
 	schemaParser  *parser.SchemaParser
 	queryParser   *parser.QueryParser
 }
@@ -25,8 +25,8 @@ type GraphQLHandler struct {
 func NewGraphQLHandler() *GraphQLHandler {
 	return &GraphQLHandler{
 		queryExecutor: executor.NewQueryExecutor(),
-		schemaParser: parser.NewSchemaParser(),
-		queryParser:  parser.NewQueryParser(),
+		schemaParser:  parser.NewSchemaParser(),
+		queryParser:   parser.NewQueryParser(),
 	}
 }
 
@@ -39,9 +39,9 @@ type GraphQLRequest struct {
 
 // GraphQLResponse GraphQL响应体
 type GraphQLResponse struct {
-	Data       interface{}            `json:"data"`
+	Data       interface{}                  `json:"data"`
 	Errors     []*types.GraphQLErrorWrapper `json:"errors,omitempty"`
-	Extensions map[string]interface{} `json:"extensions,omitempty"`
+	Extensions map[string]interface{}       `json:"extensions,omitempty"`
 }
 
 // RegisterRoutes 注册GraphQL路由
@@ -434,11 +434,11 @@ func (h *GraphQLHandler) inferOperationType(query string) string {
 // containsIgnoreCase 检查字符串是否包含子字符串（忽略大小写）
 func containsIgnoreCase(s, substr string) bool {
 	return len(s) >= len(substr) &&
-		   (s == substr ||
-		    len(s) > len(substr) &&
-		    (s[:len(substr)] == substr ||
-		     s[len(s)-len(substr):] == substr ||
-		     containsIgnoreCaseRec(s[1:], substr)))
+		(s == substr ||
+			len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					containsIgnoreCaseRec(s[1:], substr)))
 }
 
 func containsIgnoreCaseRec(s, substr string) bool {

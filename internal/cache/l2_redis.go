@@ -12,10 +12,10 @@ import (
 
 // RedisL2Cache Redis L2缓存实现
 type RedisL2Cache struct {
-	client   *redis.Client
-	prefix   string
-	logger   *zap.Logger
-	metrics  *L2Metrics
+	client  *redis.Client
+	prefix  string
+	logger  *zap.Logger
+	metrics *L2Metrics
 }
 
 // L2Metrics L2缓存指标

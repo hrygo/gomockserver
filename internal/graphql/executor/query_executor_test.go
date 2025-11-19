@@ -170,46 +170,46 @@ func TestMockResolver(t *testing.T) {
 	resolver := NewMockResolver()
 
 	tests := []struct {
-		name         string
-		fieldName    string
-		parentType   string
-		expectError  bool
+		name           string
+		fieldName      string
+		parentType     string
+		expectError    bool
 		expectTypename string
 	}{
 		{
-			name:            "hello字段",
-			fieldName:       "hello",
-			parentType:      "Query",
-			expectError:     false,
-			expectTypename:  "HelloResponse",
+			name:           "hello字段",
+			fieldName:      "hello",
+			parentType:     "Query",
+			expectError:    false,
+			expectTypename: "HelloResponse",
 		},
 		{
-			name:            "status字段",
-			fieldName:       "status",
-			parentType:      "Query",
-			expectError:     false,
-			expectTypename:  "ServerStatus",
+			name:           "status字段",
+			fieldName:      "status",
+			parentType:     "Query",
+			expectError:    false,
+			expectTypename: "ServerStatus",
 		},
 		{
-			name:            "user字段",
-			fieldName:       "user",
-			parentType:      "Query",
-			expectError:     false,
-			expectTypename:  "User",
+			name:           "user字段",
+			fieldName:      "user",
+			parentType:     "Query",
+			expectError:    false,
+			expectTypename: "User",
 		},
 		{
-			name:            "users字段",
-			fieldName:       "users",
-			parentType:      "Query",
-			expectError:     false,
-			expectTypename:  "",
+			name:           "users字段",
+			fieldName:      "users",
+			parentType:     "Query",
+			expectError:    false,
+			expectTypename: "",
 		}, // users返回数组
 		{
-			name:            "未知字段",
-			fieldName:       "unknown",
-			parentType:      "Query",
-			expectError:     true,
-			expectTypename:  "",
+			name:           "未知字段",
+			fieldName:      "unknown",
+			parentType:     "Query",
+			expectError:    true,
+			expectTypename: "",
 		},
 	}
 
@@ -341,10 +341,10 @@ func TestDynamicResolver(t *testing.T) {
 	resolver := NewDynamicResolver(data)
 
 	tests := []struct {
-		name         string
-		fieldName    string
-		expectError  bool
-		expectValue  interface{}
+		name        string
+		fieldName   string
+		expectError bool
+		expectValue interface{}
 	}{
 		{
 			name:        "存在的字段1",
@@ -449,8 +449,8 @@ func TestQueryExecutor_SchemaValidator(t *testing.T) {
 		{
 			name: "有效的执行上下文",
 			execCtx: &types.ExecutionContext{
-				Schema: &types.GraphQLSchema{},
-				Query: &types.GraphQLQuery{},
+				Schema:    &types.GraphQLSchema{},
+				Query:     &types.GraphQLQuery{},
 				Operation: "QUERY",
 			},
 			expectError: false,
@@ -458,7 +458,7 @@ func TestQueryExecutor_SchemaValidator(t *testing.T) {
 		{
 			name: "缺少schema",
 			execCtx: &types.ExecutionContext{
-				Query: &types.GraphQLQuery{},
+				Query:     &types.GraphQLQuery{},
 				Operation: "QUERY",
 			},
 			expectError: true,
@@ -466,7 +466,7 @@ func TestQueryExecutor_SchemaValidator(t *testing.T) {
 		{
 			name: "缺少query",
 			execCtx: &types.ExecutionContext{
-				Schema: &types.GraphQLSchema{},
+				Schema:    &types.GraphQLSchema{},
 				Operation: "QUERY",
 			},
 			expectError: true,
@@ -475,7 +475,7 @@ func TestQueryExecutor_SchemaValidator(t *testing.T) {
 			name: "缺少operation",
 			execCtx: &types.ExecutionContext{
 				Schema: &types.GraphQLSchema{},
-				Query: &types.GraphQLQuery{},
+				Query:  &types.GraphQLQuery{},
 			},
 			expectError: true,
 		},

@@ -11,15 +11,15 @@ type Metrics struct {
 	RegexCacheHits   int64 `json:"regex_cache_hits"`
 	RegexCacheMisses int64 `json:"regex_cache_misses"`
 	RegexCacheSize   int64 `json:"regex_cache_size"`
-	
+
 	// Request metrics
-	TotalRequests    int64 `json:"total_requests"`
-	MatchedRequests  int64 `json:"matched_requests"`
+	TotalRequests     int64 `json:"total_requests"`
+	MatchedRequests   int64 `json:"matched_requests"`
 	UnmatchedRequests int64 `json:"unmatched_requests"`
-	
+
 	// Rule metrics
-	TotalRules       int64 `json:"total_rules"`
-	EnabledRules     int64 `json:"enabled_rules"`
+	TotalRules   int64 `json:"total_rules"`
+	EnabledRules int64 `json:"enabled_rules"`
 }
 
 // Global metrics instance

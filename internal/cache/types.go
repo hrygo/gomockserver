@@ -9,59 +9,59 @@ import (
 type CacheLevel int
 
 const (
-	L1_HOT CacheLevel = iota // L1缓存：内存中的热点数据
-	L2_WARM                  // L2缓存：Redis中的温数据
-	L3_COLD                  // L3缓存：MongoDB中的冷数据
+	L1_HOT  CacheLevel = iota // L1缓存：内存中的热点数据
+	L2_WARM                   // L2缓存：Redis中的温数据
+	L3_COLD                   // L3缓存：MongoDB中的冷数据
 )
 
 // CacheEntry 缓存条目
 type CacheEntry struct {
-	Key        string      `json:"key"`
-	Value      interface{} `json:"value"`
-	Level      CacheLevel  `json:"level"`
-	TTL        time.Duration `json:"ttl"`
-	CreatedAt  time.Time   `json:"created_at"`
-	AccessAt   time.Time   `json:"access_at"`
-	HitCount   int64       `json:"hit_count"`
-	ExpireAt   time.Time   `json:"expire_at"`
+	Key       string        `json:"key"`
+	Value     interface{}   `json:"value"`
+	Level     CacheLevel    `json:"level"`
+	TTL       time.Duration `json:"ttl"`
+	CreatedAt time.Time     `json:"created_at"`
+	AccessAt  time.Time     `json:"access_at"`
+	HitCount  int64         `json:"hit_count"`
+	ExpireAt  time.Time     `json:"expire_at"`
 }
 
 // CacheStats 缓存统计信息
 type CacheStats struct {
-	TotalRequests   int64   `json:"total_requests"`
-	L1HitCount      int64   `json:"l1_hit_count"`
-	L2HitCount      int64   `json:"l2_hit_count"`
-	L3HitCount      int64   `json:"l3_hit_count"`
-	MissCount       int64   `json:"miss_count"`
-	L1HitRate       float64 `json:"l1_hit_rate"`
-	L2HitRate       float64 `json:"l2_hit_rate"`
-	TotalHitRate    float64 `json:"total_hit_rate"`
+	TotalRequests   int64         `json:"total_requests"`
+	L1HitCount      int64         `json:"l1_hit_count"`
+	L2HitCount      int64         `json:"l2_hit_count"`
+	L3HitCount      int64         `json:"l3_hit_count"`
+	MissCount       int64         `json:"miss_count"`
+	L1HitRate       float64       `json:"l1_hit_rate"`
+	L2HitRate       float64       `json:"l2_hit_rate"`
+	TotalHitRate    float64       `json:"total_hit_rate"`
 	AvgResponseTime time.Duration `json:"avg_response_time"`
-	TotalEntries    int64   `json:"total_entries"`
-	L1Entries       int64   `json:"l1_entries"`
-	L2Entries       int64   `json:"l2_entries"`
+	TotalEntries    int64         `json:"total_entries"`
+	L1Entries       int64         `json:"l1_entries"`
+	L2Entries       int64         `json:"l2_entries"`
 }
 
 // CacheStrategy 缓存策略配置
 type CacheStrategy struct {
 	// L1缓存配置
-	L1MaxEntries    int           `json:"l1_max_entries"`
-	L1TTL           time.Duration `json:"l1_ttl"`
+	L1MaxEntries      int           `json:"l1_max_entries"`
+	L1TTL             time.Duration `json:"l1_ttl"`
 	L1CleanupInterval time.Duration `json:"l1_cleanup_interval"`
 
 	// L2缓存配置
-	L2TTL           time.Duration `json:"l2_ttl"`
+	L2TTL             time.Duration `json:"l2_ttl"`
 	L2CleanupInterval time.Duration `json:"l2_cleanup_interval"`
 
 	// 策略配置
-	HotDataThreshold    float64 `json:"hot_data_threshold"`    // 热点数据访问频率阈值
-	WarmDataThreshold   float64 `json:"warm_data_threshold"`   // 温数据访问频率阈值
-	PreloadEnabled      bool    `json:"preload_enabled"`       // 是否启用预热
-	AccessFreqWindow    time.Duration `json:"access_freq_window"` // 访问频率统计窗口
+	HotDataThreshold  float64       `json:"hot_data_threshold"`  // 热点数据访问频率阈值
+	WarmDataThreshold float64       `json:"warm_data_threshold"` // 温数据访问频率阈值
+	PreloadEnabled    bool          `json:"preload_enabled"`     // 是否启用预热
+	AccessFreqWindow  time.Duration `json:"access_freq_window"`  // 访问频率统计窗口
 
 	// 预热配置
-	PreloadKeys         []string `json:"preload_keys"`          // 预热键列表
-	PreloadConcurrency  int      `json:"preload_concurrency"`   // 预热并发数
+	PreloadKeys        []string `json:"preload_keys"`        // 预热键列表
+	PreloadConcurrency int      `json:"preload_concurrency"` // 预热并发数
 }
 
 // DefaultCacheStrategy 返回默认缓存策略
@@ -119,11 +119,11 @@ type L1Cache interface {
 
 // L1Stats L1缓存统计
 type L1Stats struct {
-	Entries    int64 `json:"entries"`
-	Hits       int64 `json:"hits"`
-	Misses     int64 `json:"misses"`
-	Evictions  int64 `json:"evictions"`
-	HitRate    float64 `json:"hit_rate"`
+	Entries   int64   `json:"entries"`
+	Hits      int64   `json:"hits"`
+	Misses    int64   `json:"misses"`
+	Evictions int64   `json:"evictions"`
+	HitRate   float64 `json:"hit_rate"`
 }
 
 // L2Cache L2 Redis缓存接口

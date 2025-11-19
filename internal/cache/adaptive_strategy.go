@@ -11,55 +11,55 @@ import (
 
 // AdaptiveStrategy 自适应缓存策略
 type AdaptiveStrategy struct {
-	mu                    sync.RWMutex
-	baseStrategy          *CacheStrategy
-	currentStrategy       *CacheStrategy
-	stats                  *StrategyStats
-	adjustmentInterval     time.Duration
-	adjustmentHistory      []StrategyAdjustmentRecord
-	logger                 *zap.Logger
+	mu                 sync.RWMutex
+	baseStrategy       *CacheStrategy
+	currentStrategy    *CacheStrategy
+	stats              *StrategyStats
+	adjustmentInterval time.Duration
+	adjustmentHistory  []StrategyAdjustmentRecord
+	logger             *zap.Logger
 }
 
 // StrategyStats 策略统计
 type StrategyStats struct {
-	TotalRequests      int64     `json:"total_requests"`
-	HitRate            float64   `json:"hit_rate"`
+	TotalRequests       int64         `json:"total_requests"`
+	HitRate             float64       `json:"hit_rate"`
 	AvgResponseTime     time.Duration `json:"avg_response_time"`
-	MemoryUsage         int64     `json:"memory_usage"`
-	CPULoad            float64   `json:"cpu_load"`
-	OptimalHitRate     float64   `json:"optimal_hit_rate"`
+	MemoryUsage         int64         `json:"memory_usage"`
+	CPULoad             float64       `json:"cpu_load"`
+	OptimalHitRate      float64       `json:"optimal_hit_rate"`
 	OptimalResponseTime time.Duration `json:"optimal_response_time"`
 }
 
 // StrategyAdjustmentRecord 策略调整记录
 type StrategyAdjustmentRecord struct {
-	Timestamp    time.Time `json:"timestamp"`
-	Type         string    `json:"type"`
-	Reason       string    `json:"reason"`
-	OldStrategy  string    `json:"old_strategy"`
-	NewStrategy  string    `json:"new_strategy"`
-	Improvement  float64   `json:"improvement"`
+	Timestamp   time.Time `json:"timestamp"`
+	Type        string    `json:"type"`
+	Reason      string    `json:"reason"`
+	OldStrategy string    `json:"old_strategy"`
+	NewStrategy string    `json:"new_strategy"`
+	Improvement float64   `json:"improvement"`
 }
 
 // StrategyTuningConfig 策略调优配置
 type StrategyTuningConfig struct {
-	MinHotThreshold    float64       `json:"min_hot_threshold"`     // 最小热点阈值
-	MaxHotThreshold    float64       `json:"max_hot_threshold"`     // 最大热点阈值
-	MinWarmThreshold   float64       `json:"min_warm_threshold"`    // 最小温数据阈值
-	MaxWarmThreshold   float64       `json:"max_warm_threshold"`    // 最大温数据阈值
-	AdjustmentInterval  time.Duration `json:"adjustment_interval"`   // 调整间隔
-	MinAdjustmentDelta  float64       `json:"min_adjustment_delta"`  // 最小调整幅度
-	MaxAdjustmentDelta  float64       `json:"max_adjustment_delta"`  // 最大调整幅度
-	HistoryLimit        int           `json:"history_limit"`        // 历史记录限制
+	MinHotThreshold    float64       `json:"min_hot_threshold"`    // 最小热点阈值
+	MaxHotThreshold    float64       `json:"max_hot_threshold"`    // 最大热点阈值
+	MinWarmThreshold   float64       `json:"min_warm_threshold"`   // 最小温数据阈值
+	MaxWarmThreshold   float64       `json:"max_warm_threshold"`   // 最大温数据阈值
+	AdjustmentInterval time.Duration `json:"adjustment_interval"`  // 调整间隔
+	MinAdjustmentDelta float64       `json:"min_adjustment_delta"` // 最小调整幅度
+	MaxAdjustmentDelta float64       `json:"max_adjustment_delta"` // 最大调整幅度
+	HistoryLimit       int           `json:"history_limit"`        // 历史记录限制
 }
 
 // DefaultTuningConfig 默认调优配置
 func DefaultTuningConfig() *StrategyTuningConfig {
 	return &StrategyTuningConfig{
-		MinHotThreshold:   0.6,
-		MaxHotThreshold:   0.95,
-		MinWarmThreshold:  0.1,
-		MaxWarmThreshold:  0.4,
+		MinHotThreshold:    0.6,
+		MaxHotThreshold:    0.95,
+		MinWarmThreshold:   0.1,
+		MaxWarmThreshold:   0.4,
 		AdjustmentInterval: 5 * time.Minute,
 		MinAdjustmentDelta: 0.05,
 		MaxAdjustmentDelta: 0.2,
@@ -117,12 +117,12 @@ func (as *AdaptiveStrategy) GetCurrentStats() *StrategyStats {
 	defer as.mu.RUnlock()
 
 	return &StrategyStats{
-		TotalRequests:      as.stats.TotalRequests,
-		HitRate:            as.stats.HitRate,
+		TotalRequests:       as.stats.TotalRequests,
+		HitRate:             as.stats.HitRate,
 		AvgResponseTime:     as.stats.AvgResponseTime,
 		MemoryUsage:         as.stats.MemoryUsage,
-		CPULoad:            as.stats.CPULoad,
-		OptimalHitRate:     as.stats.OptimalHitRate,
+		CPULoad:             as.stats.CPULoad,
+		OptimalHitRate:      as.stats.OptimalHitRate,
 		OptimalResponseTime: as.stats.OptimalResponseTime,
 	}
 }
@@ -195,7 +195,7 @@ func (as *AdaptiveStrategy) performAdaptiveAdjustment(config *StrategyTuningConf
 		Reason:      adjustment.Reason,
 		OldStrategy: as.formatStrategy(oldThreshold),
 		NewStrategy: as.formatStrategy(newStrategy.HotDataThreshold),
-		Improvement:  overallScore,
+		Improvement: overallScore,
 	}
 
 	as.adjustmentHistory = append(as.adjustmentHistory, adjustmentRecord)
@@ -216,11 +216,11 @@ func (as *AdaptiveStrategy) performAdaptiveAdjustment(config *StrategyTuningConf
 
 // StrategyAdjustment 策略调整
 type StrategyAdjustment struct {
-	Type        string  `json:"type"`        // 调整类型: "threshold", "ttl", "capacity"
-	Reason      string  `json:"reason"`      // 调整原因
-	Direction   string  `json:"direction"`   // 调整方向: "increase", "decrease"
-	Magnitude   float64 `json:"magnitude"`   // 调整幅度
-	Target      string  `json:"target"`      // 调整目标
+	Type      string  `json:"type"`      // 调整类型: "threshold", "ttl", "capacity"
+	Reason    string  `json:"reason"`    // 调整原因
+	Direction string  `json:"direction"` // 调整方向: "increase", "decrease"
+	Magnitude float64 `json:"magnitude"` // 调整幅度
+	Target    string  `json:"target"`    // 调整目标
 }
 
 // calculateHitRateScore 计算命中率评分
@@ -384,17 +384,17 @@ func (as *AdaptiveStrategy) GetStrategyConfig() map[string]interface{} {
 	defer as.mu.RUnlock()
 
 	return map[string]interface{}{
-		"current_hot_threshold":    as.currentStrategy.HotDataThreshold,
-		"current_warm_threshold":   as.currentStrategy.WarmDataThreshold,
-		"base_hot_threshold":       as.baseStrategy.HotDataThreshold,
-		"base_warm_threshold":      as.baseStrategy.WarmDataThreshold,
-		"total_adjustments":        len(as.adjustmentHistory),
-		"last_adjustment_time":     func() string {
+		"current_hot_threshold":  as.currentStrategy.HotDataThreshold,
+		"current_warm_threshold": as.currentStrategy.WarmDataThreshold,
+		"base_hot_threshold":     as.baseStrategy.HotDataThreshold,
+		"base_warm_threshold":    as.baseStrategy.WarmDataThreshold,
+		"total_adjustments":      len(as.adjustmentHistory),
+		"last_adjustment_time": func() string {
 			if len(as.adjustmentHistory) > 0 {
 				return as.adjustmentHistory[len(as.adjustmentHistory)-1].Timestamp.Format(time.RFC3339)
 			}
 			return "none"
 		}(),
-		"stats":                    as.stats,
+		"stats": as.stats,
 	}
 }

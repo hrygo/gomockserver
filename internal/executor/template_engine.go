@@ -9,9 +9,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gomockserver/mockserver/internal/adapter"
 	"github.com/gomockserver/mockserver/internal/models"
+	"github.com/google/uuid"
 )
 
 // TemplateEngine 模板引擎
@@ -148,12 +148,12 @@ type TemplateContext struct {
 
 // RequestContext 请求上下文
 type RequestContext struct {
-	Method  string                 `json:"method"`
-	Path    string                 `json:"path"`
-	Headers map[string]string      `json:"headers"`
-	Query   map[string]string      `json:"query"`
-	Body    interface{}            `json:"body"`
-	IP      string                 `json:"ip"`
+	Method  string            `json:"method"`
+	Path    string            `json:"path"`
+	Headers map[string]string `json:"headers"`
+	Query   map[string]string `json:"query"`
+	Body    interface{}       `json:"body"`
+	IP      string            `json:"ip"`
 }
 
 // RuleContext 规则上下文
@@ -253,7 +253,7 @@ func (e *TemplateEngine) renderJSONRecursive(obj interface{}, context *TemplateC
 			return rendered, nil
 		}
 		return v, nil
-	
+
 	case map[string]interface{}:
 		// 递归处理map
 		result := make(map[string]interface{})
@@ -265,7 +265,7 @@ func (e *TemplateEngine) renderJSONRecursive(obj interface{}, context *TemplateC
 			result[key] = rendered
 		}
 		return result, nil
-	
+
 	case []interface{}:
 		// 递归处理数组
 		result := make([]interface{}, len(v))
@@ -277,7 +277,7 @@ func (e *TemplateEngine) renderJSONRecursive(obj interface{}, context *TemplateC
 			result[i] = rendered
 		}
 		return result, nil
-	
+
 	default:
 		// 其他类型直接返回
 		return v, nil

@@ -161,7 +161,7 @@ func TestTemplateEngine_RenderJSON_ErrorHandling(t *testing.T) {
 			wantErr:  false, // RenderJSON会处理错误，返回原始字符串
 		},
 		{
-			name:     "深度嵌套结构中的无效模板",
+			name: "深度嵌套结构中的无效模板",
 			template: map[string]interface{}{
 				"level1": map[string]interface{}{
 					"level2": map[string]interface{}{
@@ -169,8 +169,8 @@ func TestTemplateEngine_RenderJSON_ErrorHandling(t *testing.T) {
 					},
 				},
 			},
-			context:  &TemplateContext{},
-			wantErr:  false, // 会返回部分处理的结果
+			context: &TemplateContext{},
+			wantErr: false, // 会返回部分处理的结果
 		},
 		{
 			name:     "循环引用",
@@ -203,7 +203,7 @@ func TestTemplateEngine_RenderJSON_Recursive(t *testing.T) {
 			"user": map[string]interface{}{
 				"id": "{{.Request.Path}}",
 				"info": map[string]interface{}{
-					"name": "Test User",
+					"name":  "Test User",
 					"email": "user@example.com",
 					"metadata": map[string]interface{}{
 						"created": "{{timestamp}}",
@@ -272,7 +272,7 @@ func TestTemplateEngine_RenderJSON_Recursive(t *testing.T) {
 					"info": map[string]interface{}{
 						"path": "{{.Request.Path}}",
 						"headers": map[string]interface{}{
-							"host": "{{.Request.Headers.Host}}",
+							"host":       "{{.Request.Headers.Host}}",
 							"user-agent": "{{.Request.Headers.UserAgent}}",
 						},
 					},
@@ -280,7 +280,7 @@ func TestTemplateEngine_RenderJSON_Recursive(t *testing.T) {
 			},
 			"metadata": map[string]interface{}{
 				"timestamp": "{{timestamp}}",
-				"count": len("{{.Request.Path}}"),
+				"count":     len("{{.Request.Path}}"),
 			},
 		}
 
@@ -322,14 +322,14 @@ func TestTemplateEngine_Performance(t *testing.T) {
 
 	context := &TemplateContext{
 		Request: &RequestContext{
-			Path:    "/api/test/performance",
-			Method:  "POST",
+			Path:   "/api/test/performance",
+			Method: "POST",
 			Headers: map[string]string{
 				"Content-Type": "application/json",
 				"X-Request-ID": "req-123",
 			},
 			Query: map[string]string{
-				"page": "1",
+				"page":  "1",
 				"limit": "10",
 			},
 			Body: `{"test": "data"}`,

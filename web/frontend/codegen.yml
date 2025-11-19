@@ -1,0 +1,32 @@
+schema: http://localhost:8080/api/graphql
+documents:
+  - './src/**/*.graphql'
+  - './src/**/*.tsx'
+  - './src/**/*.ts'
+generates:
+  ./src/__generated__/types.ts:
+    plugins:
+      - typescript
+    config:
+      strict: true
+      scalars:
+        DateTime: string
+        JSON: any
+  ./src/__generated__/:
+    preset: near-operation-file
+    presetConfig:
+      extension: .generated.ts
+      baseTypesPath: types.ts
+    plugins:
+      - typescript-operations
+      - typescript-react-apollo
+    config:
+      withHooks: true
+      skipTypename: true
+      scalars:
+        DateTime: string
+        JSON: any
+hooks:
+  afterAllFileWrite:
+    - npm run format
+    - npm run lint --fix

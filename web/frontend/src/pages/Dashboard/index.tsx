@@ -315,11 +315,11 @@ const Dashboard: React.FC = () => {
       {/* 图表区域 */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={16}>
-          <Card bodyStyle={{ padding: '20px' }}>
+          <Card styles={{ body: { padding: '20px' } }}>
             {safeRequestTrend.length > 0 ? (
-              <ReactECharts 
+              <ReactECharts
                 ref={trendChartRef}
-                option={requestTrendOption} 
+                option={requestTrendOption}
                 style={{ height: 300 }}
                 opts={{ renderer: 'svg' }}
               />
@@ -329,11 +329,11 @@ const Dashboard: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card bodyStyle={{ padding: '20px' }}>
+          <Card styles={{ body: { padding: '20px' } }}>
             {safeResponseTimeDist.length > 0 ? (
-              <ReactECharts 
+              <ReactECharts
                 ref={pieChartRef}
-                option={responseTimeOption} 
+                option={responseTimeOption}
                 style={{ height: 300 }}
                 opts={{ renderer: 'svg' }}
               />
