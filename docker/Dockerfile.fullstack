@@ -82,7 +82,8 @@ FROM alpine:latest
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
-    bash
+    bash \
+    redis
 
 # 设置时区
 ENV TZ=Asia/Shanghai
@@ -92,6 +93,9 @@ WORKDIR /app
 # 从后端构建阶段复制二进制文件
 COPY --from=backend-builder /app/mockserver .
 COPY --from=backend-builder /app/config.yaml .
+
+# 复制Redis配置文件（如果存在）
+COPY --from=backend-builder /app/config/redis ./config/redis 2>/dev/null || true
 
 # 从前端构建阶段复制前端产物
 COPY --from=frontend-builder /frontend/dist ./web/frontend/dist

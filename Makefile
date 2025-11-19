@@ -1,4 +1,4 @@
-.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend
+.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend start-redis stop-redis restart-redis redis-cli redis-logs redis-status redis-test redis-bench redis-flush test-cache-coverage test-redis-full
 
 # 变量定义
 BINARY_NAME=mockserver
@@ -40,6 +40,8 @@ help:
 	@echo "  make test-coverage   - 生成覆盖率报告"
 	@echo "  make test-coverage-check - 检查覆盖率门限 (70%)"
 	@echo "  make test-docker     - 在Docker环境中测试"
+	@echo "  make test-cache-coverage - 缓存模块覆盖率测试"
+	@echo "  make test-redis-full - Redis完整功能测试"
 	@echo "  make bench           - 运行性能基准测试"
 	@echo ""
 	@echo "🔍 代码质量:"
@@ -67,7 +69,16 @@ help:
 	@echo "  make start-mongo     - 启动 MongoDB 容器"
 	@echo "  make stop-mongo      - 停止 MongoDB 容器"
 	@echo "  make mongo-shell     - 连接 MongoDB Shell"
-	@echo "  make start-all       - 启动全栈应用 (MongoDB + 后端 + 前端)"
+	@echo "  make start-redis     - 启动 Redis 容器"
+	@echo "  make stop-redis      - 停止 Redis 容器"
+	@echo "  make restart-redis   - 重启 Redis 容器"
+	@echo "  make redis-cli        - 连接 Redis CLI"
+	@echo "  make redis-logs      - 查看 Redis 日志"
+	@echo "  make redis-status    - 查看 Redis 状态"
+	@echo "  make redis-test      - 测试 Redis 连接"
+	@echo "  make redis-bench     - Redis 性能测试"
+	@echo "  make redis-flush     - 清空 Redis 数据"
+	@echo "  make start-all       - 启动全栈应用 (MongoDB + Redis + 后端 + 前端)"
 	@echo "  make stop-all        - 停止全栈应用"
 	@echo "  make start-backend   - 后台运行（使用 dev 配置）"
 	@echo "  make start-frontend  - 前端运行"
@@ -639,6 +650,203 @@ dev-env: start-mongo
 clean-env: stop-mongo
 	@echo "🧽 Cleaning development environment..."
 	@docker volume rm mongodb_data 2>/dev/null || true
+	@echo "✅ Environment cleaned"
+
+# ════════════════════════════════════════════════════════
+# Redis 相关命令
+# ════════════════════════════════════════════════════════
+
+# 启动 Redis 容器
+start-redis:
+	@echo "🔴 Starting Redis container..."
+	@if docker ps -a --format '{{.Names}}' | grep -q '^mockserver-redis$$'; then \
+		echo "ℹ️  Redis container exists, checking status..."; \
+		if docker ps --format '{{.Names}}' | grep -q '^mockserver-redis$$'; then \
+			echo "✅ Redis is already running"; \
+		else \
+			echo "🔄 Starting existing Redis container..."; \
+			docker start mockserver-redis || (echo "❌ Failed to start, removing broken container..." && docker rm -f mockserver-redis && \
+			docker run -d --name mockserver-redis -p 6379:6379 -v redis_data:/data m.daocloud.io/docker.io/redis:7.2-alpine redis-server --appendonly yes); \
+		fi; \
+	else \
+		echo "🚀 Creating and starting Redis container..."; \
+		docker run -d --name mockserver-redis -p 6379:6379 -v redis_data:/data m.daocloud.io/docker.io/redis:7.2-alpine redis-server --appendonly yes; \
+	fi
+	@echo "✅ Redis is running on localhost:6379"
+
+# 停止 Redis 容器
+stop-redis:
+	@echo "🛑 Stopping Redis container..."
+	@docker stop mockserver-redis 2>/dev/null || echo "⚠️  Redis container not running"
+	@echo "✅ Redis stopped"
+
+# 重启 Redis 容器
+restart-redis: stop-redis start-redis
+	@echo "✅ Redis restarted"
+
+# 连接 Redis CLI
+redis-cli:
+	@echo "🔴 Connecting to Redis CLI..."
+	@docker exec -it mockserver-redis redis-cli
+
+# 查看 Redis 日志
+redis-logs:
+	@docker logs -f mockserver-redis
+
+# 查看 Redis 状态
+redis-status:
+	@echo "📊 Redis Status:"
+	@if docker ps --format '{{.Names}}' | grep -q '^mockserver-redis$$'; then \
+		echo "✅ Redis container is running"; \
+		echo "📈 Redis Info:"; \
+		docker exec mockserver-redis redis-cli info server | head -10; \
+		echo ""; \
+		echo "💾 Memory Usage:"; \
+		docker exec mockserver-redis redis-cli info memory | grep used_memory_human; \
+		echo ""; \
+		echo "🔑 Connected Clients:"; \
+		docker exec mockserver-redis redis-cli info clients | grep connected_clients; \
+		echo ""; \
+		echo "📊 Database Info:"; \
+		docker exec mockserver-redis redis-cli info keyspace | head -5; \
+	else \
+		echo "❌ Redis container is not running"; \
+		echo "🚀 Run 'make start-redis' to start Redis"; \
+	fi
+
+# 测试 Redis 连接
+redis-test:
+	@echo "🧪 Testing Redis connection..."
+	@if docker ps --format '{{.Names}}' | grep -q '^mockserver-redis$$'; then \
+		echo "Testing basic operations..."; \
+		docker exec mockserver-redis redis-cli set test_key "Hello Redis at $$(date '+%H:%M:%S')" && \
+		docker exec mockserver-redis redis-cli get test_key && \
+		docker exec mockserver-redis redis-cli del test_key && \
+		echo "✅ Redis connection test passed!"; \
+	else \
+		echo "❌ Redis container is not running"; \
+		echo "🚀 Run 'make start-redis' to start Redis"; \
+		exit 1; \
+	fi
+
+# Redis 性能测试
+redis-bench:
+	@echo "⚡ Running Redis benchmark..."
+	@if docker ps --format '{{.Names}}' | grep -q '^mockserver-redis$$'; then \
+		docker exec mockserver-redis redis-benchmark -h localhost -p 6379 -c 50 -n 10000 -d 100; \
+	else \
+		echo "❌ Redis container is not running"; \
+		echo "🚀 Run 'make start-redis' to start Redis"; \
+		exit 1; \
+	fi
+
+# 清空 Redis 数据
+redis-flush:
+	@echo "🧹 Flushing all Redis data..."
+	@if docker ps --format '{{.Names}}' | grep -q '^mockserver-redis$$'; then \
+		docker exec mockserver-redis redis-cli flushall; \
+		echo "✅ All Redis data flushed"; \
+	else \
+		echo "❌ Redis container is not running"; \
+		echo "🚀 Run 'make start-redis' to start Redis"; \
+		exit 1; \
+	fi
+
+# 缓存模块覆盖率测试
+test-cache-coverage:
+	@echo "📊 Running cache module tests with coverage..."
+	@mkdir -p tests/coverage
+	@go test -v -race -coverprofile=tests/coverage/cache-coverage.out ./internal/cache/...
+	@go tool cover -html=tests/coverage/cache-coverage.out -o tests/coverage/cache-coverage.html
+	@COVERAGE=$$(go tool cover -func=tests/coverage/cache-coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+	echo "📈 Cache module coverage: $$COVERAGE%"; \
+	if [ $$(echo "$$COVERAGE < 60" | bc -l) -eq 1 ]; then \
+		echo "⚠️  Warning: Cache module coverage $$COVERAGE% is below 60% requirement"; \
+	else \
+		echo "✅ Cache module coverage meets 60% requirement"; \
+	fi
+	@echo "📈 Coverage report: tests/coverage/cache-coverage.html"
+
+# Redis 完整功能测试
+test-redis-full:
+	@echo "🧪 Running comprehensive Redis tests..."
+	@make redis-test
+	@echo ""
+	@echo "🔧 Testing cache functionality with Redis..."
+	@mkdir -p tests/coverage
+	@REDIS_URL=redis://localhost:6379 go test -v -race -coverprofile=tests/coverage/redis-integration-coverage.out ./internal/cache/ -tags=redis
+	@go tool cover -html=tests/coverage/redis-integration-coverage.out -o tests/coverage/redis-integration-coverage.html
+	@COVERAGE=$$(go tool cover -func=tests/coverage/redis-integration-coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+	echo "📈 Redis integration coverage: $$COVERAGE%"
+	@echo "📈 Coverage report: tests/coverage/redis-integration-coverage.html"
+	@echo ""
+	@echo "✅ Redis comprehensive tests completed!"
+
+# 更新start-all命令包含Redis
+start-all:
+	@echo "🚀 Starting full stack application..."
+	@echo ""
+	@echo "Step 1/4: Starting MongoDB..."
+	@make start-mongo
+	@echo ""
+	@echo "Step 2/4: Starting Redis..."
+	@make start-redis
+	@echo ""
+	@echo "Step 3/4: Starting Backend..."
+	@sleep 3
+	@make start-backend
+	@echo ""
+	@echo "Step 4/4: Starting Frontend..."
+	@make start-frontend
+	@echo ""
+	@echo "═══════════════════════════════════════════════════════"
+	@echo "✅ Full stack application is running!"
+	@echo "═══════════════════════════════════════════════════════"
+	@echo ""
+	@echo "🌐 Access URLs:"
+	@echo "  Frontend:   http://localhost:5173"
+	@echo "  Admin API:  http://localhost:8080/api/v1"
+	@echo "  Mock API:   http://localhost:9090"
+	@echo "  MongoDB:    mongodb://localhost:27017"
+	@echo "  Redis:      redis://localhost:6379"
+	@echo ""
+	@echo "📋 View Logs:"
+	@echo "  Backend:    tail -f /tmp/mockserver.log"
+	@echo "  Frontend:   tail -f /tmp/frontend.log"
+	@echo "  MongoDB:    make mongo-logs"
+	@echo "  Redis:      make redis-logs"
+	@echo ""
+	@echo "🛑 Stop All:"
+	@echo "  make stop-all"
+	@echo "═══════════════════════════════════════════════════════"
+
+# 更新stop-all命令包含Redis
+stop-all:
+	@echo "🛑 Stopping full stack application..."
+	@make stop-frontend 2>/dev/null || true
+	@make stop-backend 2>/dev/null || true
+	@pkill -f "vite" 2>/dev/null || true
+	@pkill -f "mockserver/main.go" 2>/dev/null || true
+	@lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:9090 | xargs kill -9 2>/dev/null || true
+	@make stop-mongo 2>/dev/null || true
+	@make stop-redis 2>/dev/null || true
+	@rm -f /tmp/mockserver.pid /tmp/frontend.pid /tmp/mockserver.log /tmp/frontend.log
+	@echo "✅ Full stack application stopped"
+
+# 更新dev-env包含Redis
+dev-env: start-mongo start-redis
+	@echo "✅ Development environment ready!"
+	@echo "📌 MongoDB: localhost:27017"
+	@echo "📌 Redis: localhost:6379"
+	@echo "🚀 Run 'make run' or 'make dev' to start the server"
+
+# 更新clean-env包含Redis
+clean-env: stop-mongo stop-redis
+	@echo "🧽 Cleaning development environment..."
+	@docker volume rm mongodb_data 2>/dev/null || true
+	@docker volume rm redis_data 2>/dev/null || true
 	@echo "✅ Environment cleaned"
 
 # 显示版本信息
