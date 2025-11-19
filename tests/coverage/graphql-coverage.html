@@ -1,0 +1,797 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>executor: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/gomockserver/mockserver/internal/graphql/executor/query_executor.go (51.5%)</option>
+				
+				<option value="file1">github.com/gomockserver/mockserver/internal/graphql/executor/resolver.go (90.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package executor
+
+import (
+        "context"
+        "fmt"
+        "regexp"
+        "strings"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/graphql/types"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// QueryExecutor GraphQL查询执行器
+type QueryExecutor struct {
+        logger     *zap.Logger
+        validators []QueryValidator
+        middleware []QueryMiddleware
+        resolver   *ResolverManager
+}
+
+// NewQueryExecutor 创建查询执行器
+func NewQueryExecutor() *QueryExecutor <span class="cov8" title="1">{
+        return &amp;QueryExecutor{
+                logger:     logger.Get().Named("graphql-executor"),
+                validators: make([]QueryValidator, 0),
+                middleware: make([]QueryMiddleware, 0),
+                resolver:   DefaultResolverManager(),
+        }
+}</span>
+
+// AddValidator 添加查询验证器
+func (e *QueryExecutor) AddValidator(validator QueryValidator) <span class="cov0" title="0">{
+        e.validators = append(e.validators, validator)
+}</span>
+
+// AddMiddleware 添加查询中间件
+func (e *QueryExecutor) AddMiddleware(middleware QueryMiddleware) <span class="cov0" title="0">{
+        e.middleware = append(e.middleware, middleware)
+}</span>
+
+// ExecuteQuery 执行GraphQL查询
+func (e *QueryExecutor) ExecuteQuery(ctx context.Context, execCtx *types.ExecutionContext) (*types.GraphQLResult, error) <span class="cov8" title="1">{
+        startTime := time.Now()
+
+        e.logger.Info("开始执行GraphQL查询",
+                zap.String("request_id", execCtx.RequestID),
+                zap.String("operation", execCtx.Operation))
+
+        // 执行中间件
+        result := e.executeMiddlewareChain(ctx, execCtx, e.executeQueryInternal)
+
+        // 计算执行时间
+        executionTime := time.Since(startTime)
+        if result.Data == nil </span><span class="cov0" title="0">{
+                result.Data = map[string]interface{}{}
+        }</span>
+
+        // 添加执行扩展信息
+        <span class="cov8" title="1">if result.Extensions == nil </span><span class="cov8" title="1">{
+                result.Extensions = make(map[string]interface{})
+        }</span>
+        <span class="cov8" title="1">result.Extensions["executionTime"] = executionTime.String()
+        result.Extensions["timestamp"] = time.Now().Unix()
+
+        e.logger.Info("查询执行完成",
+                zap.String("request_id", execCtx.RequestID),
+                zap.Duration("execution_time", executionTime),
+                zap.Int("error_count", len(result.Errors)))
+
+        return result, nil</span>
+}
+
+// executeQueryInternal 内部查询执行
+func (e *QueryExecutor) executeQueryInternal(ctx context.Context, execCtx *types.ExecutionContext) *types.GraphQLResult <span class="cov8" title="1">{
+        result := &amp;types.GraphQLResult{
+                Data:   make(map[string]interface{}),
+                Errors: make([]*types.GraphQLErrorWrapper, 0),
+        }
+
+        // 验证查询
+        if err := e.validateQuery(ctx, execCtx); err != nil </span><span class="cov0" title="0">{
+                result.Errors = append(result.Errors, e.wrapError(err, types.ErrorKindValidation))
+                return result
+        }</span>
+
+        // 根据操作类型执行查询
+        <span class="cov8" title="1">switch execCtx.Operation </span>{
+        case string(types.Query):<span class="cov8" title="1">
+                e.executeSelectQuery(ctx, execCtx, result)</span>
+        case string(types.Mutation):<span class="cov8" title="1">
+                e.executeMutationQuery(ctx, execCtx, result)</span>
+        case string(types.Subscription):<span class="cov0" title="0">
+                e.executeSubscriptionQuery(ctx, execCtx, result)</span>
+        default:<span class="cov0" title="0">
+                result.Errors = append(result.Errors, &amp;types.GraphQLErrorWrapper{
+                        Kind:    types.ErrorKindSyntax,
+                        Message: fmt.Sprintf("不支持的操作类型: %s", execCtx.Operation),
+                })</span>
+        }
+
+        <span class="cov8" title="1">return result</span>
+}
+
+// executeSelectQuery 执行SELECT查询
+func (e *QueryExecutor) executeSelectQuery(ctx context.Context, execCtx *types.ExecutionContext, result *types.GraphQLResult) <span class="cov8" title="1">{
+        e.logger.Debug("执行SELECT查询", zap.String("request_id", execCtx.RequestID))
+
+        // 解析查询字符串，提取请求的字段
+        queryFields := e.parseSimpleQuery(execCtx.Query.Query)
+        if len(queryFields) == 0 </span><span class="cov8" title="1">{
+                // 如果无法解析，返回默认结果
+                result.Data = map[string]interface{}{
+                        "__typename": "QueryResult",
+                        "status":    "success",
+                        "timestamp": time.Now().Unix(),
+                }
+                return
+        }</span>
+
+        // 执行每个字段的解析
+        <span class="cov8" title="1">data := make(map[string]interface{})
+        for _, fieldName := range queryFields </span><span class="cov8" title="1">{
+                fieldCtx := &amp;types.FieldContext{
+                        ParentType: "Query",
+                        FieldName:  fieldName,
+                        Arguments:  execCtx.Variables,
+                        Alias:      fieldName,
+                        Path:       []string{fieldName},
+                }
+
+                fieldResult, err := e.resolver.ResolveField(ctx, fieldCtx)
+                if err != nil </span><span class="cov0" title="0">{
+                        e.logger.Error("字段解析失败",
+                                zap.String("field", fieldName),
+                                zap.Error(err))
+                        result.Errors = append(result.Errors, &amp;types.GraphQLErrorWrapper{
+                                Kind:    types.ErrorKindExecution,
+                                Message: fmt.Sprintf("字段 %s 解析失败: %v", fieldName, err),
+                                Path:    []interface{}{fieldName},
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">data[fieldName] = fieldResult</span>
+        }
+
+        <span class="cov8" title="1">result.Data = data</span>
+}
+
+// executeMutationQuery 执行Mutation查询
+func (e *QueryExecutor) executeMutationQuery(ctx context.Context, execCtx *types.ExecutionContext, result *types.GraphQLResult) <span class="cov8" title="1">{
+        e.logger.Debug("执行Mutation查询", zap.String("request_id", execCtx.RequestID))
+
+        // 解析Mutation查询字符串，提取请求的字段
+        mutationFields := e.parseSimpleQuery(execCtx.Query.Query)
+        if len(mutationFields) == 0 </span><span class="cov0" title="0">{
+                // 如果无法解析，返回默认结果
+                result.Data = map[string]interface{}{
+                        "__typename": "MutationResult",
+                        "success":   true,
+                        "timestamp": time.Now().Unix(),
+                }
+                return
+        }</span>
+
+        // 执行每个Mutation字段的解析
+        <span class="cov8" title="1">data := make(map[string]interface{})
+        for _, fieldName := range mutationFields </span><span class="cov8" title="1">{
+                fieldCtx := &amp;types.FieldContext{
+                        ParentType: "Mutation",
+                        FieldName:  fieldName,
+                        Arguments:  execCtx.Variables,
+                        Alias:      fieldName,
+                        Path:       []string{fieldName},
+                }
+
+                fieldResult, err := e.resolver.ResolveField(ctx, fieldCtx)
+                if err != nil </span><span class="cov8" title="1">{
+                        e.logger.Error("Mutation字段解析失败",
+                                zap.String("field", fieldName),
+                                zap.Error(err))
+                        result.Errors = append(result.Errors, &amp;types.GraphQLErrorWrapper{
+                                Kind:    types.ErrorKindExecution,
+                                Message: fmt.Sprintf("Mutation字段 %s 解析失败: %v", fieldName, err),
+                                Path:    []interface{}{fieldName},
+                        })
+                        continue</span>
+                }
+
+                <span class="cov0" title="0">data[fieldName] = fieldResult</span>
+        }
+
+        <span class="cov8" title="1">result.Data = data</span>
+}
+
+// executeSubscriptionQuery 执行Subscription查询
+func (e *QueryExecutor) executeSubscriptionQuery(ctx context.Context, execCtx *types.ExecutionContext, result *types.GraphQLResult) <span class="cov0" title="0">{
+        e.logger.Debug("执行Subscription查询", zap.String("request_id", execCtx.RequestID))
+
+        // 这里简化处理，实际应该建立WebSocket连接
+        // 目前返回一个示例结果
+        result.Data = map[string]interface{}{
+                "__typename": "SubscriptionResult",
+                "connected": true,
+                "timestamp": time.Now().Unix(),
+        }
+}</span>
+
+// validateQuery 验证查询
+func (e *QueryExecutor) validateQuery(ctx context.Context, execCtx *types.ExecutionContext) error <span class="cov8" title="1">{
+        for _, validator := range e.validators </span><span class="cov0" title="0">{
+                if err := validator.Validate(ctx, execCtx); err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// executeMiddlewareChain 执行中间件链
+func (e *QueryExecutor) executeMiddlewareChain(ctx context.Context, execCtx *types.ExecutionContext, finalFunc func(ctx context.Context, execCtx *types.ExecutionContext) *types.GraphQLResult) *types.GraphQLResult <span class="cov8" title="1">{
+        // 如果没有中间件，直接执行最终函数
+        if len(e.middleware) == 0 </span><span class="cov8" title="1">{
+                return finalFunc(ctx, execCtx)
+        }</span>
+
+        // 创建中间件链
+        <span class="cov0" title="0">var handler QueryHandler = func(ctx context.Context, execCtx *types.ExecutionContext) *types.GraphQLResult </span><span class="cov0" title="0">{
+                return finalFunc(ctx, execCtx)
+        }</span>
+
+        // 从后向前构建中间件链
+        <span class="cov0" title="0">for i := len(e.middleware) - 1; i &gt;= 0; i-- </span><span class="cov0" title="0">{
+                currentHandler := handler
+                middleware := e.middleware[i]
+                handler = func(ctx context.Context, execCtx *types.ExecutionContext) *types.GraphQLResult </span><span class="cov0" title="0">{
+                        return middleware.Handle(ctx, execCtx, currentHandler)
+                }</span>
+        }
+
+        <span class="cov0" title="0">return handler(ctx, execCtx)</span>
+}
+
+// wrapError 包装错误
+func (e *QueryExecutor) wrapError(err error, kind types.ErrorKind) *types.GraphQLErrorWrapper <span class="cov0" title="0">{
+        return &amp;types.GraphQLErrorWrapper{
+                Kind:    kind,
+                Message: err.Error(),
+                Internal: err,
+        }
+}</span>
+
+// QueryValidator 查询验证器接口
+type QueryValidator interface {
+        Validate(ctx context.Context, execCtx *types.ExecutionContext) error
+}
+
+// QueryMiddleware 查询中间件接口
+type QueryMiddleware interface {
+        Handle(ctx context.Context, execCtx *types.ExecutionContext, next QueryHandler) *types.GraphQLResult
+}
+
+// QueryHandler 查询处理器函数类型
+type QueryHandler func(ctx context.Context, execCtx *types.ExecutionContext) *types.GraphQLResult
+
+// 基础验证器实现
+
+// SchemaValidator Schema验证器
+type SchemaValidator struct {
+        logger *zap.Logger
+}
+
+// NewSchemaValidator 创建Schema验证器
+func NewSchemaValidator() *SchemaValidator <span class="cov0" title="0">{
+        return &amp;SchemaValidator{
+                logger: logger.Get().Named("schema-validator"),
+        }
+}</span>
+
+// Validate 验证Schema
+func (v *SchemaValidator) Validate(ctx context.Context, execCtx *types.ExecutionContext) error <span class="cov0" title="0">{
+        if execCtx.Schema == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("schema不能为空")
+        }</span>
+
+        <span class="cov0" title="0">if execCtx.Query == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("query不能为空")
+        }</span>
+
+        <span class="cov0" title="0">if execCtx.Operation == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("operation不能为空")
+        }</span>
+
+        <span class="cov0" title="0">v.logger.Debug("Schema验证通过", zap.String("request_id", execCtx.RequestID))
+        return nil</span>
+}
+
+// 安全验证器
+type SecurityValidator struct {
+        logger    *zap.Logger
+        maxDepth  int
+        maxTokens int
+}
+
+// NewSecurityValidator 创建安全验证器
+func NewSecurityValidator() *SecurityValidator <span class="cov0" title="0">{
+        return &amp;SecurityValidator{
+                logger:    logger.Get().Named("security-validator"),
+                maxDepth:  10,  // 最大查询深度
+                maxTokens: 100, // 最大token数
+        }
+}</span>
+
+// Validate 安全验证
+func (v *SecurityValidator) Validate(ctx context.Context, execCtx *types.ExecutionContext) error <span class="cov0" title="0">{
+        if execCtx.Query == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("query不能为空")
+        }</span>
+
+        // 简化的查询复杂度检查
+        <span class="cov0" title="0">queryLength := len(execCtx.Query.Query)
+        if queryLength &gt; v.maxTokens*10 </span><span class="cov0" title="0">{ // 简化的token估算
+                return fmt.Errorf("查询过于复杂，超过最大限制")
+        }</span>
+
+        <span class="cov0" title="0">v.logger.Debug("安全验证通过", zap.String("request_id", execCtx.RequestID))
+        return nil</span>
+}
+
+// 基础中间件实现
+
+// LoggingMiddleware 日志中间件
+type LoggingMiddleware struct {
+        logger *zap.Logger
+}
+
+// NewLoggingMiddleware 创建日志中间件
+func NewLoggingMiddleware() *LoggingMiddleware <span class="cov0" title="0">{
+        return &amp;LoggingMiddleware{
+                logger: logger.Get().Named("logging-middleware"),
+        }
+}</span>
+
+// Handle 处理日志中间件
+func (m *LoggingMiddleware) Handle(ctx context.Context, execCtx *types.ExecutionContext, next QueryHandler) *types.GraphQLResult <span class="cov0" title="0">{
+        startTime := time.Now()
+
+        m.logger.Info("GraphQL查询开始",
+                zap.String("request_id", execCtx.RequestID),
+                zap.String("operation", execCtx.Operation))
+
+        result := next(ctx, execCtx)
+
+        duration := time.Since(startTime)
+        m.logger.Info("GraphQL查询完成",
+                zap.String("request_id", execCtx.RequestID),
+                zap.Duration("duration", duration),
+                zap.Int("error_count", len(result.Errors)))
+
+        return result
+}</span>
+
+// MetricsMiddleware 指标收集中间件
+type MetricsMiddleware struct {
+        logger *zap.Logger
+}
+
+// NewMetricsMiddleware 创建指标收集中间件
+func NewMetricsMiddleware() *MetricsMiddleware <span class="cov0" title="0">{
+        return &amp;MetricsMiddleware{
+                logger: logger.Get().Named("metrics-middleware"),
+        }
+}</span>
+
+// Handle 处理指标收集中间件
+func (m *MetricsMiddleware) Handle(ctx context.Context, execCtx *types.ExecutionContext, next QueryHandler) *types.GraphQLResult <span class="cov0" title="0">{
+        startTime := time.Now()
+        result := next(ctx, execCtx)
+        duration := time.Since(startTime)
+
+        // 简化的指标记录
+        m.logger.Debug("记录查询指标",
+                zap.String("operation", execCtx.Operation),
+                zap.Duration("duration", duration),
+                zap.Bool("has_errors", len(result.Errors) &gt; 0))
+
+        return result
+}</span>
+
+// TimeoutMiddleware 超时中间件
+type TimeoutMiddleware struct {
+        timeout time.Duration
+        logger  *zap.Logger
+}
+
+// NewTimeoutMiddleware 创建超时中间件
+func NewTimeoutMiddleware(timeout time.Duration) *TimeoutMiddleware <span class="cov0" title="0">{
+        return &amp;TimeoutMiddleware{
+                timeout: timeout,
+                logger:  logger.Get().Named("timeout-middleware"),
+        }
+}</span>
+
+// Handle 处理超时中间件
+func (m *TimeoutMiddleware) Handle(ctx context.Context, execCtx *types.ExecutionContext, next QueryHandler) *types.GraphQLResult <span class="cov0" title="0">{
+        ctx, cancel := context.WithTimeout(ctx, m.timeout)
+        defer cancel()
+
+        resultChan := make(chan *types.GraphQLResult, 1)
+        go func() </span><span class="cov0" title="0">{
+                resultChan &lt;- next(ctx, execCtx)
+        }</span>()
+
+        <span class="cov0" title="0">select </span>{
+        case result := &lt;-resultChan:<span class="cov0" title="0">
+                return result</span>
+        case &lt;-ctx.Done():<span class="cov0" title="0">
+                return &amp;types.GraphQLResult{
+                        Data:   nil,
+                        Errors: []*types.GraphQLErrorWrapper{
+                                {
+                                        Kind:    types.ErrorKindExecution,
+                                        Message: "查询执行超时",
+                                },
+                        },
+                }</span>
+        }
+}
+
+// parseSimpleQuery 简单的GraphQL查询解析器
+// 这是一个基础实现，用于从查询字符串中提取字段名
+func (e *QueryExecutor) parseSimpleQuery(query string) []string <span class="cov8" title="1">{
+        if query == "" </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        // 移除注释和多余空白
+        <span class="cov8" title="1">cleanQuery := strings.TrimSpace(query)
+
+        // 简单的正则表达式匹配GraphQL字段
+        // 匹配模式: { field1, field2, field3 } 或 query { field1 field2 }
+
+        // 1. 查找查询块的内容
+        queryBlockRegex := regexp.MustCompile(`\{([^{}]+)\}`)
+        matches := queryBlockRegex.FindAllStringSubmatch(cleanQuery, -1)
+
+        var fields []string
+
+        for _, match := range matches </span><span class="cov8" title="1">{
+                if len(match) &gt; 1 </span><span class="cov8" title="1">{
+                        blockContent := strings.TrimSpace(match[1])
+
+                        // 2. 分割字段名
+                        fieldRegex := regexp.MustCompile(`(\w+)`)
+                        fieldMatches := fieldRegex.FindAllString(blockContent, -1)
+
+                        // 过滤掉GraphQL关键字
+                        for _, field := range fieldMatches </span><span class="cov8" title="1">{
+                                field = strings.TrimSpace(field)
+                                if field != "" &amp;&amp;
+                                   !strings.EqualFold(field, "query") &amp;&amp;
+                                   !strings.EqualFold(field, "mutation") &amp;&amp;
+                                   !strings.EqualFold(field, "subscription") &amp;&amp;
+                                   !strings.Contains(field, "(") </span><span class="cov8" title="1">{
+                                        fields = append(fields, field)
+                                }</span>
+                        }
+                }
+        }
+
+        // 去重
+        <span class="cov8" title="1">uniqueFields := make([]string, 0)
+        seen := make(map[string]bool)
+        for _, field := range fields </span><span class="cov8" title="1">{
+                if !seen[field] </span><span class="cov8" title="1">{
+                        seen[field] = true
+                        uniqueFields = append(uniqueFields, field)
+                }</span>
+        }
+
+        <span class="cov8" title="1">e.logger.Debug("解析GraphQL查询字段",
+                zap.Strings("fields", uniqueFields),
+                zap.String("original_query", cleanQuery))
+
+        return uniqueFields</span>
+}</pre>
+		
+		<pre class="file" id="file1" style="display: none">package executor
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        "github.com/gomockserver/mockserver/internal/graphql/types"
+        "github.com/gomockserver/mockserver/pkg/logger"
+        "go.uber.org/zap"
+)
+
+// Resolver 基础解析器接口
+type Resolver interface {
+        Resolve(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error)
+}
+
+// StaticResolver 静态解析器 - 返回预定义值
+type StaticResolver struct {
+        Value interface{}
+}
+
+// NewStaticResolver 创建静态解析器
+func NewStaticResolver(value interface{}) *StaticResolver <span class="cov8" title="1">{
+        return &amp;StaticResolver{Value: value}
+}</span>
+
+// Resolve 执行静态解析
+func (r *StaticResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error) <span class="cov8" title="1">{
+        return r.Value, nil
+}</span>
+
+// DynamicResolver 动态解析器 - 基于字段名返回值
+type DynamicResolver struct {
+        Data map[string]interface{}
+}
+
+// NewDynamicResolver 创建动态解析器
+func NewDynamicResolver(data map[string]interface{}) *DynamicResolver <span class="cov8" title="1">{
+        return &amp;DynamicResolver{Data: data}
+}</span>
+
+// Resolve 执行动态解析
+func (r *DynamicResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error) <span class="cov8" title="1">{
+        if value, exists := r.Data[fieldCtx.FieldName]; exists </span><span class="cov8" title="1">{
+                return value, nil
+        }</span>
+        <span class="cov8" title="1">return nil, fmt.Errorf("字段 '%s' 未找到", fieldCtx.FieldName)</span>
+}
+
+// MockResolver Mock解析器 - 为测试和演示提供模拟数据
+type MockResolver struct {
+        logger *zap.Logger
+}
+
+// NewMockResolver 创建Mock解析器
+func NewMockResolver() *MockResolver <span class="cov8" title="1">{
+        return &amp;MockResolver{
+                logger: logger.Get().Named("mock-resolver"),
+        }
+}</span>
+
+// Resolve 执行Mock解析
+func (r *MockResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error) <span class="cov8" title="1">{
+        r.logger.Debug("执行Mock解析",
+                zap.String("field", fieldCtx.FieldName),
+                zap.String("parent_type", fieldCtx.ParentType))
+
+        switch fieldCtx.FieldName </span>{
+        case "user":<span class="cov8" title="1">
+                return map[string]interface{}{
+                        "id":         "mock-user-1",
+                        "name":       "Mock User",
+                        "email":      "mock@example.com",
+                        "createdAt":  time.Now().Format(time.RFC3339),
+                        "__typename": "User",
+                }, nil</span>
+        case "users":<span class="cov8" title="1">
+                return []map[string]interface{}{
+                        {
+                                "id":         "mock-user-1",
+                                "name":       "Mock User 1",
+                                "email":      "mock1@example.com",
+                                "createdAt":  time.Now().Format(time.RFC3339),
+                                "__typename": "User",
+                        },
+                        {
+                                "id":         "mock-user-2",
+                                "name":       "Mock User 2",
+                                "email":      "mock2@example.com",
+                                "createdAt":  time.Now().Add(-time.Hour).Format(time.RFC3339),
+                                "__typename": "User",
+                        },
+                }, nil</span>
+        case "hello":<span class="cov8" title="1">
+                return map[string]interface{}{
+                        "message":    "Hello from MockServer GraphQL!",
+                        "timestamp":  time.Now().Unix(),
+                        "__typename": "HelloResponse",
+                }, nil</span>
+        case "status":<span class="cov8" title="1">
+                return map[string]interface{}{
+                        "status":     "healthy",
+                        "version":    "0.8.0",
+                        "timestamp":  time.Now().Format(time.RFC3339),
+                        "__typename": "ServerStatus",
+                }, nil</span>
+        case "_service":<span class="cov0" title="0">
+                return map[string]interface{}{
+                        "sdl": "type Query { user(id: ID!): User users: [User!]! hello: HelloResponse status: ServerStatus } type User { id: ID! name: String! email: String createdAt: String! } type HelloResponse { message: String! timestamp: Int! } type ServerStatus { status: String! version: String! timestamp: String! }",
+                        "__typename": "Service",
+                }, nil</span>
+        default:<span class="cov8" title="1">
+                return nil, fmt.Errorf("未知的Mock字段: %s", fieldCtx.FieldName)</span>
+        }
+}
+
+// ProxyResolver 代理解析器 - 转发到其他服务
+type ProxyResolver struct {
+        BaseURL string
+        logger  *zap.Logger
+}
+
+// NewProxyResolver 创建代理解析器
+func NewProxyResolver(baseURL string) *ProxyResolver <span class="cov0" title="0">{
+        return &amp;ProxyResolver{
+                BaseURL: baseURL,
+                logger:  logger.Get().Named("proxy-resolver"),
+        }
+}</span>
+
+// Resolve 执行代理解析
+func (r *ProxyResolver) Resolve(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error) <span class="cov0" title="0">{
+        r.logger.Debug("执行代理解析",
+                zap.String("field", fieldCtx.FieldName),
+                zap.String("base_url", r.BaseURL))
+
+        // 简化实现 - 将在Phase 3中完善HTTP代理功能
+        // 目前返回一个模拟的代理结果
+        return map[string]interface{}{
+                "proxied":   true,
+                "field":     fieldCtx.FieldName,
+                "timestamp": time.Now().Unix(),
+                "__typename": "ProxyResult",
+        }, nil
+}</span>
+
+// ResolverManager 解析器管理器
+type ResolverManager struct {
+        resolvers map[string]Resolver
+        logger    *zap.Logger
+}
+
+// NewResolverManager 创建解析器管理器
+func NewResolverManager() *ResolverManager <span class="cov8" title="1">{
+        return &amp;ResolverManager{
+                resolvers: make(map[string]Resolver),
+                logger:    logger.Get().Named("resolver-manager"),
+        }
+}</span>
+
+// RegisterResolver 注册解析器
+func (rm *ResolverManager) RegisterResolver(typeName, fieldName string, resolver Resolver) <span class="cov8" title="1">{
+        key := fmt.Sprintf("%s.%s", typeName, fieldName)
+        rm.resolvers[key] = resolver
+        rm.logger.Debug("注册解析器", zap.String("key", key))
+}</span>
+
+// GetResolver 获取解析器
+func (rm *ResolverManager) GetResolver(typeName, fieldName string) (Resolver, bool) <span class="cov8" title="1">{
+        key := fmt.Sprintf("%s.%s", typeName, fieldName)
+        resolver, exists := rm.resolvers[key]
+        return resolver, exists
+}</span>
+
+// ResolveField 解析字段
+func (rm *ResolverManager) ResolveField(ctx context.Context, fieldCtx *types.FieldContext) (interface{}, error) <span class="cov8" title="1">{
+        resolver, exists := rm.GetResolver(fieldCtx.ParentType, fieldCtx.FieldName)
+        if !exists </span><span class="cov8" title="1">{
+                // 如果没有注册特定解析器，使用默认Mock解析器
+                mockResolver := NewMockResolver()
+                return mockResolver.Resolve(ctx, fieldCtx)
+        }</span>
+
+        <span class="cov8" title="1">return resolver.Resolve(ctx, fieldCtx)</span>
+}
+
+// DefaultResolverManager 创建默认解析器管理器
+func DefaultResolverManager() *ResolverManager <span class="cov8" title="1">{
+        rm := NewResolverManager()
+
+        // 注册Query类型的解析器
+        mockResolver := NewMockResolver()
+        rm.RegisterResolver("Query", "user", mockResolver)
+        rm.RegisterResolver("Query", "users", mockResolver)
+        rm.RegisterResolver("Query", "hello", mockResolver)
+        rm.RegisterResolver("Query", "status", mockResolver)
+        rm.RegisterResolver("Query", "_service", mockResolver)
+
+        // 注册Mutation类型的解析器
+        rm.RegisterResolver("Mutation", "createUser", mockResolver)
+        rm.RegisterResolver("Mutation", "updateUser", mockResolver)
+
+        return rm
+}</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
