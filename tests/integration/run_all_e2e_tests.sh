@@ -24,8 +24,9 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 TESTS=(
     "基础功能测试:e2e_test.sh:基础CRUD和Mock功能"
     "高级功能测试:advanced_e2e_test.sh:复杂匹配和动态响应"
-    "WebSocket测试:websocket_e2e_test.sh:WebSocket协议功能"
-    "边界条件测试:edge_case_e2e_test.sh:边界和异常场景"
+    "简化缓存测试:simple_cache_test.sh:Redis缓存基础功能和集成"
+    "简化WebSocket测试:simple_websocket_test.sh:WebSocket基础功能验证"
+    "边界条件测试:simple_edge_case_test.sh:边界和异常场景"
     "压力测试:stress_e2e_test.sh:性能和负载测试"
 )
 
@@ -252,6 +253,19 @@ EOF
 - [x] 数据流传输
 - [x] 错误处理
 
+### Redis 缓存功能验证
+- [x] Redis 基础连接测试
+- [x] 缓存 CRUD 操作 (SET/GET/DEL)
+- [x] 键过期时间管理 (SETEX/TTL)
+- [x] 批量操作测试 (MSET/MGET)
+- [x] 多种数据类型支持
+- [x] 并发连接池测试
+- [x] 缓存性能基准测试
+- [x] 内存使用监控
+- [x] 数据一致性验证
+- [x] 网络延迟测试
+- [x] 内存压力测试
+
 ### 边界条件验证
 - [x] 超长请求路径
 - [x] 超大请求体
@@ -283,7 +297,8 @@ EOF
 - **配置文件**: $CONFIG_FILE
 - **管理API**: $ADMIN_API
 - **MockAPI**: $MOCK_API
-- **数据库**: MongoDB
+- **数据库**: MongoDB + Redis
+- **Redis**: ${REDIS_HOST:-localhost}:${REDIS_PORT:-6379}
 
 ### 测试工具
 - **测试框架**: 自定义 Bash 测试框架

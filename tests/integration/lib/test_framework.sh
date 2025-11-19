@@ -61,6 +61,42 @@ detect_environment() {
 }
 
 # ========================================
+# 测试日志函数
+# ========================================
+
+log_test() {
+    echo -e "${CYAN}[TEST]${NC} $1"
+}
+
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_pass() {
+    echo -e "${GREEN}[PASS]${NC} $1"
+}
+
+log_fail() {
+    echo -e "${RED}[FAIL]${NC} $1"
+}
+
+log_skip() {
+    echo -e "${YELLOW}[SKIP]${NC} $1"
+}
+
+# ========================================
 # 测试结果记录函数
 # ========================================
 
@@ -160,12 +196,32 @@ mock_request() {
     local data="$3"
     local headers="$4"
 
+    # 确保关键变量已设置
+    if [ -z "$PROJECT_ID" ] || [ -z "$ENVIRONMENT_ID" ]; then
+        echo "Error: PROJECT_ID or ENVIRONMENT_ID is not set"
+        echo "PROJECT_ID='${PROJECT_ID}' ENVIRONMENT_ID='${ENVIRONMENT_ID}'"
+        return 1
+    fi
+
     local url="$MOCK_API/$PROJECT_ID/$ENVIRONMENT_ID$path"
 
-    if [ -n "$data" ]; then
-        cmd="curl -s -L -w '\n%{http_code}\n' -X $method"
+    # 使用绝对路径的curl命令以避免PATH问题
+    local curl_cmd="curl"
+    if command -v curl >/dev/null 2>&1; then
+        curl_cmd="curl"
+    elif [ -x "/opt/anaconda3/bin/curl" ]; then
+        curl_cmd="/opt/anaconda3/bin/curl"
+    elif [ -x "/usr/bin/curl" ]; then
+        curl_cmd="/usr/bin/curl"
     else
-        cmd="curl -s -L -w '\n%{http_code}\n' -X $method"
+        echo "Error: curl command not found"
+        return 1
+    fi
+
+    if [ -n "$data" ]; then
+        cmd="$curl_cmd -s -L -w '\n%{http_code}\n' -X $method"
+    else
+        cmd="$curl_cmd -s -L -w '\n%{http_code}\n' -X $method"
     fi
 
     if [ -n "$headers" ]; then
@@ -612,6 +668,219 @@ check_and_install_dependencies() {
 }
 
 # ========================================
+# Redis 测试函数
+# ========================================
+
+# 检查Redis连接
+check_redis_connection() {
+    local redis_host="${REDIS_HOST:-localhost}"
+    local redis_port="${REDIS_PORT:-6379}"
+
+    if command -v redis-cli >/dev/null 2>&1; then
+        if redis-cli -h "$redis_host" -p "$redis_port" ping >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# 启动Redis服务（如果需要）
+start_redis_if_needed() {
+    if check_redis_connection; then
+        test_info "Redis is already running"
+        return 0
+    fi
+
+    test_info "Starting Redis service..."
+    if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+        make start-redis >/dev/null 2>&1
+        sleep 2
+        return $?
+    else
+        test_warn "Cannot start Redis automatically - please start Redis manually"
+        return 1
+    fi
+}
+
+# Redis缓存测试
+test_redis_cache_operations() {
+    local test_key="mockserver_test_$(generate_random_string 8)"
+    local test_value="test_value_$(date +%s)"
+    local redis_host="${REDIS_HOST:-localhost}"
+    local redis_port="${REDIS_PORT:-6379}"
+
+    if ! check_redis_connection; then
+        test_skip "Redis not available for cache testing"
+        return 0
+    fi
+
+    # SET操作测试
+    if redis-cli -h "$redis_host" -p "$redis_port" set "$test_key" "$test_value" | grep -q "OK"; then
+        test_pass "Redis SET operation"
+    else
+        test_fail "Redis SET operation"
+        return 1
+    fi
+
+    # GET操作测试
+    local retrieved_value=$(redis-cli -h "$redis_host" -p "$redis_port" get "$test_key")
+    if [ "$retrieved_value" = "$test_value" ]; then
+        test_pass "Redis GET operation"
+    else
+        test_fail "Redis GET operation - expected '$test_value', got '$retrieved_value'"
+        return 1
+    fi
+
+    # 过期时间测试
+    redis-cli -h "$redis_host" -p "$redis_port" setex "${test_key}_expire" 2 "expire_test" >/dev/null
+    if redis-cli -h "$redis_host" -p "$redis_port" get "${test_key}_expire" | grep -q "expire_test"; then
+        test_pass "Redis SETEX operation (immediate)"
+        sleep 3
+        if redis-cli -h "$redis_host" -p "$redis_port" get "${test_key}_expire" | grep -q "(nil)"; then
+            test_pass "Redis key expiration"
+        else
+            test_fail "Redis key expiration"
+        fi
+    else
+        test_fail "Redis SETEX operation"
+    fi
+
+    # 清理测试数据
+    redis-cli -h "$redis_host" -p "$redis_port" del "$test_key" "${test_key}_expire" >/dev/null 2>&1 || true
+
+    return 0
+}
+
+# Redis性能测试
+test_redis_performance() {
+    local num_operations=100
+    local redis_host="${REDIS_HOST:-localhost}"
+    local redis_port="${REDIS_PORT:-6379}"
+
+    if ! check_redis_connection; then
+        test_skip "Redis not available for performance testing"
+        return 0
+    fi
+
+    test_info "Testing Redis performance with $num_operations operations"
+
+    local test_key="perf_test_$(date +%s)"
+    local start_time=$(get_timestamp_ms)
+
+    # SET性能测试
+    for i in $(seq 1 $num_operations); do
+        redis-cli -h "$redis_host" -p "$redis_port" set "${test_key}_$i" "value_$i" >/dev/null
+    done
+
+    local set_time=$(($(get_timestamp_ms) - start_time))
+    local set_ops_per_sec=$((num_operations * 1000 / set_time))
+
+    test_info "Redis SET: $num_operations operations in ${set_time}ms (${set_ops_per_sec} ops/sec)"
+
+    # GET性能测试
+    start_time=$(get_timestamp_ms)
+    for i in $(seq 1 $num_operations); do
+        redis-cli -h "$redis_host" -p "$redis_port" get "${test_key}_$i" >/dev/null
+    done
+
+    local get_time=$(($(get_timestamp_ms) - start_time))
+    local get_ops_per_sec=$((num_operations * 1000 / get_time))
+
+    test_info "Redis GET: $num_operations operations in ${get_time}ms (${get_ops_per_sec} ops/sec)"
+
+    # 性能基准检查
+    if [ $set_ops_per_sec -gt 1000 ] && [ $get_ops_per_sec -gt 2000 ]; then
+        test_pass "Redis performance meets requirements"
+    else
+        test_warn "Redis performance below expected (SET: ${set_ops_per_sec}, GET: ${get_ops_per_sec})"
+    fi
+
+    # 清理性能测试数据
+    for i in $(seq 1 $num_operations); do
+        redis-cli -h "$redis_host" -p "$redis_port" del "${test_key}_$i" >/dev/null 2>&1 || true
+    done
+
+    return 0
+}
+
+# Redis内存使用检查
+test_redis_memory_usage() {
+    if ! check_redis_connection; then
+        test_skip "Redis not available for memory testing"
+        return 0
+    fi
+
+    local redis_host="${REDIS_HOST:-localhost}"
+    local redis_port="${REDIS_PORT:-6379}"
+
+    # 获取内存信息
+    local memory_info=$(redis-cli -h "$redis_host" -p "$redis_port" info memory 2>/dev/null)
+    if [ -n "$memory_info" ]; then
+        local used_memory=$(echo "$memory_info" | grep "used_memory_human:" | cut -d: -f2 | tr -d '[:space:]')
+        local used_memory_rss=$(echo "$memory_info" | grep "used_memory_rss_human:" | cut -d: -f2 | tr -d '[:space:]')
+
+        test_info "Redis memory usage: $used_memory (RSS: $used_memory_rss)"
+        test_pass "Redis memory monitoring"
+    else
+        test_fail "Redis memory info retrieval"
+        return 1
+    fi
+
+    return 0
+}
+
+# 运行Redis集成测试
+run_redis_integration_tests() {
+    test_info "Starting Redis integration tests"
+
+    # 确保Redis运行
+    start_redis_if_needed
+
+    # 运行各种Redis测试
+    test_redis_cache_operations
+    test_redis_performance
+    test_redis_memory_usage
+
+    # 如果有独立的Redis测试脚本，也运行它们
+    local redis_integration_script="$PROJECT_ROOT/tests/redis/redis_integration_test.sh"
+    if [ -f "$redis_integration_script" ] && [ -x "$redis_integration_script" ]; then
+        test_info "Running comprehensive Redis integration tests"
+        if "$redis_integration_script"; then
+            test_pass "Comprehensive Redis integration tests"
+        else
+            test_fail "Comprehensive Redis integration tests"
+        fi
+    fi
+
+    test_info "Redis integration tests completed"
+}
+
+# 运行Redis性能测试
+run_redis_performance_tests() {
+    test_info "Starting Redis performance tests"
+
+    # 确保Redis运行
+    start_redis_if_needed
+
+    # 如果有独立的Redis性能测试脚本，运行它们
+    local redis_perf_script="$PROJECT_ROOT/tests/redis/redis_performance_test.sh"
+    if [ -f "$redis_perf_script" ] && [ -x "$redis_perf_script" ]; then
+        test_info "Running comprehensive Redis performance tests"
+        if "$redis_perf_script" "/tmp/redis_performance_report.txt"; then
+            test_pass "Comprehensive Redis performance tests"
+            test_info "Performance report saved to /tmp/redis_performance_report.txt"
+        else
+            test_fail "Comprehensive Redis performance tests"
+        fi
+    else
+        test_warn "Redis performance test script not found, running basic tests"
+        test_redis_performance
+    fi
+
+    test_info "Redis performance tests completed"
+}
+
+# ========================================
 # 导出函数
 # ========================================
 
@@ -628,6 +897,9 @@ export -f generate_random_string generate_random_email generate_random_phone gen
 export -f generate_project_data generate_environment_data generate_rule_data
 export -f websocket_test_connection
 export -f performance_test
+export -f check_redis_connection start_redis_if_needed
+export -f test_redis_cache_operations test_redis_performance test_redis_memory_usage
+export -f run_redis_integration_tests run_redis_performance_tests
 export -f generate_test_report
 export -f cleanup_test_resources print_test_summary
 export -f init_test_framework
