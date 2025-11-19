@@ -3,6 +3,8 @@ package executor
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gomockserver/mockserver/internal/graphql/types"
@@ -15,6 +17,7 @@ type QueryExecutor struct {
 	logger     *zap.Logger
 	validators []QueryValidator
 	middleware []QueryMiddleware
+	resolver   *ResolverManager
 }
 
 // NewQueryExecutor 创建查询执行器
@@ -23,6 +26,7 @@ func NewQueryExecutor() *QueryExecutor {
 		logger:     logger.Get().Named("graphql-executor"),
 		validators: make([]QueryValidator, 0),
 		middleware: make([]QueryMiddleware, 0),
+		resolver:   DefaultResolverManager(),
 	}
 }
 
@@ -103,26 +107,92 @@ func (e *QueryExecutor) executeQueryInternal(ctx context.Context, execCtx *types
 func (e *QueryExecutor) executeSelectQuery(ctx context.Context, execCtx *types.ExecutionContext, result *types.GraphQLResult) {
 	e.logger.Debug("执行SELECT查询", zap.String("request_id", execCtx.RequestID))
 
-	// 这里简化处理，实际应该解析查询语句并执行
-	// 目前返回一个示例结果
-	result.Data = map[string]interface{}{
-		"__typename": "QueryResult",
-		"status":    "success",
-		"timestamp": time.Now().Unix(),
+	// 解析查询字符串，提取请求的字段
+	queryFields := e.parseSimpleQuery(execCtx.Query.Query)
+	if len(queryFields) == 0 {
+		// 如果无法解析，返回默认结果
+		result.Data = map[string]interface{}{
+			"__typename": "QueryResult",
+			"status":    "success",
+			"timestamp": time.Now().Unix(),
+		}
+		return
 	}
+
+	// 执行每个字段的解析
+	data := make(map[string]interface{})
+	for _, fieldName := range queryFields {
+		fieldCtx := &types.FieldContext{
+			ParentType: "Query",
+			FieldName:  fieldName,
+			Arguments:  execCtx.Variables,
+			Alias:      fieldName,
+			Path:       []string{fieldName},
+		}
+
+		fieldResult, err := e.resolver.ResolveField(ctx, fieldCtx)
+		if err != nil {
+			e.logger.Error("字段解析失败",
+				zap.String("field", fieldName),
+				zap.Error(err))
+			result.Errors = append(result.Errors, &types.GraphQLErrorWrapper{
+				Kind:    types.ErrorKindExecution,
+				Message: fmt.Sprintf("字段 %s 解析失败: %v", fieldName, err),
+				Path:    []interface{}{fieldName},
+			})
+			continue
+		}
+
+		data[fieldName] = fieldResult
+	}
+
+	result.Data = data
 }
 
 // executeMutationQuery 执行Mutation查询
 func (e *QueryExecutor) executeMutationQuery(ctx context.Context, execCtx *types.ExecutionContext, result *types.GraphQLResult) {
 	e.logger.Debug("执行Mutation查询", zap.String("request_id", execCtx.RequestID))
 
-	// 这里简化处理，实际应该解析mutation语句并执行
-	// 目前返回一个示例结果
-	result.Data = map[string]interface{}{
-		"__typename": "MutationResult",
-		"success":   true,
-		"timestamp": time.Now().Unix(),
+	// 解析Mutation查询字符串，提取请求的字段
+	mutationFields := e.parseSimpleQuery(execCtx.Query.Query)
+	if len(mutationFields) == 0 {
+		// 如果无法解析，返回默认结果
+		result.Data = map[string]interface{}{
+			"__typename": "MutationResult",
+			"success":   true,
+			"timestamp": time.Now().Unix(),
+		}
+		return
 	}
+
+	// 执行每个Mutation字段的解析
+	data := make(map[string]interface{})
+	for _, fieldName := range mutationFields {
+		fieldCtx := &types.FieldContext{
+			ParentType: "Mutation",
+			FieldName:  fieldName,
+			Arguments:  execCtx.Variables,
+			Alias:      fieldName,
+			Path:       []string{fieldName},
+		}
+
+		fieldResult, err := e.resolver.ResolveField(ctx, fieldCtx)
+		if err != nil {
+			e.logger.Error("Mutation字段解析失败",
+				zap.String("field", fieldName),
+				zap.Error(err))
+			result.Errors = append(result.Errors, &types.GraphQLErrorWrapper{
+				Kind:    types.ErrorKindExecution,
+				Message: fmt.Sprintf("Mutation字段 %s 解析失败: %v", fieldName, err),
+				Path:    []interface{}{fieldName},
+			})
+			continue
+		}
+
+		data[fieldName] = fieldResult
+	}
+
+	result.Data = data
 }
 
 // executeSubscriptionQuery 执行Subscription查询
@@ -356,4 +426,62 @@ func (m *TimeoutMiddleware) Handle(ctx context.Context, execCtx *types.Execution
 			},
 		}
 	}
+}
+
+// parseSimpleQuery 简单的GraphQL查询解析器
+// 这是一个基础实现，用于从查询字符串中提取字段名
+func (e *QueryExecutor) parseSimpleQuery(query string) []string {
+	if query == "" {
+		return nil
+	}
+
+	// 移除注释和多余空白
+	cleanQuery := strings.TrimSpace(query)
+
+	// 简单的正则表达式匹配GraphQL字段
+	// 匹配模式: { field1, field2, field3 } 或 query { field1 field2 }
+
+	// 1. 查找查询块的内容
+	queryBlockRegex := regexp.MustCompile(`\{([^{}]+)\}`)
+	matches := queryBlockRegex.FindAllStringSubmatch(cleanQuery, -1)
+
+	var fields []string
+
+	for _, match := range matches {
+		if len(match) > 1 {
+			blockContent := strings.TrimSpace(match[1])
+
+			// 2. 分割字段名
+			fieldRegex := regexp.MustCompile(`(\w+)`)
+			fieldMatches := fieldRegex.FindAllString(blockContent, -1)
+
+			// 过滤掉GraphQL关键字
+			for _, field := range fieldMatches {
+				field = strings.TrimSpace(field)
+				if field != "" &&
+				   !strings.EqualFold(field, "query") &&
+				   !strings.EqualFold(field, "mutation") &&
+				   !strings.EqualFold(field, "subscription") &&
+				   !strings.Contains(field, "(") {
+					fields = append(fields, field)
+				}
+			}
+		}
+	}
+
+	// 去重
+	uniqueFields := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, field := range fields {
+		if !seen[field] {
+			seen[field] = true
+			uniqueFields = append(uniqueFields, field)
+		}
+	}
+
+	e.logger.Debug("解析GraphQL查询字段",
+		zap.Strings("fields", uniqueFields),
+		zap.String("original_query", cleanQuery))
+
+	return uniqueFields
 }
