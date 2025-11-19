@@ -65,7 +65,8 @@ func Init(level, format, output, filePath string, maxSize, maxBackups, maxAge in
 	core := zapcore.NewCore(encoder, writeSyncer, zapLevel)
 
 	// 创建 logger
-	globalLogger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	// 使用 AddCallerSkip(1) 跳过包装函数，显示真实的调用者位置
+	globalLogger = zap.New(core, zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.ErrorLevel))
 
 	return nil
 }
@@ -74,7 +75,8 @@ func Init(level, format, output, filePath string, maxSize, maxBackups, maxAge in
 func Get() *zap.Logger {
 	if globalLogger == nil {
 		// 如果未初始化，返回默认 logger
-		globalLogger, _ = zap.NewProduction()
+		// 同样使用 AddCallerSkip(1) 来显示正确的调用者位置
+		globalLogger, _ = zap.NewProduction(zap.AddCallerSkip(1))
 	}
 	return globalLogger
 }
