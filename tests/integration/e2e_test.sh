@@ -60,6 +60,27 @@ cleanup() {
         wait $SERVER_PID 2>/dev/null || true
         echo -e "${GREEN}✓ 服务器已停止${NC}"
     fi
+
+    # 清理依赖服务
+    if [ "$START_MONGODB_BY_SCRIPT" = "true" ]; then
+        echo -e "${YELLOW}停止 MongoDB 服务 (由脚本启动)...${NC}"
+        if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+            make stop-mongo >/dev/null 2>&1 || true
+        else
+            docker stop mongodb >/dev/null 2>&1 || true
+        fi
+        echo -e "${GREEN}✓ MongoDB 已停止${NC}"
+    fi
+
+    if [ "$START_REDIS_BY_SCRIPT" = "true" ]; then
+        echo -e "${YELLOW}停止 Redis 服务 (由脚本启动)...${NC}"
+        if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+            make stop-redis >/dev/null 2>&1 || true
+        else
+            docker stop mockserver-redis >/dev/null 2>&1 || true
+        fi
+        echo -e "${GREEN}✓ Redis 已停止${NC}"
+    fi
     
     echo ""
     echo -e "${BLUE}=========================================${NC}"
@@ -97,6 +118,10 @@ extract_json_field() {
     echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | cut -d'"' -f4
 }
 
+# 服务状态跟踪
+START_MONGODB_BY_SCRIPT=false
+START_REDIS_BY_SCRIPT=false
+
 # ========================================
 # 阶段 0: 准备工作
 # ========================================
@@ -106,6 +131,38 @@ echo ""
 
 # 检查是否需要启动服务器
 if [ "$SKIP_SERVER_START" != "true" ]; then
+    # 0.0 检查并启动依赖服务
+    echo -e "${YELLOW}[0.0] 检查依赖服务...${NC}"
+    
+    # 检查 MongoDB
+    if ! docker ps --format '{{.Names}}' | grep -q '^mongodb$'; then
+        echo "启动 MongoDB..."
+        if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+            make start-mongo >/dev/null 2>&1
+        else
+            docker run -d --name mongodb -p 27017:27017 -v mongodb_data:/data/db m.daocloud.io/docker.io/mongo:6.0 >/dev/null 2>&1
+        fi
+        START_MONGODB_BY_SCRIPT=true
+        sleep 3
+    else
+        echo "MongoDB 已运行"
+    fi
+
+    # 检查 Redis
+    if ! docker ps --format '{{.Names}}' | grep -q '^mockserver-redis$'; then
+        echo "启动 Redis..."
+        if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+            make start-redis >/dev/null 2>&1
+        else
+            docker run -d --name mockserver-redis -p 6379:6379 -v redis_data:/data m.daocloud.io/docker.io/redis:7.2-alpine redis-server --appendonly yes >/dev/null 2>&1
+        fi
+        START_REDIS_BY_SCRIPT=true
+        sleep 2
+    else
+        echo "Redis 已运行"
+    fi
+    echo ""
+
     # 0.1 检查并编译二进制文件
     echo -e "${YELLOW}[0.1] 检查二进制文件...${NC}"
     if [ ! -f "$BINARY" ]; then

@@ -444,7 +444,10 @@ main() {
 }
 
 # 信号处理
-trap 'echo -e "\n${YELLOW}测试被中断，正在清理...${NC}"; exit 1' INT TERM
+trap 'echo -e "\n${YELLOW}测试被中断，正在清理...${NC}"; cleanup_dependency_services; exit 1' INT TERM
+
+# 正常退出清理
+trap 'cleanup_dependency_services' EXIT
 
 # 执行主流程
 main

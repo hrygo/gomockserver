@@ -34,6 +34,10 @@ TEST_RESULTS=()
 TEST_START_TIME=""
 TEST_END_TIME=""
 
+# 服务状态跟踪
+START_MONGODB_BY_FRAMEWORK=false
+START_REDIS_BY_FRAMEWORK=false
+
 # ========================================
 # 环境检测和配置
 # ========================================
@@ -473,6 +477,7 @@ start_mongodb_service() {
             docker run -d --name mongodb-mockserver -p 27017:27017 mongo:5.0 >/dev/null 2>&1
         fi
         sleep 5
+        START_MONGODB_BY_FRAMEWORK=true
         return 0
     fi
 
@@ -497,6 +502,7 @@ start_redis_service() {
             docker run -d --name redis-mockserver -p 6379:6379 redis:7-alpine >/dev/null 2>&1
         fi
         sleep 3
+        START_REDIS_BY_FRAMEWORK=true
         return 0
     fi
 
@@ -569,6 +575,35 @@ verify_service_status() {
         else
             echo -e "${YELLOW}⚠ 未运行${NC}"
         fi
+    fi
+}
+
+# 清理依赖服务
+cleanup_dependency_services() {
+    echo -e "${BLUE}→ 清理依赖服务...${NC}"
+
+    if [ "$START_MONGODB_BY_FRAMEWORK" = "true" ]; then
+        echo -e "${YELLOW}停止 MongoDB 服务 (由框架启动)...${NC}"
+        if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+            make stop-mongo >/dev/null 2>&1 || true
+        else
+            docker stop mongodb-mockserver >/dev/null 2>&1 || true
+        fi
+        echo -e "${GREEN}✓ MongoDB 已停止${NC}"
+    else
+        echo -e "${CYAN}保留 MongoDB 服务 (测试前已存在)${NC}"
+    fi
+
+    if [ "$START_REDIS_BY_FRAMEWORK" = "true" ]; then
+        echo -e "${YELLOW}停止 Redis 服务 (由框架启动)...${NC}"
+        if command -v make >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/Makefile" ]; then
+            make stop-redis >/dev/null 2>&1 || true
+        else
+            docker stop redis-mockserver >/dev/null 2>&1 || true
+        fi
+        echo -e "${GREEN}✓ Redis 已停止${NC}"
+    else
+        echo -e "${CYAN}保留 Redis 服务 (测试前已存在)${NC}"
     fi
 }
 
