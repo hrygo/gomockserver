@@ -1,4 +1,4 @@
-.PHONY: help test test-unit test-integration test-e2e test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend start-redis stop-redis restart-redis redis-cli redis-logs redis-status redis-test redis-bench redis-flush test-cache-coverage test-redis-full project-health script-check script-fix ci-check full-health clean-temp clean-coverage clean-all
+.PHONY: help test test-unit test-integration test-e2e test-e2e-full test-e2e-skip test-e2e-reports test-websocket test-edge-case test-stress test-all test-coverage build clean fmt vet lint docker-build docker-up docker-down docker-test run install dev start-mongo stop-mongo restart-mongo mongo-shell mongo-logs dev-env clean-env test-service-coverage test-api-coverage start-all stop-all start-backend stop-backend start-frontend stop-frontend start-redis stop-redis restart-redis redis-cli redis-logs redis-status redis-test redis-bench redis-flush test-cache-coverage test-redis-full project-health script-check script-fix ci-check full-health clean-temp clean-coverage clean-all
 
 # 变量定义
 BINARY_NAME=mockserver
@@ -37,11 +37,17 @@ help:
 	@echo "  make test-repository - 运行 Repository 层测试"
 	@echo "  make test-integration - 运行集成测试"
 	@echo "  make test-e2e        - 运行端到端测试"
+	@echo "  make test-e2e-full   - 运行完整E2E测试套件"
+	@echo "  make test-e2e-skip   - 跳过服务启动运行E2E测试"
+	@echo "  make test-e2e-reports - 生成E2E测试报告"
 	@echo "  make test-coverage   - 生成覆盖率报告"
 	@echo "  make test-coverage-check - 检查覆盖率门限 (70%)"
 	@echo "  make test-docker     - 在Docker环境中测试"
 	@echo "  make test-cache-coverage - 缓存模块覆盖率测试"
 	@echo "  make test-redis-full - Redis完整功能测试"
+	@echo "  make test-websocket  - WebSocket功能测试"
+	@echo "  make test-edge-case  - 边界条件测试"
+	@echo "  make test-stress     - 压力测试"
 	@echo "  make bench           - 运行性能基准测试"
 	@echo ""
 	@echo "🔍 代码质量:"
@@ -172,7 +178,7 @@ clean:
 test: test-unit
 
 # 完整测试套件
-test-all: test-unit test-integration
+test-all: test-unit test-integration test-e2e-skip
 	@echo "✅ All tests completed!"
 
 # 单元测试
@@ -196,6 +202,61 @@ test-integration:
 test-e2e:
 	@echo "🌐 Running E2E tests in Docker..."
 	@docker-compose -f docker-compose.test.yml --profile integration run --rm test-runner
+
+# 完整E2E测试套件（启动所有服务）
+test-e2e-full:
+	@echo "🌐 Running complete E2E test suite with full stack..."
+	@echo "Step 1: Starting dependencies..."
+	@make start-mongo
+	@make start-redis
+	@echo "Step 2: Starting backend service..."
+	@make start-backend
+	@echo "Step 3: Running E2E test suite..."
+	@mkdir -p /tmp/mockserver_e2e_results
+	@ADMIN_API=http://localhost:8080/api/v1 MOCK_API=http://localhost:9090 SKIP_SERVER_START=false ./tests/integration/run_all_e2e_tests.sh
+	@echo "✅ E2E test suite completed!"
+	@echo "📊 Results saved to /tmp/mockserver_e2e_results/"
+
+# 跳过服务启动的E2E测试（使用现有服务）
+test-e2e-skip:
+	@echo "🌐 Running E2E test suite with SKIP_SERVER_START=true..."
+	@mkdir -p /tmp/mockserver_e2e_results
+	@ADMIN_API=http://localhost:8080/api/v1 MOCK_API=http://localhost:9090 SKIP_SERVER_START=true ./tests/integration/run_all_e2e_tests.sh
+	@echo "✅ E2E test suite completed!"
+	@echo "📊 Results saved to /tmp/mockserver_e2e_results/"
+
+# 生成E2E测试报告
+test-e2e-reports:
+	@echo "📊 Generating E2E test reports..."
+	@if [ -d "/tmp/mockserver_e2e_results" ]; then \
+		echo "📈 Latest E2E test results:"; \
+		ls -la /tmp/mockserver_e2e_results/ | head -10; \
+		echo ""; \
+		if [ -f "/tmp/mockserver_e2e_results/comprehensive_test_report_*.md" ]; then \
+			echo "📋 Comprehensive Report:"; \
+			ls -t /tmp/mockserver_e2e_results/comprehensive_test_report_*.md | head -1 | xargs -I {} sh -c 'echo "File: {}"; head -20 "{}"'; \
+		fi; \
+	else \
+		echo "❌ No E2E test results found. Run 'make test-e2e-full' or 'make test-e2e-skip' first."; \
+	fi
+
+# WebSocket功能测试
+test-websocket:
+	@echo "🔌 Running WebSocket functionality tests..."
+	@mkdir -p /tmp/mockserver_e2e_results
+	@ADMIN_API=http://localhost:8080/api/v1 MOCK_API=http://localhost:9090 SKIP_SERVER_START=false ./tests/integration/simple_websocket_test.sh
+
+# 边界条件测试
+test-edge-case:
+	@echo "🔍 Running edge case and boundary tests..."
+	@mkdir -p /tmp/mockserver_e2e_results
+	@ADMIN_API=http://localhost:8080/api/v1 MOCK_API=http://localhost:9090 SKIP_SERVER_START=false ./tests/integration/simple_edge_case_test.sh
+
+# 压力测试
+test-stress:
+	@echo "⚡ Running stress and performance tests..."
+	@mkdir -p /tmp/mockserver_e2e_results
+	@ADMIN_API=http://localhost:8080/api/v1 MOCK_API=http://localhost:9090 SKIP_SERVER_START=false ./tests/integration/stress_e2e_test.sh
 
 # Docker 测试环境
 test-docker:
@@ -605,6 +666,8 @@ pre-commit: qa
 # 命令别名
 t: test
 c: test-coverage
+e2e: test-e2e-skip
+e2e-full: test-e2e-full
 
 
 # ════════════════════════════════════════════════════════

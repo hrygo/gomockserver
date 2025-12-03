@@ -20,14 +20,14 @@ FRAMEWORK_LIB="$TEST_DIR/lib/test_framework.sh"
 RESULTS_DIR="/tmp/mockserver_e2e_results"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# 测试列表
+# 测试列表 (完整功能覆盖)
 TESTS=(
     "基础功能测试:e2e_test.sh:基础CRUD和Mock功能"
     "高级功能测试:advanced_e2e_test.sh:复杂匹配和动态响应"
-    "简化缓存测试:simple_cache_test.sh:Redis缓存基础功能和集成"
-    "简化WebSocket测试:simple_websocket_test.sh:WebSocket基础功能验证"
+    "Redis缓存测试:simple_cache_test.sh:Redis缓存深度验证"
+    "WebSocket测试:simple_websocket_test.sh:WebSocket功能验证"
     "边界条件测试:simple_edge_case_test.sh:边界和异常场景"
-    "压力测试:stress_e2e_test.sh:性能和负载测试"
+    "性能压力测试:stress_e2e_test.sh:负载和性能测试"
 )
 
 # 全局统计
@@ -444,7 +444,10 @@ main() {
 }
 
 # 信号处理
-trap 'echo -e "\n${YELLOW}测试被中断，正在清理...${NC}"; exit 1' INT TERM
+trap 'echo -e "\n${YELLOW}测试被中断，正在清理...${NC}"; cleanup_dependency_services; exit 1' INT TERM
+
+# 正常退出清理
+trap 'cleanup_dependency_services' EXIT
 
 # 执行主流程
 main

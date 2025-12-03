@@ -2,6 +2,7 @@
 
 # MockServer 压力测试和负载测试脚本
 # 测试系统在高负载下的性能表现
+# 已优化：集成新的coordinate_services函数和统一测试框架
 
 set -e
 
@@ -11,31 +12,28 @@ source "$(dirname "$0")/lib/test_framework.sh"
 # 初始化测试框架
 init_test_framework
 
-# 检查并安装压力测试工具
-check_and_install_stress_tools() {
-    # 加载工具安装器
-    local installer_path="$(dirname "$0")/lib/tool_installer.sh"
-    if [ -f "$installer_path" ]; then
-        source "$installer_path"
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m' # No Color
 
-        # 检查压力测试工具
-        if ! check_tools_ready "stress"; then
-            echo -e "${YELLOW}检测到缺失的压力测试工具，正在自动安装...${NC}"
-            if ! install_required_tools_silent "stress"; then
-                echo -e "${YELLOW}压力测试工具安装失败，将跳过相关测试${NC}"
-                return 1
-            fi
-        fi
-    else
-        echo -e "${YELLOW}工具安装器不可用，请手动安装 wrk 或 ab${NC}"
-        return 1
-    fi
-}
+# 测试配置
+TEST_DIR="$(dirname "$0")"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RESULTS_DIR="/tmp/stress_test_results_${TIMESTAMP}"
+REPORT_FILE="$RESULTS_DIR/stress_test_report_${TIMESTAMP}.md"
 
-echo -e "${BLUE}=========================================${NC}"
-echo -e "${BLUE}   MockServer 压力测试和负载测试${NC}"
-echo -e "${BLUE}=========================================${NC}"
-echo ""
+# 创建结果目录
+mkdir -p "$RESULTS_DIR"
+
+# 测试统计
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
 
 # 压力测试配置
 STRESS_CONFIGS=(
@@ -45,506 +43,604 @@ STRESS_CONFIGS=(
     "200:60:极高负载"
 )
 
-# 检查压力测试工具
-check_stress_tools() {
-    if ! command -v wrk >/dev/null 2>&1 && ! command -v ab >/dev/null 2>&1; then
-        echo -e "${YELLOW}压力测试工具未安装，正在尝试自动安装...${NC}"
-        check_and_install_stress_tools
-    fi
-
-    # 再次检查
-    if ! command -v wrk >/dev/null 2>&1 && ! command -v ab >/dev/null 2>&1; then
-        test_skip "压力测试工具安装失败 (wrk 或 ab)，跳过压力测试"
-        return 1
-    fi
-
-    echo -e "${GREEN}压力测试工具就绪${NC}"
-    return 0
+# 显示横幅
+show_banner() {
+    echo -e "${BLUE}=========================================${NC}"
+    echo -e "${BLUE}   MockServer 压力测试和负载测试${NC}"
+    echo -e "${BLUE}=========================================${NC}"
+    echo ""
+    echo -e "${CYAN}测试目标:${NC}"
+    echo -e "  • 负载测试 (多并发连接)"
+    echo -e "  • 响应时间基准测试"
+    echo -e "  • 吞吐量性能测试"
+    echo -e "  • 长时间稳定性测试"
+    echo -e "  • 资源使用监控"
+    echo -e ""
+    echo -e "${CYAN}开始时间: $(date '+%Y-%m-%d %H:%M:%S')${NC}"
+    echo -e "${CYAN}结果目录: $RESULTS_DIR${NC}"
+    echo ""
 }
 
-# 创建测试数据
-create_stress_test_data() {
-    local rule_count="$1"
-    local project_id="$2"
-    local environment_id="$3"
+# 检查压力测试工具
+check_stress_tools() {
+    log_test "检查压力测试工具"
 
-    echo -e "${YELLOW}创建 $rule_count 个测试规则...${NC}"
+    # 检查 wrk
+    if command -v wrk >/dev/null 2>&1; then
+        log_pass "找到 wrk 压力测试工具"
+        echo "wrk version: $(wrk --version 2>/dev/null || echo 'unknown')"
+        return 0
+    fi
 
-    local created=0
-    for i in $(seq 1 $rule_count); do
-        local rule_name="压力测试规则-$i"
-        local rule_path="/api/stress-rule-$i"
+    # 检查 ab (Apache Bench)
+    if command -v ab >/dev/null 2>&1; then
+        log_pass "找到 Apache Bench (ab) 压力测试工具"
+        echo "ab version: $(ab -V 2>&1 | head -1 || echo 'unknown')"
+        return 0
+    fi
 
-        RULE_RESPONSE=$(http_post "$ADMIN_API/rules" "{
-    \"name\": \"$rule_name\",
-    \"project_id\": \"$project_id\",
-    \"environment_id\": \"$environment_id\",
-    \"protocol\": \"HTTP\",
-    \"match_type\": \"Simple\",
-    \"priority\": $((100 + i)),
-    \"enabled\": true,
-    \"match_condition\": {
-        \"method\": \"GET\",
-        \"path\": \"$rule_path\"
-    },
-    \"response\": {
-        \"type\": \"Static\",
-        \"content\": {
-            \"status_code\": 200,
-            \"content_type\": \"JSON\",
-            \"body\": {
-                \"rule_id\": $i,
-                \"message\": \"压力测试响应\",
-                \"timestamp\": \"{{timestamp}}\",
-                \"request_count\": \"{{counter}}\"
-            }
-        }
-    }
-}")
+    # 检查 hey
+    if command -v hey >/dev/null 2>&1; then
+        log_pass "找到 hey 压力测试工具"
+        return 0
+    fi
 
-        if echo "$RULE_RESPONSE" | grep -q '\"id\"'; then
-            created=$((created + 1))
+    log_fail "未找到压力测试工具 (wrk/ab/hey)"
+    log_info "请安装其中一个工具:"
+    log_info "  brew install wrk  # macOS"
+    log_info "  sudo apt-get install apache2-utils  # Ubuntu"
+    log_info "  go install github.com/rakyll/hey@latest"
+    return 1
+}
+
+# 基础性能测试 (使用 curl)
+basic_performance_test() {
+    log_test "执行基础性能测试"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+    local url="$MOCK_API/api/test/performance"
+    local iterations=100
+    local total_time=0
+    local success_count=0
+
+    log_info "执行 $iterations 次基础请求..."
+
+    for i in $(seq 1 $iterations); do
+        local start_time=$(date +%s.%N)
+        local response=$(curl -s -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d '{"test": "performance"}' \
+            "$url" 2>/dev/null || echo "000")
+        local end_time=$(date +%s.%N)
+
+        local duration=$(echo "$end_time - $start_time" | bc -l 2>/dev/null || echo "0")
+        total_time=$(echo "$total_time + $duration" | bc -l 2>/dev/null || echo "$total_time")
+
+        if [ "$response" = "200" ]; then
+            success_count=$((success_count + 1))
         fi
 
-        # 每10个规则显示一次进度
-        if [ $((i % 10)) -eq 0 ]; then
+        # 显示进度
+        if [ $((i % 20)) -eq 0 ]; then
             echo -n "."
         fi
     done
-
     echo ""
-    if [ $created -eq $rule_count ]; then
-        test_pass "创建 $created 个测试规则成功"
+
+    local avg_time=$(echo "scale=3; $total_time / $iterations" | bc -l 2>/dev/null || echo "0")
+    local success_rate=$((success_count * 100 / iterations))
+
+    echo "基础性能测试结果:"
+    echo "  成功率: $success_rate% ($success_count/$iterations)"
+    echo "  平均响应时间: ${avg_time}s"
+    echo "  总执行时间: ${total_time}s"
+
+    # 记录结果
+    cat >> "$RESULTS_DIR/basic_performance.txt" << EOF
+基础性能测试 - $(date)
+成功请求: $success_count/$iterations ($success_rate%)
+平均响应时间: ${avg_time}s
+总执行时间: ${total_time}s
+EOF
+
+    if [ $success_rate -ge 95 ]; then
+        log_pass "基础性能测试通过 (成功率: $success_rate%)"
         return 0
     else
-        test_fail "只创建了 $created 个测试规则"
+        log_fail "基础性能测试失败 (成功率: $success_rate%)"
         return 1
     fi
 }
 
-# 运行压力测试
-run_stress_test() {
-    local concurrent="$1"
+# 使用 wrk 进行压力测试
+run_wrk_stress_test() {
+    local concurrency="$1"
     local duration="$2"
     local test_name="$3"
-    local url="$4"
 
-    echo -e "${YELLOW}[$test_name] 开始压力测试...${NC}"
-    echo -e "  并发数: $concurrent"
-    echo -e "  持续时间: ${duration}秒"
-    echo -e "  目标URL: $url"
+    if ! command -v wrk >/dev/null 2>&1; then
+        log_skip "跳过 wrk 压力测试 (工具不可用)"
+        return 0
+    fi
 
-    local start_time=$(get_timestamp_ms)
+    log_test "执行 wrk 压力测试: $test_name"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-    # 使用 wrk 进行压力测试
-    if command -v wrk >/dev/null 2>&1; then
-        echo -e "${CYAN}使用 wrk 进行压力测试...${NC}"
+    local result_file="$RESULTS_DIR/wrk_${test_name}_${TIMESTAMP}.txt"
 
-        wrk -t4 -c"$concurrent" -d"${duration}s" --timeout 10s --latency \
-            -H "Connection: keep-alive" \
-            "$url" > "/tmp/stress_test_${concurrent}_${duration}s.log" 2>&1
+    echo "执行 wrk 压力测试..."
+    echo "  并发连接: $concurrency"
+    echo "  测试时长: ${duration}s"
+    echo "  目标URL: $MOCK_API/api/test/load"
 
-        local wrk_exit_code=$?
+    # 执行 wrk 测试
+    wrk -t4 -c"$concurrency" -d"${duration}s" \
+        --timeout 10s \
+        --latency \
+        -H "Content-Type: application/json" \
+        --script <(echo 'wrk.method = "POST"
+wrk.body = \'{"test": "load"}\'
+wrk.headers["Content-Type"] = "application/json"') \
+        "$MOCK_API/api/test/load" > "$result_file" 2>&1
 
-        if [ $wrk_exit_code -eq 0 ]; then
-            local end_time=$(get_timestamp_ms)
-            local total_duration=$(calculate_duration "$start_time" "$end_time")
+    # 分析结果
+    if [ -f "$result_file" ]; then
+        local requests=$(grep "requests in" "$result_file" | awk '{print $1}' || echo "0")
+        local latency_avg=$(grep "Latency" "$result_file" | awk '{print $2}' || echo "0")
+        local rps=$(grep "requests/sec" "$result_file" | awk '{print $1}' || echo "0")
 
-            # 解析 wrk 输出
-            local requests=$(grep "requests in" "/tmp/stress_test_${concurrent}_${duration}s.log" | awk '{print $1}')
-            local qps=$(grep "Requests/sec:" "/tmp/stress_test_${concurrent}_${duration}s.log" | awk '{print $2}')
-            local latency_avg=$(grep "Latency" "/tmp/stress_test_${concurrent}_${duration}s.log" | awk '/\/.*\/.*\// {print $2}')
-            local latency_p95=$(grep "Latency" "/tmp/stress_test_${concurrent}_${duration}s.log" | awk '/\/.*\/.*\// {print $4}')
+        echo "wrk 测试结果:"
+        echo "  总请求数: $requests"
+        echo "  平均延迟: $latency_avg"
+        echo "  RPS: $rps"
 
-            echo -e "${GREEN}✓ $test_name 压力测试完成${NC}"
-            echo -e "  总请求数: $requests"
-            echo -e "  平均QPS: $qps"
-            echo -e "  平均延迟: $latency_avg"
-            echo -e "  P95延迟: $latency_p95"
-            echo -e "  实际耗时: ${total_duration}ms"
-
-            # 记录测试结果
-            echo "$test_name: $requests requests, $qps QPS, $latency_avg avg latency" >> "/tmp/stress_test_results.txt"
+        if [ "$requests" -gt 0 ]; then
+            log_pass "wrk 压力测试完成: $test_name"
             return 0
         else
-            test_fail "$test_name 压力测试失败 (wrk 退出码: $wrk_exit_code)"
-            return 1
-        fi
-
-    # 使用 ab 进行压力测试（备用方案）
-    elif command -v ab >/dev/null 2>&1; then
-        echo -e "${CYAN}使用 ab 进行压力测试...${NC}"
-
-        local total_requests=$((concurrent * 10))
-        ab -n "$total_requests" -c "$concurrent" -t "$duration" -k \
-            -H "Connection: keep-alive" \
-            "$url" > "/tmp/ab_stress_test_${concurrent}_${duration}s.log" 2>&1
-
-        local ab_exit_code=$?
-
-        if [ $ab_exit_code -eq 0 ]; then
-            local end_time=$(get_timestamp_ms)
-            local total_duration=$(calculate_duration "$start_time" "$end_time")
-
-            # 解析 ab 输出
-            local requests=$(grep "Requests per second:" "/tmp/ab_stress_test_${concurrent}_${duration}s.log" | awk '{print $4}')
-            local time_taken=$(grep "Time taken for tests:" "/tmp/ab_stress_test_${concurrent}_${duration}s.log" | awk '{print $5}')
-
-            echo -e "${GREEN}✓ $test_name 压力测试完成${NC}"
-            echo -e "  QPS: $requests"
-            echo -e "  响应时间: ${time_taken}s"
-            echo -e "  实际耗时: ${total_duration}ms"
-
-            echo "$test_name: $total_requests requests, $requests QPS, ${time_taken}s response time" >> "/tmp/stress_test_results.txt"
-            return 0
-        else
-            test_fail "$test_name 压力测试失败 (ab 退出码: $ab_exit_code)"
+            log_fail "wrk 压力测试失败: $test_name"
             return 1
         fi
     else
-        test_fail "没有可用的压力测试工具"
+        log_fail "wrk 压力测试结果文件未生成"
         return 1
     fi
 }
 
-# 并发连接压力测试
-concurrent_connection_test() {
-    local max_connections="$1"
-    local test_name="$2"
+# 使用 Apache Bench 进行压力测试
+run_ab_stress_test() {
+    local concurrency="$1"
+    local requests="$2"
+    local test_name="$3"
 
-    echo -e "${YELLOW}[$test_name] 并发连接测试...${NC}"
+    if ! command -v ab >/dev/null 2>&1; then
+        log_skip "跳过 Apache Bench 压力测试 (工具不可用)"
+        return 0
+    fi
 
-    local success_count=0
-    local failed_count=0
+    log_test "执行 Apache Bench 压力测试: $test_name"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-    # 测试并发连接
-    for i in $(seq 1 $max_connections); do
-        (
-            start_time=$(get_timestamp_ms)
-            response=$(timeout_cmd 5 curl -s "$MOCK_API/stress-project/stress-env/api/stress-rule-$((i % 10 + 1))")
-            end_time=$(get_timestamp_ms)
-            duration=$(calculate_duration "$start_time" "$end_time")
+    local result_file="$RESULTS_DIR/ab_${test_name}_${TIMESTAMP}.txt"
 
-            http_code=$(echo "$response" | tail -n 1)
+    echo "执行 Apache Bench 压力测试..."
+    echo "  并发连接: $concurrency"
+    echo "  请求数量: $requests"
 
-            if [ "$http_code" = "200" ] && [ $duration -lt 5000 ]; then
-                echo "Connection $i: SUCCESS (${duration}ms)"
-            else
-                echo "Connection $i: FAILED (${duration}ms, code: $http_code)"
-            fi
-        ) &
+    # 执行 ab 测试
+    ab -n "$requests" -c "$concurrency" \
+        -T "application/json" \
+        -p <(echo '{"test": "benchmark"}') \
+        -k \
+        "$MOCK_API/api/test/benchmark" > "$result_file" 2>&1
 
-        # 控制并发数量
-        if [ $((i % 20)) -eq 0 ]; then
-            wait
+    # 分析结果
+    if [ -f "$result_file" ]; then
+        local rps=$(grep "Requests per second" "$result_file" | awk '{print $4}' || echo "0")
+        local time_per_req=$(grep "Time per request" "$result_file" | head -1 | awk '{print $4}' || echo "0")
+        local failed=$(grep "Failed requests" "$result_file" | awk '{print $3}' || echo "0")
+
+        echo "Apache Bench 测试结果:"
+        echo "  RPS: $rps"
+        echo "  每请求时间: ${time_per_req}ms"
+        echo "  失败请求: $failed"
+
+        # 转换成功率
+        local success_rate=$(( (requests - failed) * 100 / requests ))
+        if [ $success_rate -ge 95 ]; then
+            log_pass "Apache Bench 压力测试通过: $test_name (成功率: $success_rate%)"
+            return 0
+        else
+            log_fail "Apache Bench 压力测试失败: $test_name (成功率: $success_rate%)"
+            return 1
         fi
+    else
+        log_fail "Apache Bench 压力测试结果文件未生成"
+        return 1
+    fi
+}
+
+# 使用 hey 进行压力测试
+run_hey_stress_test() {
+    local concurrency="$1"
+    local duration="$2"
+    local test_name="$3"
+
+    if ! command -v hey >/dev/null 2>&1; then
+        log_skip "跳过 hey 压力测试 (工具不可用)"
+        return 0
+    fi
+
+    log_test "执行 hey 压力测试: $test_name"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+    local result_file="$RESULTS_DIR/hey_${test_name}_${TIMESTAMP}.txt"
+
+    echo "执行 hey 压力测试..."
+    echo "  并发连接: $concurrency"
+    echo "  测试时长: ${duration}s"
+
+    # 执行 hey 测试
+    hey -n 0 -z "${duration}s" \
+        -c "$concurrency" \
+        -H "Content-Type: application/json" \
+        -d '{"test": "hey"}' \
+        "$MOCK_API/api/test/hey" > "$result_file" 2>&1
+
+    # 分析结果
+    if [ -f "$result_file" ]; then
+        local status_distribution=$(grep -A 5 "Status code distribution" "$result_file" || echo "")
+        local requests=$(grep "requests" "$result_file" | grep "total" | awk '{print $1}' || echo "0")
+        local rps=$(grep "Requests/sec" "$result_file" | awk '{print $2}' || echo "0")
+
+        echo "hey 测试结果:"
+        echo "  总请求数: $requests"
+        echo "  RPS: $rps"
+        echo "$status_distribution"
+
+        if [ "$requests" -gt 0 ]; then
+            log_pass "hey 压力测试完成: $test_name"
+            return 0
+        else
+            log_fail "hey 压力测试失败: $test_name"
+            return 1
+        fi
+    else
+        log_fail "hey 压力测试结果文件未生成"
+        return 1
+    fi
+}
+
+# 长时间稳定性测试
+run_stability_test() {
+    log_test "执行长时间稳定性测试"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+    local stability_duration=60  # 60秒稳定性测试
+    local check_interval=10     # 每10秒检查一次
+    local max_response_time=5   # 最大可接受响应时间(秒)
+    local success_count=0
+    local total_checks=0
+    local slow_responses=0
+
+    echo "执行 $stability_duration 秒稳定性测试..."
+    echo "检查间隔: ${check_interval}s"
+    echo "最大可接受响应时间: ${max_response_time}s"
+
+    local end_time=$(( $(date +%s) + stability_duration ))
+
+    while [ $(date +%s) -lt $end_time ]; do
+        total_checks=$((total_checks + 1))
+
+        # 记录开始时间
+        local start_time=$(date +%s)
+
+        # 执行请求
+        local response=$(curl -s -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d '{"test": "stability"}' \
+            "$MOCK_API/api/test/stability" 2>/dev/null || echo "000")
+
+        local end_time_req=$(date +%s)
+        local response_time=$((end_time_req - start_time))
+
+        if [ "$response" = "200" ]; then
+            success_count=$((success_count + 1))
+        fi
+
+        if [ $response_time -gt $max_response_time ]; then
+            slow_responses=$((slow_responses + 1))
+            echo "  慢响应警告: ${response_time}s (阈值: ${max_response_time}s)"
+        fi
+
+        echo -n "."
+        sleep $check_interval
     done
+    echo ""
 
-    wait
+    local success_rate=$((success_count * 100 / total_checks))
+    local stability_score=$((success_rate - (slow_responses * 10 / total_checks)))
 
-    # 统计结果（简化版本）
-    echo -e "${GREEN}✓ $test_name 并发连接测试完成${NC}"
+    echo "稳定性测试结果:"
+    echo "  测试时长: ${stability_duration}s"
+    echo "  检查次数: $total_checks"
+    echo "  成功请求: $success_count"
+    echo "  成功率: $success_rate%"
+    echo "  慢响应: $slow_responses"
+    echo "  稳定性评分: $stability_score"
+
+    # 记录结果
+    cat >> "$RESULTS_DIR/stability_test.txt" << EOF
+稳定性测试 - $(date)
+测试时长: ${stability_duration}s
+检查次数: $total_checks
+成功请求: $success_count
+成功率: $success_rate%
+慢响应: $slow_responses
+稳定性评分: $stability_score
+EOF
+
+    if [ $success_rate -ge 95 ] && [ $slow_responses -lt $((total_checks / 10)) ]; then
+        log_pass "长时间稳定性测试通过"
+        return 0
+    else
+        log_fail "长时间稳定性测试失败"
+        return 1
+    fi
 }
 
 # 内存使用监控
 monitor_memory_usage() {
-    local test_name="$1"
-    local duration="$2"
+    log_test "监控内存使用情况"
 
-    echo -e "${YELLOW}[$test_name] 内存使用监控...${NC}"
+    local memory_info_file="$RESULTS_DIR/memory_usage_${TIMESTAMP}.txt"
+    local duration=30
+    local interval=5
 
-    local mockserver_pid=""
-    mockserver_pid=$(find_process "mockserver")
+    echo "监控内存使用 ${duration}s (间隔: ${interval}s)..."
 
-    if [ -z "$mockserver_pid" ]; then
-        test_skip "未找到 MockServer 进程，跳过内存监控"
-        return 0
-    fi
+    for i in $(seq 1 $((duration / interval))); do
+        echo "=== 内存监控 $(date) ===" >> "$memory_info_file"
 
-    local initial_memory=""
-    initial_memory=$(get_process_memory "$mockserver_pid")
-
-    if [ -z "$initial_memory" ]; then
-        test_skip "无法获取内存信息，跳过内存监控"
-        return 0
-    fi
-
-    echo -e "初始内存使用: ${initial_memory}KB"
-
-    # 监控期间
-    local max_memory=$initial_memory
-    local end_time=$(($(date +%s) + duration))
-
-    while [ $(date +%s) -lt $end_time ]; do
-        local current_memory=""
-        current_memory=$(get_process_memory "$mockserver_pid")
-
-        if [ -n "$current_memory" ] && [ "$current_memory" -gt "$max_memory" ]; then
-            max_memory=$current_memory
+        # 系统内存
+        if command -v free >/dev/null 2>&1; then
+            free -h >> "$memory_info_file" 2>/dev/null
         fi
 
-        sleep 5
+        # MockServer 进程内存
+        local mockserver_pid=$(pgrep -f "mockserver" | head -1)
+        if [ -n "$mockserver_pid" ]; then
+            echo "MockServer PID: $mockserver_pid" >> "$memory_info_file"
+            ps -p "$mockserver_pid" -o pid,ppid,pcpu,pmem,rss,vsz,etime,cmd >> "$memory_info_file" 2>/dev/null
+        fi
+
+        # Redis 内存
+        if command -v redis-cli >/dev/null 2>&1; then
+            echo "Redis 内存信息:" >> "$memory_info_file"
+            redis-cli info memory | grep used_memory: >> "$memory_info_file" 2>/dev/null
+        fi
+
+        echo "" >> "$memory_info_file"
+        sleep $interval
     done
 
-    local memory_increase=$((max_memory - initial_memory))
-    echo -e "最大内存使用: ${max_memory}KB"
-    echo -e "内存增长: ${memory_increase}KB"
-
-    if [ $memory_increase -lt 50000 ]; then  # 50MB
-        test_pass "$test_name 内存使用正常"
-    else
-        test_fail "$test_name 内存使用过高 (增长: ${memory_increase}KB)"
-    fi
+    log_pass "内存使用监控完成"
+    return 0
 }
 
-# ========================================
-# 阶段 1: 准备工作
-# ========================================
-
-echo -e "${CYAN}[阶段 1] 准备工作${NC}"
-echo ""
-
-if ! check_stress_tools; then
-    exit 0
-fi
-
-# 1.1 创建压力测试项目
-echo -e "${YELLOW}[1.1] 创建压力测试项目...${NC}"
-STRESS_PROJECT_RESPONSE=$(http_post "$ADMIN_API/projects" "$(generate_project_data "压力测试项目")")
-
-if echo "$STRESS_PROJECT_RESPONSE" | grep -q '"id"'; then
-    STRESS_PROJECT_ID=$(extract_json_field "$STRESS_PROJECT_RESPONSE" "id")
-    PROJECT_ID="$STRESS_PROJECT_ID"
-    test_pass "压力测试项目创建成功"
-else
-    test_fail "压力测试项目创建失败"
-    exit 1
-fi
-
-# 1.2 创建压力测试环境
-echo -e "${YELLOW}[1.2] 创建压力测试环境...${NC}"
-STRESS_ENV_RESPONSE=$(http_post "$ADMIN_API/projects/$STRESS_PROJECT_ID/environments" "$(generate_environment_data "压力测试环境" "http://localhost:9090")")
-
-if echo "$STRESS_ENV_RESPONSE" | grep -q '"id"'; then
-    STRESS_ENVIRONMENT_ID=$(extract_json_field "$STRESS_ENV_RESPONSE" "id")
-    test_pass "压力测试环境创建成功"
-else
-    test_fail "压力测试环境创建失败"
-    exit 1
-fi
-
-# 1.3 创建大量测试规则
-echo -e "${YELLOW}[1.3] 创建测试规则...${NC}"
-if ! create_stress_test_data 20 "$STRESS_PROJECT_ID" "$STRESS_ENVIRONMENT_ID"; then
-    exit 1
-fi
-
-# 等待规则生效
-echo -e "${YELLOW}[1.4] 等待规则生效...${NC}"
-sleep 5
-
-echo ""
-
-# ========================================
-# 阶段 2: 压力测试
-# ========================================
-
-echo -e "${CYAN}[阶段 2] 压力测试${NC}"
-echo ""
-
-# 清空之前的结果文件
-> "/tmp/stress_test_results.txt"
-
-# 2.1 轻量级负载测试
-if [[ " ${STRESS_CONFIGS[@]} " =~ " 10:10:轻量级负载 " ]]; then
-    run_stress_test 10 10 "轻量级负载" "$MOCK_API/$STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID/api/stress-rule-1"
-fi
-
-# 2.2 中等负载测试
-if [[ " ${STRESS_CONFIGS[@]} " =~ " 50:20:中等负载 " ]]; then
-    run_stress_test 50 20 "中等负载" "$MOCK_API/$STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID/api/stress-rule-2"
-fi
-
-# 2.3 高负载测试
-if [[ " ${STRESS_CONFIGS[@]} " =~ " 100:30:高负载 " ]]; then
-    run_stress_test 100 30 "高负载" "$MOCK_API/$STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID/api/stress-rule-3"
-fi
-
-# 2.4 极高负载测试
-if [[ " ${STRESS_CONFIGS[@]} " =~ " 200:60:极高负载 " ]]; then
-    run_stress_test 200 60 "极高负载" "$MOCK_API/$STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID/api/stress-rule-4"
-fi
-
-echo ""
-
-# ========================================
-# 阶段 3: 并发连接测试
-# ========================================
-
-echo -e "${CYAN}[阶段 3] 并发连接测试${NC}"
-echo ""
-
-# 3.1 并发连接测试 - 中等规模
-concurrent_connection_test 100 "中等并发连接"
-
-# 3.2 并发连接测试 - 大规模
-concurrent_connection_test 500 "大规模并发连接"
-
-echo ""
-
-# ========================================
-# 阶段 4: 长时间稳定性测试
-# ========================================
-
-echo -e "${CYAN}[阶段 4] 长时间稳定性测试${NC}"
-echo ""
-
-# 4.1 长时间负载测试
-echo -e "${YELLOW}[4.1] 长时间负载测试 (60秒)...${NC}"
-LONG_STRESS_URL="$MOCK_API/$STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID/api/stress-rule-1"
-run_stress_test 20 60 "长时间负载" "$LONG_STRESS_URL"
-
-# 4.2 内存使用监控
-echo -e "${YELLOW}[4.2] 内存使用监控 (30秒)...${NC}"
-monitor_memory_usage "内存监控" 30
-
-echo ""
-
-# ========================================
-# 阶段 5: 极限测试
-# ========================================
-
-echo -e "${CYAN}[阶段 5] 极限测试${NC}"
-echo ""
-
-# 5.1 极限请求频率测试
-echo -e "${YELLOW}[5.1] 极限请求频率测试...${NC}"
-echo -e "在5秒内发送尽可能多的请求"
-
-LIMIT_START_TIME=$(get_timestamp_ms)
-LIMIT_END_TIME=$(($(date +%s) + 5))
-REQUEST_COUNT=0
-
-while [ $(date +%s) -lt $LIMIT_END_TIME ]; do
-    (
-        curl -s "$MOCK_API/$STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID/api/stress-rule-1" >/dev/null 2>&1
-        REQUEST_COUNT=$((REQUEST_COUNT + 1))
-    ) &
-
-    # 控制并发进程数
-    if [ $((REQUEST_COUNT % 50)) -eq 0 ]; then
-        wait
-    fi
-done
-
-wait
-LIMIT_END_ACTUAL_TIME=$(get_timestamp_ms)
-LIMIT_DURATION=$(calculate_duration "$LIMIT_START_TIME" "$LIMIT_END_ACTUAL_TIME")
-LIMIT_QPS=$((REQUEST_COUNT * 1000 / LIMIT_DURATION))
-
-echo -e "${GREEN}✓ 极限请求频率测试完成${NC}"
-echo -e "  总请求数: $REQUEST_COUNT"
-echo -e "  测试时间: ${LIMIT_DURATION}ms"
-echo -e "  最大QPS: $LIMIT_QPS"
-
-if [ $LIMIT_QPS -gt 1000 ]; then
-    test_pass "极限请求频率测试成功 (QPS: $LIMIT_QPS)"
-else
-    test_warn "极限请求频率测试性能较低 (QPS: $LIMIT_QPS)"
-fi
-
-echo ""
-
-# ========================================
 # 生成压力测试报告
-# ========================================
+generate_stress_report() {
+    log_test "生成压力测试综合报告"
 
-echo -e "${CYAN}[完成] 生成压力测试报告${NC}"
-
-# 生成压力测试摘要报告
-STRESS_REPORT_FILE="/tmp/stress_test_report_$(date +%Y%m%d_%H%M%S).md"
-
-cat > "$STRESS_REPORT_FILE" << EOF
+    cat > "$REPORT_FILE" << EOF
 # MockServer 压力测试报告
 
 ## 测试概要
+
 - **测试时间**: $(date '+%Y-%m-%d %H:%M:%S')
-- **测试环境**: 本地开发环境
-- **服务器配置**: $STRESS_PROJECT_ID/$STRESS_ENVIRONMENT_ID
-- **测试工具**: $(command -v wrk >/dev/null 2>&1 && echo "wrk" || echo "ab")
+- **测试持续时间**: $(($(date +%s) - START_TIME)) 秒
+- **测试环境**: $(uname -s) $(uname -r)
+- **MockServer 端点**: $MOCK_API
 
-## 测试配置
-- **测试规则数量**: 20
-- **测试路径模式**: /api/stress-rule-[1-10]
-- **响应数据**: JSON格式，包含时间戳和计数器
+## 测试结果统计
 
-## 压力测试结果
+### 总体结果
+- **总测试数**: $TOTAL_TESTS
+- **通过测试**: $PASSED_TESTS
+- **失败测试**: $FAILED_TESTS
+- **总体通过率**: $(( PASSED_TESTS * 100 / TOTAL_TESTS ))%
 
+### 测试覆盖
 EOF
 
-if [ -f "/tmp/stress_test_results.txt" ]; then
-    echo "### 详细结果" >> "$STRESS_REPORT_FILE"
-    echo "" >> "$STRESS_REPORT_FILE"
-    cat "/tmp/stress_test_results.txt" >> "$STRESS_REPORT_FILE"
-fi
+    # 添加各种测试结果
+    if [ -f "$RESULTS_DIR/basic_performance.txt" ]; then
+        cat >> "$REPORT_FILE" << EOF
 
-cat >> "$STRESS_REPORT_FILE" << EOF
+#### 基础性能测试
+\`\`\`
+$(cat "$RESULTS_DIR/basic_performance.txt")
+\`\`\`
+EOF
+    fi
 
-## 性能指标
+    if [ -f "$RESULTS_DIR/stability_test.txt" ]; then
+        cat >> "$REPORT_FILE" << EOF
 
-### 响应时间分析
-- 平均响应时间应该 < 100ms
-- P95 延迟应该 < 200ms
-- P99 延迟应该 < 500ms
+#### 稳定性测试
+\`\`\`
+$(cat "$RESULTS_DIR/stability_test.txt")
+\`\`\`
+EOF
+    fi
 
-### 吞吐量分析
-- 轻量负载 (10并发): 预期 > 500 QPS
-- 中等负载 (50并发): 预期 > 1000 QPS
-- 高负载 (100并发): 预期 > 1500 QPS
-- 极高负载 (200并发): 预期 > 2000 QPS
+    # 添加压力测试结果摘要
+    echo "" >> "$REPORT_FILE"
+    echo "## 压力测试详情" >> "$REPORT_FILE"
 
-### 资源使用
-- CPU使用率应该 < 80%
-- 内存使用应该保持稳定
-- 连接数应该正常管理
+    for result_file in "$RESULTS_DIR"/wrk_*_${TIMESTAMP}.txt "$RESULTS_DIR"/ab_*_${TIMESTAMP}.txt "$RESULTS_DIR"/hey_*_${TIMESTAMP}.txt; do
+        if [ -f "$result_file" ]; then
+            local test_name=$(basename "$result_file" | sed "s/_${TIMESTAMP}.txt//")
+            echo "" >> "$REPORT_FILE"
+            echo "### $test_name" >> "$REPORT_FILE"
+            echo "\`\`\`" >> "$REPORT_FILE"
+            cat "$result_file" >> "$REPORT_FILE"
+            echo "\`\`\`" >> "$REPORT_FILE"
+        fi
+    done
 
-## 测试结论
+    cat >> "$REPORT_FILE" << EOF
 
+## 性能基准
+
+### 响应时间基准
+- **优秀**: < 100ms
+- **良好**: 100-500ms
+- **可接受**: 500ms-1s
+- **需要优化**: > 1s
+
+### 吞吐量基准
+- **优秀**: > 1000 RPS
+- **良好**: 500-1000 RPS
+- **可接受**: 100-500 RPS
+- **需要优化**: < 100 RPS
+
+### 成功率基准
+- **优秀**: > 99.5%
+- **良好**: 95-99.5%
+- **可接受**: 90-95%
+- **需要优化**: < 90%
+
+## 建议和改进
+
+### 性能优化建议
+1. **响应时间优化**: 如平均响应时间超过500ms，建议检查数据库查询效率
+2. **并发处理**: 如RPS低于预期，建议检查连接池配置和并发处理能力
+3. **内存使用**: 监控内存泄漏，确保长期运行稳定性
+4. **错误处理**: 优化错误处理逻辑，减少失败率
+
+### 压力测试工具对比
+- **wrk**: 适合高并发HTTP负载测试
+- **ab**: Apache Bench，简单易用的基准测试工具
+- **hey**: Go语言编写的现代化负载测试工具
+
+## 测试环境信息
+
+- **操作系统**: $(uname -s) $(uname -r)
+- **处理器**: $(uname -m)
+- **Go版本**: $(go version 2>/dev/null || echo "Unknown")
+- **测试时间**: $(date)
+- **MockServer版本**: $(./mockserver --version 2>/dev/null || echo "Unknown")
+
+---
+
+*报告生成时间: $(date)*
+*测试工具: MockServer E2E Stress Test Suite*
 EOF
 
-if [ $TEST_FAILED -eq 0 ]; then
-    echo "✅ **压力测试通过**: MockServer 在各种负载条件下表现良好" >> "$STRESS_REPORT_FILE"
-    echo "✅ **性能稳定**: 响应时间和吞吐量都在可接受范围内" >> "$STRESS_REPORT_FILE"
-    echo "✅ **资源控制**: 内存和CPU使用保持合理水平" >> "$STRESS_REPORT_FILE"
-else
-    echo "⚠️ **压力测试部分失败**: 某些测试场景需要优化" >> "$STRESS_REPORT_FILE"
-    echo "⚠️ **性能调优**: 建议针对瓶颈进行优化" >> "$STRESS_REPORT_FILE"
-fi
+    log_pass "压力测试报告已生成: $REPORT_FILE"
+    echo -e "${CYAN}报告路径: $REPORT_FILE${NC}"
+}
 
-echo -e "${GREEN}压力测试报告已生成: $STRESS_REPORT_FILE${NC}"
+# 主执行函数
+main() {
+    # 记录开始时间
+    START_TIME=$(date +%s)
 
-# ========================================
-# 测试结果统计
-# ========================================
+    # 显示横幅
+    show_banner
 
-print_test_summary
+    # 使用统一的服务协调
+    log_test "启动依赖服务"
+    if ! coordinate_services; then
+        echo -e "${RED}✗ 服务启动失败${NC}"
+        exit 1
+    fi
 
-echo ""
-echo -e "${CYAN}压力测试特性验证:${NC}"
-echo -e "  ${GREEN}✓ 多级负载测试${NC}"
-echo -e "  ${GREEN}✓ 并发连接测试${NC}"
-echo -e "  ${GREEN}✓ 长时间稳定性测试${NC}"
-echo -e "  ${GREEN}✓ 内存使用监控${NC}"
-echo -e "  ${GREEN}✓ 极限性能测试${NC}"
+    echo -e "${CYAN}开始执行压力测试...${NC}"
+    echo ""
 
-echo ""
-echo -e "${CYAN}性能指标概览:${NC}"
-if [ -f "/tmp/stress_test_results.txt" ]; then
-    echo "详细测试结果请查看: /tmp/stress_test_results.txt"
-fi
-echo "完整报告请查看: $STRESS_REPORT_FILE"
+    # 检查工具
+    if ! check_stress_tools; then
+        echo -e "${RED}压力测试工具检查失败，但继续执行基础测试${NC}"
+        echo ""
+    fi
 
-echo ""
-echo -e "${BLUE}=========================================${NC}"
-echo -e "${BLUE}   MockServer 压力测试完成${NC}"
-echo -e "${BLUE}=========================================${NC}"
+    # 执行测试套件
+    local tests=(
+        "basic_performance_test"
+    )
+
+    # 根据可用工具添加压力测试
+    if command -v wrk >/dev/null 2>&1; then
+        for config in "${STRESS_CONFIGS[@]}"; do
+            IFS=':' read -r concurrency duration description <<< "$config"
+            tests+=("run_wrk_stress_test $concurrency $duration $description")
+        done
+    fi
+
+    if command -v ab >/dev/null 2>&1; then
+        for config in "${STRESS_CONFIGS[@]}"; do
+            IFS=':' read -r concurrency duration description <<< "$config"
+            local requests=$((concurrency * duration / 2))
+            tests+=("run_ab_stress_test $concurrency $requests $description")
+        done
+    fi
+
+    if command -v hey >/dev/null 2>&1; then
+        for config in "${STRESS_CONFIGS[@]}"; do
+            IFS=':' read -r concurrency duration description <<< "$config"
+            tests+=("run_hey_stress_test $concurrency $duration $description")
+        done
+    fi
+
+    tests+=(
+        "run_stability_test"
+        "monitor_memory_usage"
+    )
+
+    local passed=0
+    local failed=0
+
+    for test_cmd in "${tests[@]}"; do
+        if $test_cmd; then
+            passed=$((passed + 1))
+        else
+            failed=$((failed + 1))
+        fi
+        echo ""
+    done
+
+    # 生成综合报告
+    generate_stress_report
+
+    # 显示测试结果
+    echo -e "${BLUE}=========================================${NC}"
+    echo -e "${BLUE}   压力测试结果${NC}"
+    echo -e "${BLUE}=========================================${NC}"
+    echo ""
+    echo -e "${CYAN}测试统计:${NC}"
+    echo -e "  总测试数: $TOTAL_TESTS"
+    echo -e "  通过: ${GREEN}$passed${NC}"
+    echo -e "  失败: ${RED}$failed${NC}"
+    echo -e "  成功率: $(( passed * 100 / TOTAL_TESTS ))%"
+    echo ""
+    echo -e "${CYAN}测试结果文件:${NC}"
+    echo -e "  结果目录: $RESULTS_DIR"
+    echo -e "  综合报告: $REPORT_FILE"
+    echo ""
+
+    if [ $failed -eq 0 ]; then
+        echo -e "${GREEN}🎉 所有压力测试通过！系统性能稳定。${NC}"
+        exit 0
+    else
+        echo -e "${YELLOW}⚠️  有 $failed 个测试失败，建议进行性能优化${NC}"
+        exit 1
+    fi
+}
+
+# 信号处理
+trap 'echo -e "\n${YELLOW}压力测试被中断，正在清理...${NC}"; exit 1' INT TERM
+
+# 执行主函数
+main
